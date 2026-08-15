@@ -1,0 +1,2236 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* App-wide scrollbars — PLAIN (non-@layer) CSS on purpose, same reason as the
+   xterm rules below: a `@layer` rule keyed on an element rather than a class
+   is not guaranteed to survive Tailwind's purge.
+   The native WebView2 bar is a light-grey 17 px column with arrow buttons —
+   it reads as somebody else's chrome bolted onto a matte-black app, and it
+   was the single loudest non-theme surface left on screen. This makes every
+   scroll container in the app agree: a thin dark thumb floating on the
+   content, no track, no buttons. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
+
+@layer components {
+  /*
+   * Voice-orb state language. The procedural material stays inside the sphere;
+   * these two soft waves make lifecycle changes readable from across the desk.
+   * Every loop uses only transform and opacity, and none rotates, so the active
+   * surface remains calm even when a long prompt is being written.
+   */
+  /* The ring and the state dot follow the APP's accent, not the orb's own
+     ivory-gold material. Two yellows a few degrees apart in one 240 px column
+     is a mismatch the eye reads as sloppiness long before it can name it —
+     the sphere keeps its warm palette because it is a rendered material, and
+     everything drawn around it belongs to the interface. */
+  .agentic-voice-orb-ring {
+    @apply pointer-events-none absolute inset-2 rounded-full border border-primary/40;
+    opacity: 0;
+    transform: scale(0.94);
+    will-change: transform, opacity;
+  }
+
+  .agentic-voice-orb-stage[data-state="listening"] .agentic-voice-orb-ring-a {
+    animation: agentic-orb-wave 1.35s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  }
+
+  .agentic-voice-orb-stage[data-state="thinking"] .agentic-voice-orb-ring-a,
+  .agentic-voice-orb-stage[data-state="thinking"] .agentic-voice-orb-ring-b {
+    animation: agentic-orb-work 1.55s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+
+  .agentic-voice-orb-stage[data-state="thinking"] .agentic-voice-orb-ring-b {
+    animation-delay: 0.58s;
+  }
+
+  .agentic-voice-orb-stage[data-state="speaking"] .agentic-voice-orb-ring-a,
+  .agentic-voice-orb-stage[data-state="speaking"] .agentic-voice-orb-ring-b {
+    animation: agentic-orb-wave 0.82s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  }
+
+  .agentic-voice-orb-stage[data-state="speaking"] .agentic-voice-orb-ring-b {
+    animation-delay: 0.31s;
+  }
+
+  .agentic-voice-orb-stage[data-drop-state="over"] .agentic-voice-orb-ring,
+  .agentic-voice-orb-stage[data-drop-state="reading"] .agentic-voice-orb-ring {
+    animation: agentic-orb-drop 1.1s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+    border-style: dashed;
+    border-width: 2px;
+  }
+
+  .agentic-voice-state-dot {
+    @apply h-2 w-2 rounded-full bg-muted-foreground/45;
+  }
+
+  .agentic-voice-state-dot[data-state="listening"],
+  .agentic-voice-state-dot[data-state="thinking"],
+  .agentic-voice-state-dot[data-state="speaking"] {
+    background: hsl(var(--primary));
+    animation: agentic-orb-dot 1.25s ease-in-out infinite;
+  }
+
+  .agentic-voice-state-dot[data-state="thinking"] {
+    animation-duration: 0.85s;
+  }
+
+  .agentic-voice-state-dot[data-state="speaking"] {
+    animation-duration: 0.62s;
+  }
+
+  .agentic-voice-state-dot[data-state="error"] {
+    @apply bg-destructive;
+  }
+
+  /*
+   * The live transcript pill under the orb. Presence is animated both ways —
+   * it slides in from the status pill above it, and `data-leaving` (set while
+   * the ghost text fades, see VoiceBubble) plays the same move backwards
+   * before the element unmounts.
+   */
+  .agentic-voice-transcript {
+    animation: agentic-transcript-in 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .agentic-voice-transcript[data-leaving="true"] {
+    animation: agentic-transcript-out 0.22s ease-out forwards;
+  }
+
+  /* A three-line window over the tail of the sentence. `lh` keeps the crop on
+     an exact line boundary whatever the font metrics resolve to; the fade mask
+     appears only when a line really was cropped (`data-overflowing` is
+     MEASURED in the component, CSS cannot know), so a short sentence keeps a
+     crisp top edge. */
+  .agentic-voice-transcript-window {
+    max-height: 3lh;
+    overflow: hidden;
+  }
+
+  .agentic-voice-transcript-window[data-overflowing="true"] {
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1lh);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 1lh);
+  }
+
+  /* inline-block, not inline: transforms do not apply to non-replaced inline
+     boxes, and an atomic box also stops a word from re-wrapping mid-animation. */
+  .agentic-voice-transcript-word {
+    display: inline-block;
+    animation: agentic-transcript-word 0.26s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+
+  /* The "still writing" caret shown while the recognizer has not committed to
+     the sentence. App accent on purpose — same rule as the ring and the dot:
+     everything drawn around the sphere belongs to the interface. */
+  .agentic-voice-transcript-caret {
+    @apply bg-primary;
+    display: inline-block;
+    width: 2px;
+    height: 0.85em;
+    margin-left: 0.2em;
+    vertical-align: -0.08em;
+    border-radius: 9999px;
+    animation: agentic-transcript-caret 1.05s ease-in-out infinite;
+  }
+
+  @keyframes agentic-orb-wave {
+    0% {
+      opacity: 0.62;
+      transform: scale(0.91);
+    }
+    72%,
+    100% {
+      opacity: 0;
+      transform: scale(1.18);
+    }
+  }
+
+  @keyframes agentic-orb-work {
+    0%,
+    100% {
+      opacity: 0.16;
+      transform: scale3d(0.95, 1.01, 1);
+    }
+    50% {
+      opacity: 0.64;
+      transform: scale3d(1.13, 1.08, 1);
+    }
+  }
+
+  @keyframes agentic-orb-drop {
+    0%,
+    100% {
+      opacity: 0.42;
+      transform: scale(1.01);
+    }
+    50% {
+      opacity: 0.92;
+      transform: scale(1.12);
+    }
+  }
+
+  @keyframes agentic-orb-dot {
+    0%,
+    100% {
+      opacity: 0.45;
+      transform: scale(0.78);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.18);
+    }
+  }
+
+  @keyframes agentic-transcript-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px) scale(0.97);
+    }
+  }
+
+  @keyframes agentic-transcript-out {
+    to {
+      opacity: 0;
+      transform: translateY(-4px) scale(0.97);
+    }
+  }
+
+  @keyframes agentic-transcript-word {
+    from {
+      opacity: 0;
+      transform: translateY(3px);
+      filter: blur(3px);
+    }
+  }
+
+  @keyframes agentic-transcript-caret {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.25;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .agentic-voice-orb-ring,
+    .agentic-voice-state-dot,
+    .agentic-voice-transcript,
+    .agentic-voice-transcript-word,
+    .agentic-voice-transcript-caret {
+      animation: none !important;
+    }
+
+    .agentic-voice-orb-stage[data-state]:not([data-state="idle"])
+      .agentic-voice-orb-ring-a {
+      opacity: 0.45;
+      transform: scale(1.08);
+    }
+  }
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  /* The transparent border + content-box clip is what makes the thumb read as
+     a floating pill rather than a filled gutter. */
+  background-color: hsl(var(--border));
+  background-clip: content-box;
+  border: 3px solid transparent;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--muted-foreground));
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+/* Shiki dual-theme switch — PLAIN (non-@layer) CSS, same reason as the rules
+   below: `.shiki` markup is produced at runtime from highlighted strings and
+   never appears in the source, so a @layer rule for it would be purged.
+
+   CodeBlock highlights once with both themes; Shiki writes the light colour
+   into `color:` and the dark one into `--shiki-dark` on every span. These two
+   rules are what make the dark half take over. Without them, switching the
+   theme would leave every code block permanently in light colours. */
+.dark .shiki,
+.dark .shiki span {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+  font-style: var(--shiki-dark-font-style) !important;
+  font-weight: var(--shiki-dark-font-weight) !important;
+  text-decoration: var(--shiki-dark-text-decoration) !important;
+}
+
+/* xterm.js viewport scrollbar — PLAIN (non-@layer) CSS on purpose. Tailwind
+   tree-shakes `@layer utilities` by class usage, and `.xterm-viewport` is
+   created by xterm.js at runtime (it never appears in the source), so a rule
+   for it inside a @layer gets PURGED from the build — which is exactly why the
+   embedded "Make It Yours" terminals kept the native light WebView2 scrollbar.
+   Top-level CSS is always emitted. Thin, dark, no arrow buttons. */
+.xterm-viewport::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.xterm-viewport::-webkit-scrollbar-track {
+  background: transparent;
+}
+.xterm-viewport::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 4px;
+}
+.xterm-viewport::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+.xterm-viewport::-webkit-scrollbar-button {
+  display: none;
+}
+
+/* Agentic IDE panes intentionally show no scrollbar. Scrolling still works
+   through xterm's wheel handling, while recorded conversation history opens
+   from the book button in the pane header. Keep these rules top-level because
+   xterm creates the viewport at runtime. */
+.agentic-terminal-host .xterm-viewport {
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.agentic-terminal-host .xterm-viewport::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* While a boundary is being dragged, the terminal inside a pane keeps the size
+   it had — a terminal is a grid of whole character cells, and re-cutting that
+   grid means telling the agent to redraw its entire screen, which is far too
+   expensive to do per frame (see AgenticTerminal's `layoutBusy`). So for the
+   length of the gesture the pane is a frame around contents of the old size,
+   and the only question is where the difference shows.
+
+   Anchoring the contents to the BOTTOM is what makes it look right: an agent
+   draws its input box at the bottom of its screen, so the strip of unused
+   ground ends up above the output instead of below the input — a terminal with
+   room over it reads as normal, one with its prompt floating in the middle
+   reads as broken. That was the reported symptom. Dragging the other way trims
+   the oldest rows off the top, which is the direction a terminal grows anyway.
+
+   Only during the drag: the moment it ends the pane refits and the contents
+   fill the frame again. */
+.agentic-terminal-host[data-layout-busy="true"] {
+  display: flex;
+  align-items: flex-end;
+}
+
+.agentic-terminal-host[data-layout-busy="true"] > .xterm {
+  width: 100%;
+}
+
+@layer base {
+  /*
+   * ===========================================================================
+   * Theme tokens — light lives on :root, dark on .dark
+   * ===========================================================================
+   *
+   * The class is put on <html> by two places that must agree: the inline boot
+   * script in index.html (synchronously, before the first paint, so neither
+   * theme flashes the other one) and ThemeProvider (hooks/useTheme.tsx) once
+   * React owns the document. Dark remains the product's default.
+   *
+   * THE RULE FOR EVERY SURFACE IN THIS APP: never write a literal colour.
+   * A component that hardcodes `bg-zinc-900`, `#0a0a0a`, or `rgba(0,0,0,.6)`
+   * looks correct in exactly one theme and is a bug in the other — and because
+   * the app defaults to dark, that bug ships invisible to whoever wrote it.
+   *
+   * The shadcn set below covers flat surfaces and text. Effects — glows, grid
+   * lines, scrims, glass, hatching — cannot use it, because they need colour
+   * CHANNELS to build an rgba() from. That is what the four `*-rgb` triples
+   * exist for; each is a bare `R G B` list meant for `rgb(var(--x) / <alpha>)`.
+   */
+  :root {
+    /* --- Light: warm paper, dark gold ------------------------------------ */
+    --background: 42 33% 96%; /* warm ivory behind the artwork */
+    --foreground: 240 9% 18%; /* #2B2B33 warm near-black */
+    --card: 42 33% 96%; /* ivory glass, never a white plastic rectangle */
+    --card-foreground: 240 9% 18%;
+    --popover: 42 33% 97%;
+    --popover-foreground: 240 9% 18%;
+    /* #A86B00. The signal-yellow of the dark theme is 1.4:1 on paper — a
+       button nobody can read. This is the same gold the light terminal theme
+       already uses for its cursor, at 5.1:1 against --background. */
+    --primary: 38 100% 33%;
+    --primary-foreground: 0 0% 100%; /* white on gold */
+    --secondary: 42 22% 90%; /* warm recessed surface */
+    --secondary-foreground: 240 9% 18%;
+    --muted: 42 22% 90%;
+    --muted-foreground: 240 6% 30%;
+    --accent: 38 100% 33%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 6 63% 46%; /* #C0392B — the light terminal's red */
+    --destructive-foreground: 0 0% 100%;
+    --border: 40 14% 72%;
+    --input: 42 22% 90%;
+    --ring: 38 100% 33%;
+    --radius: 0.75rem;
+
+    /* --- Effect channels (see the note above) ---------------------------- */
+    /* The accent as raw channels, for glows / grid lines / halos. */
+    --accent-rgb: 168 107 0;
+    /* What a translucent overlay DARKENS with (backdrops, vignettes, shadows).
+       Warm near-black rather than pure black, so a scrim over paper does not
+       turn grey-blue. */
+    --scrim-rgb: 43 40 32;
+    /* What a translucent overlay LIGHTENS with (hatching, glass rims, sheen).
+       In light mode "highlight" means going darker, so this is the ink colour —
+       the two swap roles between themes, which is exactly the point. */
+    --sheen-rgb: 43 43 51;
+    /* The ground colour of the app shell as channels, for glass pills that
+       must read as "the app, blurred" rather than a grey rectangle. */
+    --shell-rgb: 246 242 232;
+
+    /* Light mode changes the interface ink, not the chosen wallpaper. Fully
+       transparent surfaces were tried first, but with user-chosen wallpapers
+       (any subject, any brightness) ink regularly landed on same-value artwork
+       and disappeared. Light therefore carries the same glass system as dark,
+       tuned slightly lighter: the artwork stays visible around and through
+       every panel, and text always sits on a predictable ground. */
+    /* Matched to the dark theme's values: light used to run ~8 points more
+       transparent, and on bright, busy artwork the ivory glass stopped being
+       a ground at all — ink landed on the wallpaper itself and washed out. */
+    --surface-card-alpha: 0.6;
+    --surface-panel-alpha: 0.58;
+    --surface-control-alpha: 0.72;
+    --surface-stage-alpha: 0.58;
+    --surface-wiki-pane-alpha: 0.3;
+    --surface-wiki-stage-alpha: 0.28;
+
+    /* --- Stages ----------------------------------------------------------
+       The full-bleed canvases behind the knowledge maps. They are not chrome:
+       a force graph needs its own depth cue, so it gets its own ground, its
+       own centre-of-gravity glow, and its own dot field. Light mode exposes
+       the wallpaper while retaining ink-dark stars and gold state cues. */
+    --stage-bg: 45 40% 97%;
+    --stage-dot-rgb: 43 43 51;
+    --stage-dot-strong: 0.28;
+    --stage-dot-soft: 0.16;
+    --stage-wash-rgb: 168 107 0;
+    --stage-wash-strength: 0.08;
+    --stage-vignette-rgb: 43 40 32;
+    --stage-vignette-strength: 0.1;
+
+    /* --- Run-graph node categories (Visualization) -----------------------
+       The n8n-style family hues behind `nodeSpec.ts`. Only the card's icon
+       tile reads `hsl(var(--viz-*))` — QUIET accents against the brand, not
+       a rainbow. Light values are darker ink for warm paper. */
+    --viz-trigger: 38 100% 33%; /* the brand gold — the run's ignition */
+    --viz-reasoning: 258 35% 46%; /* muted violet — the worker thinking */
+    --viz-terminal: 190 50% 30%; /* muted cyan — shell commands */
+    --viz-file: 210 50% 38%; /* muted blue — file writes/edits */
+    --viz-search: 168 45% 28%; /* muted teal — read/grep/glob */
+    --viz-web: 232 35% 46%; /* muted indigo — fetch/web */
+    --viz-integration: 24 60% 38%; /* muted orange — MCP / external tools */
+    --viz-agent: 292 35% 40%; /* muted magenta — sub-agent spawns */
+    --viz-tool: 240 6% 38%; /* neutral — unrecognised tools */
+    --viz-result: 152 45% 28%; /* muted green — the run's landing */
+    --viz-deliverable: 240 6% 38%; /* neutral — files left behind */
+
+    /* Legacy aliases. Kept because they are referenced from a handful of
+       places that predate the token set; both now follow the theme. */
+    --jarvis-yellow: 168 107 0;
+    --jarvis-yellow-dim: 138 90 8;
+    --jarvis-grid: 44 18% 88%;
+  }
+
+  .dark {
+    /* --- Dark: matte black, signal yellow — the product default ---------- */
+    --background: 0 0% 4%; /* #0A0A0A matte-black */
+    --foreground: 0 0% 96%; /* #F4F4F5 */
+    --card: 0 0% 6%; /* #0F0F0F */
+    --card-foreground: 0 0% 96%;
+    --popover: 0 0% 6%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 50 100% 52%; /* #FFD60A signal-yellow */
+    --primary-foreground: 0 0% 4%; /* black on yellow */
+    --secondary: 0 0% 10%; /* #1A1A1A */
+    --secondary-foreground: 0 0% 96%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 56%; /* #8F8F8F */
+    --accent: 50 100% 52%;
+    --accent-foreground: 0 0% 4%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 96%;
+    --border: 0 0% 14%; /* #242424 */
+    --input: 0 0% 10%;
+    --ring: 50 100% 52%;
+
+    --accent-rgb: 255 214 10;
+    --scrim-rgb: 0 0 0;
+    --sheen-rgb: 255 255 255;
+    --shell-rgb: 10 10 10;
+
+    --surface-card-alpha: 0.6;
+    --surface-panel-alpha: 0.58;
+    --surface-control-alpha: 0.72;
+    --surface-stage-alpha: 0.58;
+    --surface-wiki-pane-alpha: 0.36;
+    --surface-wiki-stage-alpha: 0.34;
+
+    --stage-bg: 0 0% 4%;
+    --stage-dot-rgb: 255 255 255;
+    --stage-dot-strong: 0.5;
+    --stage-dot-soft: 0.35;
+    --stage-wash-rgb: 255 214 10;
+    --stage-wash-strength: 0.055;
+    --stage-vignette-rgb: 0 0 0;
+    --stage-vignette-strength: 0.62;
+
+    /* Run-graph node categories — quiet accents on matte black (see :root).
+       Saturation stays low so signal-yellow remains the only loud voice. */
+    --viz-trigger: 50 100% 52%;
+    --viz-reasoning: 258 45% 70%;
+    --viz-terminal: 187 40% 56%;
+    --viz-file: 210 50% 64%;
+    --viz-search: 168 35% 52%;
+    --viz-web: 232 45% 70%;
+    --viz-integration: 24 55% 58%;
+    --viz-agent: 292 40% 66%;
+    --viz-tool: 0 0% 62%;
+    --viz-result: 152 40% 52%;
+    --viz-deliverable: 0 0% 62%;
+
+    --jarvis-yellow: 255 214 10;
+    --jarvis-yellow-dim: 230 190 40;
+    --jarvis-grid: 0 0% 12%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply bg-background;
+    scroll-behavior: smooth;
+    /* Tells the engine which theme its OWN widgets belong to — form controls,
+       the caret, focus rings, and (on WebView2) the parts of a scrollbar that
+       CSS cannot reach. Without it a light app keeps dark native dropdowns. */
+    color-scheme: light;
+  }
+
+  .dark {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family:
+      "Inter",
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      sans-serif;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    overflow-x: hidden;
+  }
+
+  .font-display {
+    font-family: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+    font-feature-settings: "ss01", "ss02";
+    letter-spacing: -0.02em;
+  }
+
+  .font-mono {
+    font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+}
+
+@layer components {
+  /*
+   * Full-bleed desktop artwork behind the normal app sections.
+   *
+   * The source image is intentionally identical in both themes. Dark mode
+   * keeps its contrast veil; light mode displays the selected artwork without
+   * tinting, fading or recolouring it. This keeps future light and dark
+   * wallpapers under the user's control instead of baking a theme into them.
+   */
+  .jarvis-desktop-wallpaper {
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    filter: saturate(0.92) brightness(0.78) contrast(1.08);
+    opacity: 0.94;
+    transform: scale(1.002);
+  }
+
+  .jarvis-desktop-wallpaper-veil {
+    background:
+      linear-gradient(
+        180deg,
+        rgb(var(--shell-rgb) / 0.3) 0%,
+        transparent 18%,
+        transparent 72%,
+        rgb(var(--shell-rgb) / 0.34) 100%
+      ),
+      radial-gradient(
+        ellipse at 52% 42%,
+        transparent 24%,
+        rgb(var(--shell-rgb) / 0.16) 100%
+      );
+  }
+
+  /* Light keeps the artwork untinted (no darkening filter), but it retains
+     the contrast veil: the veil is built from --shell-rgb, so on paper it
+     settles the edges of the frame — where chrome text lives — with a faint
+     ivory wash instead of dimming the artwork's centre.
+
+     A full-frame ivory frosting veil was tried here (2026-08-11) and rejected
+     by the maintainer: the wallpaper must stay genuinely visible in light
+     mode. Readability over arbitrary artwork is therefore carried by the ink
+     itself — the halo/outline rules further down — never by washing the
+     picture out. */
+  :root:not(.dark) .jarvis-desktop-wallpaper {
+    filter: none;
+    opacity: 1;
+  }
+
+  /*
+   * Transparent workspace chrome.
+   *
+   * The wallpaper is the app's ground now, so navigation and section roots no
+   * longer repaint it with an opaque theme colour. Small content surfaces keep
+   * a restrained local veil for contrast; their colour still comes from the
+   * semantic shell channel and therefore follows light/dark mode automatically.
+   */
+  .jarvis-shell-surface {
+    background: linear-gradient(
+      180deg,
+      rgb(var(--shell-rgb) / 0.16),
+      rgb(var(--shell-rgb) / 0.07)
+    );
+  }
+
+  /* NOTE (2026-08-11): a full glass ground for the nav column, top bar and
+     the Agentic IDE chrome was tried and rejected — the maintainer wants the
+     wallpaper to shine through the chrome untinted. `.jarvis-nav-surface`
+     stays on the Sidebar as the scoping hook for the ink/outline rules in
+     the readability-floor section; it paints nothing itself. */
+
+  .jarvis-panel-surface {
+    background: rgb(var(--shell-rgb) / var(--surface-panel-alpha));
+  }
+
+  .jarvis-message-surface {
+    background: linear-gradient(
+      135deg,
+      rgb(var(--shell-rgb) / var(--surface-card-alpha)),
+      rgb(var(--shell-rgb) / calc(var(--surface-card-alpha) * 0.82))
+    );
+    -webkit-backdrop-filter: blur(12px) saturate(1.08);
+    backdrop-filter: blur(12px) saturate(1.08);
+  }
+
+  .jarvis-input-surface {
+    background: rgb(var(--shell-rgb) / var(--surface-control-alpha));
+    -webkit-backdrop-filter: blur(14px) saturate(1.08);
+    backdrop-filter: blur(14px) saturate(1.08);
+  }
+
+  /* Section-level grounds disappear everywhere the wallpaper is active. The
+     selectors intentionally stop at page roots and purpose-built stages: cards,
+     dialogs and data tables retain their own hierarchy and remain readable. */
+  .jarvis-section-stage > [class~="bg-background"],
+  .jarvis-section-stage .agents-board-stage,
+  .jarvis-section-stage .uw-stage {
+    background-color: transparent;
+  }
+
+  /*
+   * Wallpaper readability floor.
+   *
+   * Everything inside a section stage may end up directly on user-chosen
+   * artwork — 500 wallpapers of any brightness, in either theme. Nothing can
+   * be tuned per image, so the floor works locally instead:
+   *
+   * 1. An inherited text halo. text-shadow cascades to every descendant, so a
+   *    single declaration protects all ink in the stage. The halo pulls
+   *    towards the theme's own ground (near-black in dark, paper in light);
+   *    on calm surfaces it is invisible, on busy artwork it restores the
+   *    missing contrast — the same trick desktop OSes use for icon labels.
+   * 2. Scoped token floors. Muted ink and hairline borders are re-declared on
+   *    the stage only: strong enough to survive artwork, while popovers and
+   *    dialogs outside the stage keep the quieter global values.
+   */
+  .dark .jarvis-section-stage {
+    --muted-foreground: 0 0% 68%;
+    --border: 0 0% 24%;
+    text-shadow:
+      0 1px 2px rgb(var(--scrim-rgb) / 0.55),
+      0 0 12px rgb(var(--scrim-rgb) / 0.35);
+  }
+
+  /* The same floor covers the shell chrome (nav column, top bar): those live
+     OUTSIDE the section stage, and they were the loudest reported symptom —
+     nav icons and toolbar labels dissolving into the artwork.
+
+     The chrome carries NO surface of its own (maintainer decision: the
+     wallpaper stays untinted and fully visible), so the ink must survive
+     alone. Two changes relative to the plain stage floor: near-foreground
+     ink, and a tight outline-grade halo — the desktop-OS icon-label trick,
+     where a 1–2px light ring makes dark ink read on ANY artwork. On calm
+     ivory glass the ring is ivory-on-ivory and invisible. */
+  :root:not(.dark) .jarvis-section-stage,
+  :root:not(.dark) .jarvis-nav-surface,
+  :root:not(.dark) .jarvis-shell-surface {
+    --muted-foreground: 240 9% 18%;
+    --border: 40 12% 46%;
+    /* Subtitle-grade outline, not a soft glow: eight hard offsets close a
+       full-opacity ivory ring around every glyph — the only treatment that
+       keeps dark ink legible when the artwork behind it is busy or dark.
+       The blurred layers separate the ring from detail. On the app's own
+       ivory glass the ring is ivory-on-ivory and invisible. */
+    text-shadow:
+      1px 0 0 rgb(var(--shell-rgb)),
+      -1px 0 0 rgb(var(--shell-rgb)),
+      0 1px 0 rgb(var(--shell-rgb)),
+      0 -1px 0 rgb(var(--shell-rgb)),
+      1px 1px 0 rgb(var(--shell-rgb) / 0.85),
+      -1px 1px 0 rgb(var(--shell-rgb) / 0.85),
+      1px -1px 0 rgb(var(--shell-rgb) / 0.85),
+      -1px -1px 0 rgb(var(--shell-rgb) / 0.85),
+      0 0 4px rgb(var(--shell-rgb) / 0.95),
+      0 1px 8px rgb(var(--shell-rgb) / 0.85),
+      0 0 18px rgb(var(--shell-rgb) / 0.6);
+  }
+
+  /* text-shadow never reaches SVG strokes, so the halo above cannot protect
+     the icons themselves. Stacked tight drop-shadows are the SVG equivalent
+     of an outline — invisible on calm glass, a rescue ring on busy artwork.
+     Scoped to the chrome (nav, top bar, IDE toolbar + chat rail), where
+     icons ARE the interface; content views draw icons on their own cards. */
+  :root:not(.dark) .jarvis-nav-surface svg,
+  :root:not(.dark) .jarvis-shell-surface svg,
+  :root:not(.dark) [data-testid="agentic-toolbar"] svg,
+  :root:not(.dark) [data-testid="agentic-chat-rail"] svg {
+    filter: drop-shadow(1px 0 0 rgb(var(--shell-rgb)))
+      drop-shadow(-1px 0 0 rgb(var(--shell-rgb)))
+      drop-shadow(0 1px 0 rgb(var(--shell-rgb)))
+      drop-shadow(0 -1px 0 rgb(var(--shell-rgb)))
+      drop-shadow(0 0 4px rgb(var(--shell-rgb) / 0.85));
+  }
+
+  /* The IDE toolbar and chat rail live INSIDE the stage but hold shell-grade
+     small controls; give their text the same outline-grade ink as the chrome
+     above (the stage floor alone was tuned for text on glass cards). */
+  :root:not(.dark) [data-testid="agentic-toolbar"],
+  :root:not(.dark) [data-testid="agentic-chat-rail"] {
+    --muted-foreground: 240 9% 18%;
+    text-shadow:
+      1px 0 0 rgb(var(--shell-rgb)),
+      -1px 0 0 rgb(var(--shell-rgb)),
+      0 1px 0 rgb(var(--shell-rgb)),
+      0 -1px 0 rgb(var(--shell-rgb)),
+      1px 1px 0 rgb(var(--shell-rgb) / 0.85),
+      -1px 1px 0 rgb(var(--shell-rgb) / 0.85),
+      1px -1px 0 rgb(var(--shell-rgb) / 0.85),
+      -1px -1px 0 rgb(var(--shell-rgb) / 0.85),
+      0 0 4px rgb(var(--shell-rgb) / 0.95),
+      0 1px 8px rgb(var(--shell-rgb) / 0.85),
+      0 0 18px rgb(var(--shell-rgb) / 0.6);
+  }
+
+  /*
+   * The visualization viewport — a section stage's opposite number.
+   *
+   * The readability floor above works by putting a text halo on EVERY
+   * descendant, which is right for a screen made of the app's own text and
+   * wrong for one made of somebody else's picture: the halo lands on the labels
+   * inside a rendered SVG chart and on the type of a framed HTML page, where it
+   * reads as a printing error. So this stage takes the opposite deal — no
+   * inherited shadow, and a quiet opaque ground instead of the wallpaper, so a
+   * diagram with a transparent background is judged against one flat colour
+   * rather than against whichever artwork the user picked.
+   *
+   * Chosen by the shell (App.tsx) rather than by the view, for the same reason
+   * the section stage is: it is the surface the section is drawn ON, and a view
+   * that painted its own would keep it in a detached window but lose it the
+   * moment the shell laid something else out around it.
+   */
+  .jarvis-visualization-stage {
+    background: rgb(var(--shell-rgb) / 0.94);
+    text-shadow: none;
+  }
+
+  /* Subtle grid pattern in the background — gives a dashboard feel without
+     distracting. Drawn in the accent so it reads as the app's own texture;
+     slightly stronger on paper, where a 4 % line simply disappears. */
+  .jarvis-grid {
+    background-image:
+      linear-gradient(rgb(var(--accent-rgb) / 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--accent-rgb) / 0.04) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+  }
+
+  :root:not(.dark) .jarvis-grid {
+    background-image:
+      linear-gradient(rgb(var(--accent-rgb) / 0.09) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--accent-rgb) / 0.09) 1px, transparent 1px);
+  }
+
+  /* Accent spot glow — used as an absolute-positioned element. A blurred glow
+     is additive light: it works by being BRIGHTER than its ground, which paper
+     already is. On light the same shape becomes a soft gold wash instead. */
+  .jarvis-glow {
+    background: radial-gradient(
+      circle at center,
+      rgb(var(--accent-rgb) / 0.22) 0%,
+      rgb(var(--accent-rgb) / 0.08) 30%,
+      transparent 70%
+    );
+    filter: blur(60px);
+  }
+
+  :root:not(.dark) .jarvis-glow {
+    background: radial-gradient(
+      circle at center,
+      rgb(var(--accent-rgb) / 0.14) 0%,
+      rgb(var(--accent-rgb) / 0.05) 30%,
+      transparent 70%
+    );
+  }
+
+  /*
+   * The Jarvis-Agents operations board sits on its own faint accent field — a
+   * spot glow in the top right plus a 72 px grid — so a board with nothing on
+   * it reads as an instrument on standby rather than a blank panel. Same
+   * construction as .jarvis-grid at the board's own spacing, and stronger on
+   * paper, where a 1.5 % line simply is not there.
+   */
+  .agents-board-stage {
+    background-color: hsl(var(--background));
+    background-image:
+      radial-gradient(circle at 78% 0%, rgb(var(--accent-rgb) / 0.08), transparent 30%),
+      linear-gradient(rgb(var(--accent-rgb) / 0.016) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--accent-rgb) / 0.012) 1px, transparent 1px);
+    background-size:
+      auto,
+      72px 72px,
+      72px 72px;
+  }
+
+  :root:not(.dark) .agents-board-stage {
+    background-image:
+      radial-gradient(circle at 78% 0%, rgb(var(--accent-rgb) / 0.07), transparent 30%),
+      linear-gradient(rgb(var(--accent-rgb) / 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--accent-rgb) / 0.04) 1px, transparent 1px);
+  }
+
+  /* Button base — for CTAs */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 font-medium
+           bg-primary text-primary-foreground
+           transition-all duration-200
+           hover:bg-primary/90 hover:shadow-[0_0_32px_rgb(var(--accent-rgb)/0.35)]
+           active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 font-medium
+           text-foreground border border-border
+           transition-all duration-200
+           hover:bg-secondary hover:border-primary/40
+           active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-2 rounded-full border border-border bg-secondary/60
+           px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur;
+  }
+
+  .chip-yellow {
+    @apply inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10
+           px-3 py-1 text-xs font-semibold text-primary;
+  }
+
+  .card-outline {
+    @apply rounded-2xl border border-border bg-card/60 backdrop-blur
+           transition-colors duration-300
+           hover:border-primary/40;
+  }
+}
+
+@layer utilities {
+  /*
+   * One contrast system for every workspace section. Older views chose their
+   * own card opacity (or an opaque background), which made navigation feel
+   * like switching products. Exact class-token selectors preserve semantic
+   * colours and interaction variants while converging resting surfaces on the
+   * George Voice glass balance.
+   */
+  .jarvis-section-stage
+    :where(
+      [class~="bg-card"],
+      [class~="bg-card/20"],
+      [class~="bg-card/25"],
+      [class~="bg-card/30"],
+      [class~="bg-card/40"],
+      [class~="bg-card/50"],
+      [class~="bg-card/60"],
+      [class~="bg-card/70"],
+      [class~="bg-card/80"],
+      [class~="bg-card/90"],
+      [class~="bg-card/95"]
+    ) {
+    background-color: hsl(var(--card) / var(--surface-card-alpha));
+  }
+
+  .jarvis-section-stage
+    :where(
+      div,
+      aside,
+      section,
+      article,
+      header,
+      footer,
+      main,
+      nav,
+      form,
+      table,
+      thead,
+      tbody,
+      ul,
+      ol,
+      li,
+      label,
+      button
+    ):where(
+      [class~="bg-background"],
+      [class~="bg-background/20"],
+      [class~="bg-background/25"],
+      [class~="bg-background/30"],
+      [class~="bg-background/35"],
+      [class~="bg-background/40"],
+      [class~="bg-background/45"],
+      [class~="bg-background/50"],
+      [class~="bg-background/55"],
+      [class~="bg-background/60"],
+      [class~="bg-background/70"],
+      [class~="bg-background/80"],
+      [class~="bg-background/85"],
+      [class~="bg-background/90"],
+      [class~="bg-background/95"],
+      [class~="bg-muted"],
+      [class~="bg-muted/20"],
+      [class~="bg-muted/25"],
+      [class~="bg-muted/30"],
+      [class~="bg-muted/35"],
+      [class~="bg-muted/40"],
+      [class~="bg-muted/50"],
+      [class~="bg-muted/60"],
+      [class~="bg-muted/70"],
+      [class~="bg-muted/80"]
+    ) {
+    background-color: hsl(var(--card) / var(--surface-panel-alpha));
+  }
+
+  .jarvis-section-stage
+    :where(input, textarea, select, [role="combobox"]):where(
+      [class~="bg-background"],
+      [class~="bg-background/20"],
+      [class~="bg-background/25"],
+      [class~="bg-background/30"],
+      [class~="bg-background/40"],
+      [class~="bg-background/50"],
+      [class~="bg-background/60"],
+      [class~="bg-background/70"],
+      [class~="bg-background/80"],
+      [class~="bg-background/90"],
+      [class~="bg-background/95"],
+      [class~="bg-muted"],
+      [class~="bg-muted/20"],
+      [class~="bg-muted/25"],
+      [class~="bg-muted/30"],
+      [class~="bg-muted/40"],
+      [class~="bg-muted/50"]
+    ) {
+    background-color: hsl(var(--background) / var(--surface-control-alpha));
+  }
+
+  /* Profile and several older dashboards used a 30% scrim instead of a real
+     content surface. On detailed wallpaper that drops muted labels below the
+     George Voice contrast baseline, so these cards now use the same 60% glass
+     while the artwork remains clearly visible around and through them. */
+  .jarvis-section-stage :where([class~="bg-scrim/30"]) {
+    background-color: hsl(var(--card) / var(--surface-card-alpha));
+  }
+
+  /* BoardCard previously supplied only a 1.5–5.5% sheen gradient. That is an
+     edge highlight, not a readable surface, and it made both Board and Profile
+     dissolve into detailed wallpaper. Keep the sheen, but give it the same
+     card glass that George Voice uses underneath. */
+  .jarvis-section-stage
+    :where(
+      [class~="from-sheen/[0.055]"][class~="to-sheen/[0.015]"]
+    ) {
+    background-color: hsl(var(--card) / var(--surface-card-alpha));
+  }
+
+  /* Selected and status cards used colour washes as their only background.
+     Layer the wash over the shared glass instead: state stays recognisable,
+     but provider forms, output cards and branded feedback remain as readable
+     as their neutral neighbours. */
+  .jarvis-section-stage
+    :where(div, section, article, li, label, button):where(
+      [class~="bg-primary/5"],
+      [class~="bg-primary/10"],
+      [class~="bg-primary/15"],
+      [class~="bg-primary/20"],
+      [class~="bg-primary/25"],
+      [class~="bg-primary/30"],
+      [class~="bg-primary/[0.04]"],
+      [class~="bg-primary/[0.05]"],
+      [class~="bg-primary/[0.06]"],
+      [class~="bg-primary/[0.07]"],
+      [class~="bg-destructive/[0.05]"],
+      [class~="bg-[#5865F2]/10"]
+    ) {
+    background-color: hsl(var(--card) / var(--surface-card-alpha));
+    background-image: linear-gradient(
+      var(--surface-tint-color),
+      var(--surface-tint-color)
+    );
+  }
+
+  .jarvis-section-stage
+    :where([class~="bg-primary/[0.04]"]) {
+    --surface-tint-color: hsl(var(--primary) / 0.04);
+  }
+
+  .jarvis-section-stage
+    :where([class~="bg-primary/5"], [class~="bg-primary/[0.05]"]) {
+    --surface-tint-color: hsl(var(--primary) / 0.05);
+  }
+
+  .jarvis-section-stage
+    :where([class~="bg-primary/[0.06]"]) {
+    --surface-tint-color: hsl(var(--primary) / 0.06);
+  }
+
+  .jarvis-section-stage
+    :where([class~="bg-primary/[0.07]"]) {
+    --surface-tint-color: hsl(var(--primary) / 0.07);
+  }
+
+  .jarvis-section-stage
+    :where([class~="bg-primary/10"]) {
+    --surface-tint-color: hsl(var(--primary) / 0.1);
+  }
+
+  /* The active-state washes (segment pills, "Coding mode" badge, selected
+     rows). Without the card glass underneath, a 15-25% gold wash over
+     artwork is no ground at all — the reported "active filter is
+     invisible" symptom. */
+  .jarvis-section-stage
+    :where([class~="bg-primary/15"]) {
+    --surface-tint-color: hsl(var(--primary) / 0.15);
+  }
+
+  .jarvis-section-stage
+    :where([class~="bg-primary/20"]) {
+    --surface-tint-color: hsl(var(--primary) / 0.2);
+  }
+
+  .jarvis-section-stage
+    :where([class~="bg-primary/25"]) {
+    --surface-tint-color: hsl(var(--primary) / 0.25);
+  }
+
+  .jarvis-section-stage
+    :where([class~="bg-primary/30"]) {
+    --surface-tint-color: hsl(var(--primary) / 0.3);
+  }
+
+  .jarvis-section-stage
+    :where([class~="bg-destructive/[0.05]"]) {
+    --surface-tint-color: hsl(var(--destructive) / 0.05);
+  }
+
+  .jarvis-section-stage
+    :where([class~="bg-[#5865F2]/10"]) {
+    --surface-tint-color: rgb(88 101 242 / 0.1);
+  }
+
+  /* Light mode uses transparent glass rather than stacked white sheets. A
+     restrained blur separates content from the artwork while the
+     warm inset highlight preserves the same glass hierarchy as dark mode. */
+  :root:not(.dark)
+    .jarvis-section-stage
+    :where(
+      [class~="bg-card"],
+      [class~="bg-card/20"],
+      [class~="bg-card/25"],
+      [class~="bg-card/30"],
+      [class~="bg-card/40"],
+      [class~="bg-card/50"],
+      [class~="bg-card/60"],
+      [class~="bg-card/70"],
+      [class~="bg-card/80"],
+      [class~="bg-card/90"],
+      [class~="bg-card/95"],
+      [class~="bg-background"],
+      [class~="bg-background/20"],
+      [class~="bg-background/25"],
+      [class~="bg-background/30"],
+      [class~="bg-background/35"],
+      [class~="bg-background/40"],
+      [class~="bg-background/45"],
+      [class~="bg-background/50"],
+      [class~="bg-background/55"],
+      [class~="bg-background/60"],
+      [class~="bg-background/70"],
+      [class~="bg-background/80"],
+      [class~="bg-background/85"],
+      [class~="bg-background/90"],
+      [class~="bg-background/95"],
+      [class~="bg-muted"],
+      [class~="bg-muted/20"],
+      [class~="bg-muted/25"],
+      [class~="bg-muted/30"],
+      [class~="bg-muted/35"],
+      [class~="bg-muted/40"],
+      [class~="bg-muted/50"],
+      [class~="bg-muted/60"],
+      [class~="bg-muted/70"],
+      [class~="bg-muted/80"],
+      [class~="bg-scrim/30"],
+      [class~="from-sheen/[0.055]"][class~="to-sheen/[0.015]"],
+      [class~="bg-primary/5"],
+      [class~="bg-primary/10"],
+      [class~="bg-primary/15"],
+      [class~="bg-primary/20"],
+      [class~="bg-primary/25"],
+      [class~="bg-primary/30"],
+      [class~="bg-primary/[0.04]"],
+      [class~="bg-primary/[0.05]"],
+      [class~="bg-primary/[0.06]"],
+      [class~="bg-primary/[0.07]"],
+      [class~="bg-destructive/[0.05]"],
+      [class~="bg-[#5865F2]/10"]
+    ) {
+    -webkit-backdrop-filter: blur(12px) saturate(0.92);
+    backdrop-filter: blur(12px) saturate(0.92);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.42),
+      0 10px 26px rgb(var(--scrim-rgb) / 0.07);
+  }
+
+  /* Views quiet their secondary labels with alpha variants of the muted ink
+     (text-muted-foreground/40 … /80). On plain paper that hierarchy reads
+     fine; over bright artwork the text alpha stacks with the translucent
+     glass and those labels vanish completely — the reported symptom. Inside
+     the light stage the variants converge on one readable floor; hierarchy
+     survives through the size and weight steps the views already use. */
+  :root:not(.dark)
+    .jarvis-section-stage
+    :where(
+      [class~="text-muted-foreground/40"],
+      [class~="text-muted-foreground/45"],
+      [class~="text-muted-foreground/50"],
+      [class~="text-muted-foreground/60"]
+    ) {
+    color: hsl(var(--muted-foreground) / 0.78);
+  }
+
+  :root:not(.dark)
+    .jarvis-section-stage
+    :where(
+      [class~="text-muted-foreground/70"],
+      [class~="text-muted-foreground/75"],
+      [class~="text-muted-foreground/80"]
+    ) {
+    color: hsl(var(--muted-foreground) / 0.9);
+  }
+
+  /* Same defect, different token: views also quiet rows with alpha variants
+     of the FULL ink (text-foreground/70..85 — e.g. the IDE chat rail's
+     session titles on /75) and of the accent (text-primary/60..85). Over
+     artwork the missing alpha is exactly the missing legibility, so inside
+     the light floors they converge on near-full ink; hierarchy keeps
+     reading through size and weight. */
+  :root:not(.dark)
+    :where(
+      .jarvis-section-stage,
+      .jarvis-nav-surface,
+      .jarvis-shell-surface
+    )
+    :where(
+      [class~="text-foreground/60"],
+      [class~="text-foreground/70"],
+      [class~="text-foreground/75"],
+      [class~="text-foreground/80"],
+      [class~="text-foreground/85"]
+    ) {
+    color: hsl(var(--foreground) / 0.95);
+  }
+
+  :root:not(.dark)
+    :where(
+      .jarvis-section-stage,
+      .jarvis-nav-surface,
+      .jarvis-shell-surface
+    )
+    :where(
+      [class~="text-primary/60"],
+      [class~="text-primary/70"],
+      [class~="text-primary/80"],
+      [class~="text-primary/85"]
+    ) {
+    color: hsl(var(--primary));
+  }
+
+  /* The gold active pills that live in the CHROME (e.g. the "Coding mode"
+     badge in the top bar) sit outside the section stage, so the stage's
+     card-glass-under-tint rule cannot reach them. Same treatment, scoped to
+     light: the pill gets a real ivory chip under its gold wash instead of
+     15-25% gold over raw artwork. */
+  :root:not(.dark)
+    :where(.jarvis-nav-surface, .jarvis-shell-surface)
+    :where(button, a, span, div):where(
+      [class~="bg-primary/10"],
+      [class~="bg-primary/15"],
+      [class~="bg-primary/20"],
+      [class~="bg-primary/25"],
+      [class~="bg-primary/30"]
+    ) {
+    background-color: rgb(var(--shell-rgb) / 0.85);
+    background-image: linear-gradient(
+      hsl(var(--primary) / 0.16),
+      hsl(var(--primary) / 0.16)
+    );
+  }
+
+  :root:not(.dark) .jarvis-section-stage .card-outline,
+  :root:not(.dark)
+    .jarvis-section-stage
+    :where(div, section, article)[class~="bg-border"] {
+    background-color: transparent;
+  }
+
+  /* Radix portals and hand-built pickers render under <body>, outside the
+     section stage above — so they inherit neither its glass ground nor its
+     readability floor, and they hang over arbitrary content: another card, a
+     wallpaper, or a terminal pane full of text.
+
+     A floating layer is NOT chrome. The untinted-wallpaper decision applies
+     to surfaces the artwork is the background OF (nav column, top bar); a
+     menu, dialog or tooltip is a transient overlay whose whole purpose is to
+     be read, and it covers what is under it on purpose. Light mode used to
+     drop its ground entirely and rely on a blur alone — but a blur is not a
+     contrast ground, so the agent picker over a terminal pane came out as a
+     milky smear with its 11px descriptions dissolving into the text behind
+     them (maintainer report 2026-08-11).
+
+     These surfaces therefore carry their own near-opaque paper ground, a
+     border firm enough to read as an edge, and no inherited halo (ink sits on
+     paper here, so an outline would be pure noise). */
+  :root:not(.dark)
+    :where([class~="bg-popover"], [class~="bg-popover/95"]),
+  :root:not(.dark)
+    :where(
+      [role="dialog"],
+      [role="menu"],
+      [role="listbox"],
+      [role="tooltip"]
+    ):where(
+      [class~="bg-card"],
+      [class~="bg-card/95"],
+      [class~="bg-background"],
+      [class~="bg-background/95"]
+    ) {
+    /* Firmer than the stage's hairline: this edge separates the overlay from
+       whatever it happens to hang over, not two cards on one ground. */
+    --border: 40 12% 52%;
+    background-color: hsl(var(--popover) / 0.97);
+    -webkit-backdrop-filter: blur(16px) saturate(1.02);
+    backdrop-filter: blur(16px) saturate(1.02);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.6),
+      0 18px 44px rgb(var(--scrim-rgb) / 0.2);
+    text-shadow: none;
+  }
+
+  /* Nested grounds INSIDE a dialog are flattened — the dialog above already
+     supplies one, and stacking a second translucent fill on it only muddies
+     it. The `:not()` chain protects the floating layer's own ground: a menu or
+     a tooltip opened from within a dialog is a surface in front of it, not a
+     panel inside it, and this selector outranks the rule above. */
+  :root:not(.dark)
+    [role="dialog"]
+    :where(
+      [class~="bg-card"],
+      [class~="bg-card/40"],
+      [class~="bg-card/50"],
+      [class~="bg-card/60"],
+      [class~="bg-card/70"],
+      [class~="bg-card/80"],
+      [class~="bg-card/90"],
+      [class~="bg-card/95"],
+      [class~="bg-background"],
+      [class~="bg-background/40"],
+      [class~="bg-background/50"],
+      [class~="bg-background/60"],
+      [class~="bg-background/70"],
+      [class~="bg-background/80"],
+      [class~="bg-background/90"],
+      [class~="bg-background/95"],
+      [class~="bg-muted"],
+      [class~="bg-muted/20"],
+      [class~="bg-muted/30"],
+      [class~="bg-muted/40"],
+      [class~="bg-muted/50"]
+    ):where(
+      :not([role="menu"], [role="listbox"], [role="tooltip"], [role="dialog"])
+    ) {
+    background-color: transparent;
+  }
+
+  /* Modal backdrops may blur the wallpaper, but must not tint it white or
+     black. Semantic colour washes inside the modal remain untouched. */
+  :root:not(.dark)
+    :where(
+      [class~="bg-scrim/40"],
+      [class~="bg-scrim/50"],
+      [class~="bg-scrim/60"],
+      [class~="bg-scrim/70"],
+      [class~="bg-scrim/80"],
+      [class~="bg-scrim/90"],
+      [class~="bg-background/70"],
+      [class~="bg-background/80"],
+      [class~="bg-background/90"],
+      [class~="bg-[#090909]/75"]
+    )[class~="fixed"][class~="inset-0"] {
+    background-color: transparent;
+    -webkit-backdrop-filter: blur(4px) saturate(0.92);
+    backdrop-filter: blur(4px) saturate(0.92);
+  }
+
+  .jarvis-section-stage > [class~="bg-background"] {
+    background-color: transparent;
+  }
+
+  /* The normal Wiki is assembled from nested full-height panes. Giving every
+     structural wrapper its own glass fill compounds the alpha and turns three
+     transparent layers into an almost opaque rectangle. Keep the workspace,
+     centre column and side panes clear so the desktop artwork stays visible. */
+  .jarvis-section-stage #wiki-workspace,
+  .jarvis-section-stage
+    #wiki-workspace
+    > section[class~="bg-background"] {
+    background-color: transparent;
+  }
+
+  /* A transparent full-screen map must not reveal the app bar's labels under
+     its own toolbar. The wallpaper should continue through the overlay; the
+     shell controls should not. They return immediately when the map restores. */
+  main:has(
+      > .jarvis-section-stage
+        #wiki-workspace[data-graph-expanded="true"]
+    )
+    > :not(.jarvis-section-stage) {
+    visibility: hidden;
+  }
+
+  .jarvis-section-stage
+    #wiki-workspace
+    :where(
+      [data-testid="wiki-tree-sidebar"],
+      [data-testid="wiki-backlinks-panel"],
+      [data-testid="wiki-backlinks-placeholder"]
+    ) {
+    background-color: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .jarvis-section-stage
+    #wiki-workspace
+    > section
+    > [class~="bg-card/40"] {
+    background-color: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  /* Staggered reveal on view mount — one orchestrated page-load moment.
+     Pair with an inline `animationDelay` for the stagger cadence. */
+  @keyframes profile-rise {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .profile-rise {
+    animation: profile-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .profile-rise {
+      animation: none;
+    }
+  }
+
+  /* Pulse animation for state badges */
+  @keyframes jarvis-pulse {
+    0%,
+    100% {
+      opacity: 1;
+      box-shadow: 0 0 0 0 rgb(var(--accent-rgb) / 0.4);
+    }
+    50% {
+      opacity: 0.85;
+      box-shadow: 0 0 0 8px rgb(var(--accent-rgb) / 0);
+    }
+  }
+  .animate-jarvis-pulse {
+    animation: jarvis-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* ===========================================================
+     Reasoning-trace (chat thinking indicator)
+     A gold light band sweeps through the label text; the core orb
+     pulses with two expanding rings; the card glow breathes.
+     =========================================================== */
+  @keyframes thinking-shimmer {
+    0% {
+      background-position: 200% 50%;
+    }
+    100% {
+      background-position: -200% 50%;
+    }
+  }
+  .thinking-shimmer {
+    /* The travelling band is the ACCENT, not a fixed pale yellow: on paper a
+       #ffe552 highlight passing over grey text is lighter than the text it is
+       meant to light up, so the sweep reads as a gap rather than a shine. */
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted-foreground)) 0%,
+      hsl(var(--muted-foreground)) 38%,
+      hsl(var(--primary)) 50%,
+      hsl(var(--muted-foreground)) 62%,
+      hsl(var(--muted-foreground)) 100%
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: thinking-shimmer 2.4s linear infinite;
+  }
+  @keyframes thinking-ring {
+    0% {
+      transform: scale(0.6);
+      opacity: 0.8;
+    }
+    100% {
+      transform: scale(2.4);
+      opacity: 0;
+    }
+  }
+  .thinking-ring {
+    animation: thinking-ring 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+  .thinking-core {
+    box-shadow: 0 0 12px 2px rgb(var(--accent-rgb) / 0.45);
+  }
+  @keyframes thinking-breathe {
+    0%,
+    100% {
+      opacity: 0.45;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+  .thinking-breathe {
+    animation: thinking-breathe 3.4s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .thinking-shimmer {
+      animation: none;
+      background: none;
+      color: hsl(var(--muted-foreground));
+    }
+    .thinking-ring,
+    .thinking-breathe {
+      animation: none;
+    }
+  }
+
+  /* Soft float animation for the hero orb */
+  @keyframes jarvis-float {
+    0%,
+    100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-14px);
+    }
+  }
+  .animate-jarvis-float {
+    animation: jarvis-float 6s ease-in-out infinite;
+  }
+
+  /* Slow spin for subtle rotations */
+  @keyframes jarvis-spin-slow {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  .animate-jarvis-spin-slow {
+    animation: jarvis-spin-slow 40s linear infinite;
+  }
+
+  /* Text gradient for the hero. Both stops are derived from the accent so the
+     headline stays readable on either ground — on paper the ramp runs from the
+     gold DOWN into a deeper bronze, because a gradient that brightens toward
+     white is an invisible headline. */
+  .text-gradient-yellow {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--primary) / 0.82) 0%,
+      hsl(var(--primary)) 50%,
+      color-mix(in srgb, hsl(var(--primary)) 72%, hsl(var(--foreground))) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Quieter than the app-wide default at the top of this file — for dense
+     lists where even the default pill is one line of noise too many. The
+     app-wide rules already cover track, buttons and corner. */
+  .scrollbar-jarvis::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scrollbar-jarvis::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    background-clip: content-box;
+    border: 2px solid transparent;
+    border-radius: 999px;
+  }
+  .scrollbar-jarvis::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground));
+  }
+
+  /* ===========================================================
+     Gigi mascot animations
+     Idle = continuous floating + micro-breathing on the SVG root.
+     Actions are triggered via .gigi-<action> classes —
+     each class only lives for the duration of the animation.
+     =========================================================== */
+
+  .gigi-container {
+    position: relative;
+    display: inline-block;
+    font-size: 0; /* no baseline gap under the SVG */
+  }
+  .gigi-root {
+    display: block;
+    width: 100%;
+    height: 100%;
+    transform-origin: 50% 50%;
+    will-change: transform;
+    animation: gigi-float 5.4s ease-in-out infinite;
+  }
+  .gigi-svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    display: block;
+    animation: gigi-breath 3.8s ease-in-out infinite;
+    transform-origin: 50% 50%;
+  }
+
+  /* Auto-blink (a natural blink every ~7s — parallel to random actions) */
+  .gigi-root .gigi-eyes {
+    transform-box: fill-box;
+    transform-origin: 50% 50%;
+    animation: gigi-auto-blink 7s ease-in-out infinite;
+  }
+  @keyframes gigi-auto-blink {
+    0%,
+    92%,
+    95%,
+    100% {
+      transform: scaleY(1);
+    }
+    93.5% {
+      transform: scaleY(0.08);
+    }
+  }
+
+  /* Pupil drift: subtle eye movement during idle */
+  .gigi-root .gigi-pupils {
+    animation: gigi-pupil-drift 11s ease-in-out infinite;
+    transform-origin: 50% 50%;
+  }
+  @keyframes gigi-pupil-drift {
+    0%,
+    100% {
+      transform: translate(0, 0);
+    }
+    18% {
+      transform: translate(-1.2px, 0);
+    }
+    42% {
+      transform: translate(0.8px, 0.4px);
+    }
+    68% {
+      transform: translate(1.2px, -0.3px);
+    }
+    85% {
+      transform: translate(-0.6px, 0.2px);
+    }
+  }
+
+  /* Mouth: subtle "breathing" */
+  .gigi-root .gigi-mouth {
+    transform-box: fill-box;
+    transform-origin: 50% 50%;
+    animation: gigi-mouth-idle 5.8s ease-in-out infinite;
+  }
+  @keyframes gigi-mouth-idle {
+    0%,
+    100% {
+      transform: scale(1, 1);
+    }
+    50% {
+      transform: scale(0.94, 1.06);
+    }
+  }
+
+  @keyframes gigi-float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-3px);
+    }
+  }
+  @keyframes gigi-breath {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.025);
+    }
+  }
+
+  /* --- Action: Blink (eyes close briefly) --- */
+  .gigi-blink .gigi-eyes,
+  .gigi-blink .gigi-pupils,
+  .gigi-blink .gigi-sparkle {
+    animation: gigi-blink 0.3s ease-in-out;
+    transform-origin: 50% 108px;
+  }
+  @keyframes gigi-blink {
+    0%,
+    100% {
+      transform: scaleY(1);
+    }
+    45%,
+    60% {
+      transform: scaleY(0.08);
+    }
+  }
+
+  /* --- Action: Wave (left arm waves) ---
+     Transform-origin is placed on the shoulder (fill-box top-right,
+     because the arm path bbox's top-right is where it connects to the body).
+     Important: set origin/box on the arm unconditionally — not only on
+     .gigi-wave — otherwise the animation runs with the default origin (0,0). */
+  .gigi-root .gigi-arm-left {
+    transform-box: fill-box;
+    transform-origin: 100% 0%;
+  }
+  .gigi-root .gigi-arm-right {
+    transform-box: fill-box;
+    transform-origin: 0% 0%;
+  }
+  .gigi-wave .gigi-arm-left {
+    animation: gigi-wave 1.8s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  @keyframes gigi-wave {
+    0% {
+      transform: rotate(0deg);
+    }
+    12% {
+      transform: rotate(-95deg);
+    } /* arm up */
+    22% {
+      transform: rotate(-75deg);
+    } /* wave 1 */
+    32% {
+      transform: rotate(-110deg);
+    }
+    42% {
+      transform: rotate(-75deg);
+    } /* wave 2 */
+    52% {
+      transform: rotate(-110deg);
+    }
+    62% {
+      transform: rotate(-75deg);
+    } /* wave 3 */
+    72% {
+      transform: rotate(-110deg);
+    }
+    82% {
+      transform: rotate(-90deg);
+    } /* wave ends */
+    100% {
+      transform: rotate(0deg);
+    } /* back down */
+  }
+
+  /* --- Action: Spin (whole figure spins) --- */
+  .gigi-spin .gigi-svg {
+    animation: gigi-spin 0.85s cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  @keyframes gigi-spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* --- Action: Jump (hop up) --- */
+  .gigi-jump .gigi-svg {
+    animation: gigi-jump 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  @keyframes gigi-jump {
+    0%,
+    100% {
+      transform: translateY(0) scale(1, 1);
+    }
+    20% {
+      transform: translateY(2px) scale(1.08, 0.92);
+    }
+    55% {
+      transform: translateY(-14px) scale(0.95, 1.05);
+    }
+    80% {
+      transform: translateY(1px) scale(1.05, 0.95);
+    }
+  }
+
+  /* --- Action: Shake (head shaking) --- */
+  .gigi-shake .gigi-svg {
+    animation: gigi-shake 0.55s ease-in-out;
+  }
+  @keyframes gigi-shake {
+    0%,
+    100% {
+      transform: translateX(0) rotate(0deg);
+    }
+    15% {
+      transform: translateX(-4px) rotate(-3deg);
+    }
+    35% {
+      transform: translateX(4px) rotate(3deg);
+    }
+    55% {
+      transform: translateX(-3px) rotate(-2deg);
+    }
+    75% {
+      transform: translateX(3px) rotate(2deg);
+    }
+  }
+
+  /* --- Action: Look-Left / Look-Right (pupils look) --- */
+  .gigi-look-left .gigi-pupils {
+    animation: gigi-look-left 0.85s ease-in-out;
+  }
+  .gigi-look-right .gigi-pupils {
+    animation: gigi-look-right 0.85s ease-in-out;
+  }
+  @keyframes gigi-look-left {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    30%,
+    70% {
+      transform: translateX(-4px);
+    }
+  }
+  @keyframes gigi-look-right {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    30%,
+    70% {
+      transform: translateX(4px);
+    }
+  }
+
+  /* --- Action: Glitch (brief digital disruption) --- */
+  .gigi-glitch .gigi-svg {
+    animation: gigi-glitch 0.42s steps(2, end);
+  }
+  .gigi-glitch .gigi-glitch-left,
+  .gigi-glitch .gigi-glitch-right {
+    animation: gigi-glitch-pixels 0.42s steps(4, end);
+  }
+  @keyframes gigi-glitch {
+    0% {
+      transform: translate(0, 0) skewX(0);
+      filter: none;
+    }
+    20% {
+      transform: translate(-3px, 1px) skewX(-4deg);
+      filter: hue-rotate(-20deg);
+    }
+    40% {
+      transform: translate(3px, -1px) skewX(4deg);
+    }
+    60% {
+      transform: translate(-2px, 0) skewX(-2deg);
+      filter: hue-rotate(20deg);
+    }
+    80% {
+      transform: translate(2px, 1px) skewX(2deg);
+    }
+    100% {
+      transform: translate(0, 0) skewX(0);
+      filter: none;
+    }
+  }
+  @keyframes gigi-glitch-pixels {
+    0%,
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    25% {
+      opacity: 0.3;
+      transform: translateX(-4px);
+    }
+    75% {
+      opacity: 0.8;
+      transform: translateX(4px);
+    }
+  }
+
+  /* --- Voice-state reactions --- */
+  .gigi-voice-listening .gigi-eyes {
+    animation: gigi-ear-prick 1.2s ease-in-out infinite;
+  }
+  @keyframes gigi-ear-prick {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.08);
+    }
+  }
+
+  .gigi-voice-thinking .gigi-svg {
+    animation:
+      gigi-breath 3.8s ease-in-out infinite,
+      gigi-thinking-tilt 2.4s ease-in-out infinite;
+  }
+  @keyframes gigi-thinking-tilt {
+    0%,
+    100% {
+      transform: rotate(0deg);
+    }
+    50% {
+      transform: rotate(-6deg);
+    }
+  }
+
+  .gigi-voice-speaking .gigi-mouth {
+    animation: gigi-speak 0.35s ease-in-out infinite alternate;
+    transform-origin: 50% 146px;
+  }
+  @keyframes gigi-speak {
+    0% {
+      transform: scaleY(0.7);
+    }
+    100% {
+      transform: scaleY(1.25);
+    }
+  }
+
+  .gigi-voice-error .gigi-svg {
+    animation: gigi-shake 0.5s ease-in-out infinite;
+    filter: hue-rotate(-40deg) saturate(1.4);
+  }
+
+  /* --- Comment bubble --- */
+  .gigi-bubble {
+    position: absolute;
+    top: 50%;
+    left: calc(100% + 10px);
+    transform: translateY(-50%);
+    width: max-content;
+    max-width: 220px;
+    padding: 6px 11px;
+    border-radius: 10px;
+    background: hsl(var(--card));
+    border: 1px solid rgb(var(--accent-rgb) / 0.45);
+    box-shadow:
+      0 0 18px rgb(var(--accent-rgb) / 0.18),
+      0 4px 14px rgb(var(--scrim-rgb) / 0.45);
+    font-size: 11.5px;
+    line-height: 1.35;
+    color: hsl(var(--foreground));
+    font-weight: 500;
+    z-index: 50;
+    pointer-events: none;
+    white-space: normal;
+    transform-origin: 0% 50%;
+    animation: gigi-bubble-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .gigi-bubble::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 100%;
+    transform: translateY(-50%);
+    border: 6px solid transparent;
+    border-right-color: rgb(var(--accent-rgb) / 0.45);
+  }
+  .gigi-bubble::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: calc(100% - 1px);
+    transform: translateY(-50%);
+    border: 5px solid transparent;
+    border-right-color: hsl(var(--card));
+  }
+  .gigi-bubble-text {
+    display: inline-block;
+  }
+  .gigi-bubble-listening {
+    left: auto;
+    right: calc(100% + 10px);
+    width: min(300px, calc(100vw - 32px));
+    max-width: min(300px, calc(100vw - 32px));
+    min-height: 86px;
+    max-height: 86px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: flex-end;
+    border-color: rgb(var(--accent-rgb) / 0.72);
+    box-shadow:
+      0 0 24px rgb(var(--accent-rgb) / 0.22),
+      0 8px 22px rgb(var(--scrim-rgb) / 0.55);
+    font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 13px;
+    line-height: 1.35;
+    overflow: hidden;
+    white-space: normal;
+    transform-origin: 100% 50%;
+  }
+  .gigi-bubble-listening::before {
+    right: auto;
+    left: 100%;
+    border-right-color: transparent;
+    border-left-color: rgb(var(--accent-rgb) / 0.72);
+  }
+  .gigi-bubble-listening::after {
+    right: auto;
+    left: calc(100% - 1px);
+    border-right-color: transparent;
+    border-left-color: hsl(var(--card));
+  }
+  .gigi-bubble-text-listening {
+    display: block;
+    flex: 0 0 auto;
+    width: 100%;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    white-space: pre-wrap;
+  }
+  @keyframes gigi-bubble-pop {
+    0% {
+      opacity: 0;
+      transform: translateY(-50%) scale(0.55);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(-50%) scale(1);
+    }
+  }
+
+  /* Reduced-motion friendly: all animations off */
+  @media (prefers-reduced-motion: reduce) {
+    .gigi-container,
+    .gigi-container *,
+    .gigi-root,
+    .gigi-root *,
+    .gigi-svg,
+    .gigi-svg *,
+    .gigi-bubble {
+      animation: none !important;
+    }
+  }
+}
+
+@layer components {
+  /* Full-window "toss it to Jarvis" catch layer, mounted only while a mission
+     card is being dragged. A soft vignette pulls the eye toward the dock in the
+     bottom-right; `cursor: copy` (plus the dock's preventDefault) means the OS
+     never shows the no-drop sign during the long travel to the dock. */
+  .jarvis-dock-catch {
+    cursor: copy;
+    background: radial-gradient(
+      460px circle at calc(100% - 3rem) calc(100% - 3rem),
+      rgb(var(--accent-rgb) / 0.1),
+      rgb(var(--accent-rgb) / 0.03) 42%,
+      transparent 72%
+    );
+    animation: dock-catch-in 180ms ease-out;
+  }
+
+  @keyframes dock-catch-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Expanding ring on a successful "absorb". */
+  @keyframes dock-ripple {
+    from {
+      transform: scale(1);
+      opacity: 0.7;
+    }
+    to {
+      transform: scale(2.1);
+      opacity: 0;
+    }
+  }
+
+  /* Gentle glow pulse while the dock is bloomed and waiting for a drop. */
+  @keyframes dock-breathe {
+    0%,
+    100% {
+      box-shadow: 0 0 26px rgb(var(--accent-rgb) / 0.22);
+    }
+    50% {
+      box-shadow: 0 0 42px rgb(var(--accent-rgb) / 0.45);
+    }
+  }
+
+  /* A small, springy bounce of the dock contents the moment a card lands. */
+  @keyframes dock-pop {
+    0% {
+      transform: scale(0.7);
+    }
+    60% {
+      transform: scale(1.18);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .jarvis-dock-catch {
+      animation: none;
+    }
+  }
+}
+
+@layer components {
+  /*
+   * Unfinished material in the UltraWiki intake bar. The texture says "there
+   * is work left here"; the ANIMATION says "and it is moving right now", so
+   * it is applied separately (.uw-hatch-live) and only when the backend
+   * reports the pipeline actually processing. A hatch scrolling over a paused
+   * queue would be the same false reassurance the section was rebuilt to
+   * remove.
+   */
+  .uw-hatch {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      rgb(var(--sheen-rgb) / 0.14) 0px,
+      rgb(var(--sheen-rgb) / 0.14) 2px,
+      transparent 2px,
+      transparent 6px
+    );
+    background-size: 8.49px 8.49px;
+  }
+
+  .uw-hatch-live {
+    animation: uw-hatch-drift 1.1s linear infinite;
+  }
+
+  /*
+   * The Explore stage — the surface the topic map is drawn on.
+   *
+   * The map used to be a 224 px letterbox above a wall of text, which is the
+   * one arrangement that makes a network unreadable: a force layout needs
+   * area, not width. It now owns the middle of the screen, and these three
+   * layers are what stop that area from reading as an empty black rectangle.
+   * All of it is behind the canvas and none of it carries data — the grid
+   * gives the depth a floating cloud of dots has nothing to sit on, the glow
+   * marks the centre of gravity, the vignette pulls the eye off the edges.
+   */
+  .uw-stage {
+    background-color: hsl(var(--stage-bg));
+    background-image:
+      linear-gradient(rgb(var(--accent-rgb) / 0.028) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--accent-rgb) / 0.028) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  /*
+   * Live command activity (CommandActivityLayer) — the indeterminate sweep
+   * under a RUNNING shell command. `currentColor` inherits the impact accent
+   * from the card (sky = reads, amber = modifies, red = deletes), so the bar
+   * and the badge can never disagree. Transform-only, like every loop in
+   * this file, and reduced-motion collapses it to a calm static strip.
+   */
+  .command-activity-progress {
+    position: relative;
+    background: currentColor;
+    opacity: 0.14;
+  }
+
+  .command-activity-progress::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      currentColor 45%,
+      currentColor 55%,
+      transparent
+    );
+    transform: translateX(-100%);
+    animation: command-activity-sweep 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+
+  @keyframes command-activity-sweep {
+    to {
+      transform: translateX(100%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .command-activity-progress::after {
+      animation: none;
+      transform: none;
+    }
+  }
+
+  :root:not(.dark) .uw-stage {
+    background-color: transparent;
+    background-image:
+      linear-gradient(rgb(var(--accent-rgb) / 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--accent-rgb) / 0.07) 1px, transparent 1px);
+  }
+
+  .uw-stage-glow {
+    background: radial-gradient(
+      circle at 50% 46%,
+      rgb(var(--accent-rgb) / 0.13) 0%,
+      rgb(var(--accent-rgb) / 0.04) 34%,
+      transparent 66%
+    );
+    filter: blur(46px);
+  }
+
+  .uw-stage-vignette {
+    background: radial-gradient(
+      ellipse at 50% 50%,
+      transparent 42%,
+      rgb(var(--stage-vignette-rgb) / var(--stage-vignette-strength)) 100%
+    );
+  }
+
+  /* The WebGL canvas and every layer around it remain clear so the desktop
+     artwork is the single background behind both 3D knowledge maps. */
+  .wiki-space {
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .wiki-space-vignette {
+    background: transparent;
+  }
+
+  /* UltraWiki wraps both projections in one stage. Clear its decorative
+     layers only for the spatial view so the flat map keeps its depth cues. */
+  .jarvis-section-stage .uw-stage[data-dimension="3d"] {
+    background: transparent;
+  }
+
+  .jarvis-section-stage
+    .uw-stage[data-dimension="3d"]
+    > :where(.uw-stage-glow, .uw-stage-vignette) {
+    background: transparent;
+    filter: none;
+  }
+
+  /* The floating control pills over the stage (floor slider, legend, counts).
+     Glass rather than a solid card: the map has to stay visible underneath,
+     or the controls become a second letterbox. */
+  .uw-stage-pill {
+    background: rgb(var(--shell-rgb) / 0.66);
+    border: 1px solid hsl(var(--border));
+    backdrop-filter: blur(10px);
+  }
+
+  @keyframes uw-hatch-drift {
+    from {
+      background-position: 0 0;
+    }
+    to {
+      background-position: 8.49px 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .uw-hatch-live {
+      animation: none;
+    }
+  }
+}

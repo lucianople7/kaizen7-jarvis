@@ -1,0 +1,998 @@
+/**
+ * Desktop view of the on-disk Obsidian vault.
+ *
+ * Read-only — writes happen via the WikiCurator (B1) or the user editing
+ * Markdown files in Obsidian. This component is a pure projection of
+ * `wiki/obsidian-vault/` exposed through Agent A's `/api/wiki/*` endpoints.
+ *
+ * Layout (matches docs/plans/b3/00-OVERVIEW.md §4.1):
+ *   ┌──────────┬──────────────────┬────────────┐
+ *   │   tree   │  graph | page    │ backlinks  │
+ *   │ (260 px) │  (centre tabs)   │  (380 px)  │
+ *   └──────────┴──────────────────┴────────────┘
+ *
+ * Replaces the legacy `MemoryView` (`data/core_memory.json` flat memory).
+ */
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  FileText,
+  Maximize2,
+  Minimize2,
+  Network,
+  Notebook,
+  RefreshCw,
+} from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+
+import { ViewHeader } from "@/views/ChatsView";
+import { cn } from "@/lib/utils";
+import { useT } from "@/i18n";
+import { useEventStore } from "@/store/events";
+import {
+  fetchWikiHealth,
+  fetchWikiTree,
+  rebuildWikiIndex,
+  type WikiCaptureFunnel,
+  type WikiHealthSnapshot,
+} from "@/lib/wikiApi";
+import { useWikiLive } from "@/hooks/useWikiLive";
+
+import { TreeSidebar } from "@/components/wiki/TreeSidebar";
+import { PageRenderer } from "@/components/wiki/PageRenderer";
+import { BacklinksPanel } from "@/components/wiki/BacklinksPanel";
+import { ObsidianStatus } from "@/components/wiki/ObsidianStatus";
+import { ObsidianSetupDialog } from "@/components/wiki/ObsidianSetupDialog";
+import { UltraModeSwitch } from "@/components/ultrawiki/UltraModeSwitch";
+import {
+  fetchUltraWikiStatus,
+  type UltraWikiStatus,
+} from "@/lib/ultrawikiApi";
+import type { ObsidianStatus as ObsidianStatusType } from "@/types/setup";
+
+// Agent C owns WikiGraph. Lazy import so the graph bundle (~120 KB minified)
+// only loads when the Wiki tab is mounted. A placeholder file ships in this
+// branch — Agent C's real implementation will replace it during Wave 2.
+const WikiGraph = lazy(() =>
+  import("@/components/wiki/WikiGraph").then((mod) => ({
+    default: mod.WikiGraph,
+  })),
+);
+
+// Ultra-mode body (decision D-5: either-or). Lazy like WikiGraph so
+// normal-mode users never download the Ultra chunk.
+const UltraWikiPanel = lazy(() =>
+  import("@/views/ultrawiki/UltraWikiPanel").then((mod) => ({
+    default: mod.UltraWikiPanel,
+  })),
+);
+
+type CentreTab = "graph" | "page";
+
+/**
+ * Which wiki mode this machine saw last.
+ *
+ * A per-machine memory of a backend fact, kept for exactly one reason: to
+ * render the right body immediately instead of a spinner. It is never the
+ * authority — `GET /api/ultrawiki/status` is, and overwrites this the moment
+ * it answers.
+ */
+const ULTRA_MODE_KEY = "jarvis.wiki.lastUltraMode";
+
+function recallUltraMode(): boolean | null {
+  try {
+    const raw = window.localStorage.getItem(ULTRA_MODE_KEY);
+    return raw === "ultra" ? true : raw === "normal" ? false : null;
+  } catch {
+    // Private mode / storage disabled — fall back to asking, as before.
+    return null;
+  }
+}
+
+function rememberUltraMode(enabled: boolean): void {
+  try {
+    window.localStorage.setItem(ULTRA_MODE_KEY, enabled ? "ultra" : "normal");
+  } catch {
+    // Losing the shortcut only costs one probe on the next visit.
+  }
+}
+
+interface WikiToast {
+  message: string;
+  id: number;
+}
+
+export function WikiView(): JSX.Element {
+  const t = useT();
+  useWikiLive();
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+  const [centreTab, setCentreTab] = useState<CentreTab>("graph");
+  const [isGraphExpanded, setIsGraphExpanded] = useState(false);
+  const [toast, setToast] = useState<WikiToast | null>(null);
+  // The setup walkthrough opens with the status payload the pill last saw.
+  // The hint object also reseeds whenever the user reopens the dialog so
+  // step-2-vs-step-3 starts from the most recent reality.
+  const [setupHint, setSetupHint] = useState<ObsidianStatusType | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [isReindexing, setIsReindexing] = useState(false);
+  const [reindexError, setReindexError] = useState<string | null>(null);
+
+  // A staged "open this page" request from another section (e.g. the Contacts
+  // detail's wiki link). Same consumption idiom as the Visualization stage:
+  // `seq` bumps on every request, so re-opening the same slug still fires.
+  const wikiPageRequest = useEventStore((s) => s.wikiPageRequest);
+  useEffect(() => {
+    if (wikiPageRequest) setSelectedSlug(wikiPageRequest.slug);
+  }, [wikiPageRequest]);
+
+  // Tree query lives both here (for header stats + empty-state detection)
+  // and inside TreeSidebar (for the list). React Query dedupes them.
+  const treeQuery = useQuery({
+    queryKey: ["wiki", "tree"],
+    queryFn: fetchWikiTree,
+    staleTime: 5_000,
+  });
+
+  const stats = treeQuery.data?.stats;
+  const totalPages = stats?.total_pages ?? 0;
+  const totalLinks = stats?.total_links ?? 0;
+
+  // Wiki subsystem health (spec A5): polled on mount + every 30 s so the
+  // "honest, not silent" status strip stays live without a manual refresh.
+  const healthQuery = useQuery({
+    queryKey: ["wiki", "health"],
+    queryFn: fetchWikiHealth,
+    refetchInterval: 30_000,
+    staleTime: 5_000,
+  });
+
+  // UltraWiki mode (D-5): `GET /api/ultrawiki/status` → `enabled` is the one
+  // source of truth for which body this section renders.
+  //
+  // `null` means the backend has not answered YET — it does not mean the mode
+  // is off. Reading it as off is how the in-app Restart dropped people who run
+  // Ultra back into the normal wiki: the window reloads while the backend is
+  // still coming up, the poll-safe fetcher swallows that as a successful
+  // `null`, and with no retry and no interval the section stayed wrong for the
+  // rest of the session. So: keep asking until it answers once, and until then
+  // render neither body rather than the wrong one.
+  const ultraStatusQuery = useQuery({
+    queryKey: ["ultrawiki", "status"],
+    queryFn: fetchUltraWikiStatus,
+    staleTime: 5_000,
+    refetchInterval: (query) => (query.state.data == null ? 3_000 : false),
+  });
+  // The last CONFIRMED answer. A later blip must not flip the section back to
+  // the normal wiki behind the user's back either.
+  const [lastKnownUltra, setLastKnownUltra] = useState<UltraWikiStatus | null>(
+    null,
+  );
+  // ...and the last confirmed answer from a PREVIOUS visit, which is what
+  // stops "Checking which wiki mode is active…" from being the first thing
+  // the Wiki tab shows every single time. The probe is a few hundred
+  // milliseconds on a warm backend and several seconds on a cold one, and
+  // this component remounts on every navigation away and back — so without a
+  // memory the wait was paid again and again for an answer that has not
+  // changed since the mode was last switched. Remembering it is a claim we
+  // can stand behind (it was true a moment ago) and the live probe still
+  // corrects it the instant it disagrees.
+  const [rememberedUltra, setRememberedUltra] = useState<boolean | null>(
+    recallUltraMode,
+  );
+  const [unansweredProbes, setUnansweredProbes] = useState(0);
+  const ultraProbe = ultraStatusQuery.data;
+  const ultraProbeAt = ultraStatusQuery.dataUpdatedAt;
+  useEffect(() => {
+    if (ultraProbe) {
+      setLastKnownUltra(ultraProbe);
+      setRememberedUltra(ultraProbe.enabled);
+      rememberUltraMode(ultraProbe.enabled);
+      setUnansweredProbes(0);
+    } else if (ultraProbeAt > 0) {
+      setUnansweredProbes((n) => n + 1);
+    }
+  }, [ultraProbe, ultraProbeAt]);
+
+  const ultraStatus = ultraProbe ?? lastKnownUltra;
+  // Only a genuinely first-ever visit has nothing to go on and has to wait.
+  const ultraModeKnown = ultraStatus != null || rememberedUltra != null;
+  const ultraEnabled = ultraStatus?.enabled ?? rememberedUltra ?? false;
+
+  // When a slug is selected (via tree click, graph click, or wikilink),
+  // automatically swap to the page tab.
+  useEffect(() => {
+    if (selectedSlug) {
+      setCentreTab("page");
+      setIsGraphExpanded(false);
+    }
+  }, [selectedSlug]);
+
+  // Escape leaves the full-window map. With the nav rail covered it is the
+  // reflex people reach for first, and the Restore button in the tab bar is
+  // the only other way out.
+  useEffect(() => {
+    if (!isGraphExpanded) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsGraphExpanded(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isGraphExpanded]);
+
+  // On the first visit to the Wiki tab, auto-open the Obsidian setup
+  // walkthrough — but only if the user has never marked it as completed
+  // AND the current status says action is required.
+  // Both requests run in parallel; AbortController cancels them if the
+  // component unmounts before the network round trip finishes.
+  useEffect(() => {
+    const controller = new AbortController();
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const [statusResp, stateResp] = await Promise.all([
+          fetch("/api/setup/obsidian/status", { signal: controller.signal }),
+          fetch("/api/setup/state", { signal: controller.signal }),
+        ]);
+        if (cancelled || !statusResp.ok || !stateResp.ok) return;
+
+        const status = (await statusResp.json()) as ObsidianStatusType;
+        const state = (await stateResp.json()) as { obsidian_setup_seen: boolean };
+
+        if (cancelled) return;
+        if (
+          state.obsidian_setup_seen === false &&
+          status.recommended_action !== "ok"
+        ) {
+          setSetupHint(status);
+          setDialogOpen(true);
+        }
+      } catch (err) {
+        // AbortError is expected on unmount; everything else we silently
+        // swallow — the status pill still gives the user a manual entry.
+        if ((err as { name?: string })?.name !== "AbortError") {
+          console.debug("[WikiView] first-run setup probe failed:", err);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, []);
+
+  const showToast = useCallback((message: string) => {
+    const id = Date.now();
+    setToast({ message, id });
+    window.setTimeout(() => {
+      setToast((prev) => (prev?.id === id ? null : prev));
+    }, 3000);
+  }, []);
+
+  const handleReindex = useCallback(async () => {
+    setIsReindexing(true);
+    setReindexError(null);
+    try {
+      const result = await rebuildWikiIndex();
+      if (!result.ok) {
+        throw new Error(result.error ?? t("wiki_health.reindex_failed"));
+      }
+      await Promise.all([healthQuery.refetch(), treeQuery.refetch()]);
+    } catch (error) {
+      setReindexError(
+        error instanceof Error ? error.message : t("wiki_health.reindex_failed"),
+      );
+      showToast(t("wiki_health.reindex_failed"));
+    } finally {
+      setIsReindexing(false);
+    }
+  }, [healthQuery, showToast, t, treeQuery]);
+
+  // Build the known-slug set lazily here too, so we can validate a wikilink
+  // click before changing the URL. Single source of truth: the tree response.
+  const knownSlugs = useMemo(
+    () => collectSlugs(treeQuery.data?.folders ?? []),
+    [treeQuery.data?.folders],
+  );
+
+  const handleSelect = useCallback(
+    (slug: string) => {
+      if (knownSlugs.size > 0 && !knownSlugs.has(slug)) {
+        showToast(t("wiki_view.page_not_found"));
+        return;
+      }
+      setIsGraphExpanded(false);
+      // Selecting the already-open page from the graph does not change the
+      // slug, so the selectedSlug effect cannot switch tabs in that case.
+      setCentreTab("page");
+      setSelectedSlug(slug);
+    },
+    [knownSlugs, showToast, t],
+  );
+
+  // In Ultra mode the body below is the UltraWiki store, not the vault — so
+  // the header counts that store. It used to read "31 pages · 732 wikilinks"
+  // above a screen reporting 4 712 items, which is two different corpora
+  // described as one and the first thing that made the section unreadable.
+  const ultraProgress = ultraStatus?.progress ?? null;
+  const ultraSubtitle = ultraProgress
+    ? t("ultrawiki.panel.header_subtitle")
+        .replace("{0}", ultraProgress.total.toLocaleString("en-US").replace(/,/g, " "))
+        .replace("{1}", String(ultraStatus?.sources.length ?? 0))
+    : t("ultrawiki.panel.loading");
+
+  const subtitle = !ultraModeKnown
+    ? t("ultrawiki.mode.probing")
+    : ultraEnabled
+    ? ultraSubtitle
+    : treeQuery.isLoading
+      ? t("wiki_view.loading_vault")
+      : totalPages === 0
+        ? t("wiki_view.vault_empty")
+        : `${totalPages} ${t("wiki_view.pages")} · ${totalLinks} ${t("wiki_view.wikilinks")}`;
+
+  return (
+    <div className="flex h-full min-h-0 flex-col" data-testid="wiki-view">
+      <div className="flex items-start justify-between gap-3 pr-6">
+        <div className="min-w-0 flex-1">
+          <ViewHeader
+            icon={<Notebook className="h-4 w-4" />}
+            title="Wiki · Memory Map"
+            subtitle={subtitle}
+          />
+        </div>
+        <div className="flex shrink-0 items-center gap-3 pt-4">
+          <UltraModeSwitch
+            status={ultraStatus}
+            onModeChanged={() => void ultraStatusQuery.refetch()}
+          />
+          {/* The vault pill belongs to the vault. In Ultra mode nothing on
+              screen comes from Obsidian, and "Obsidian: connected" over a
+              store it is not answering from reads as a claim about THIS
+              screen. It returns the moment the switch goes back to Normal.
+              While the mode is still unknown it stays out too — the pill
+              would be the only thing on screen making a claim. */}
+          {ultraModeKnown && !ultraEnabled && (
+            <ObsidianStatus
+              onOpenSetup={(s) => {
+                setSetupHint(s);
+                setDialogOpen(true);
+              }}
+            />
+          )}
+        </div>
+      </div>
+
+      {!ultraModeKnown ? (
+        // Which mode owns this section is not known yet. Showing the normal
+        // wiki here would be a claim, not a placeholder — and the wrong one
+        // for everyone running Ultra.
+        <ModeProbe
+          unansweredProbes={unansweredProbes}
+          onRetry={() => void ultraStatusQuery.refetch()}
+        />
+      ) : ultraEnabled ? (
+        // Ultra mode owns the entire body below the header (D-5 either-or);
+        // the normal wiki surfaces stay untouched, ready for the switch back.
+        <Suspense fallback={<GraphSkeleton />}>
+          <UltraWikiPanel />
+        </Suspense>
+      ) : (
+      <>
+      <WikiHealthStrip
+        health={healthQuery.data}
+        isLoading={healthQuery.isLoading}
+        isReindexing={isReindexing}
+        reindexError={reindexError}
+        onReindex={handleReindex}
+      />
+      <WikiCaptureFunnelStrip
+        error={healthQuery.data?.capture_error}
+        funnel={healthQuery.data?.capture_funnel}
+      />
+
+      {dialogOpen && setupHint && (
+        <ObsidianSetupDialog
+          open={dialogOpen}
+          onClose={() => setDialogOpen(false)}
+          initialStatus={setupHint}
+          onComplete={async () => {
+            // Only when the user explicitly confirms that setup worked;
+            // never on Escape or an outside click. Fire-and-forget — the
+            // route never returns a 5xx, and a failed mark only means the
+            // wizard reopens on the next visit.
+            try {
+              await fetch("/api/setup/state/obsidian-seen", {
+                method: "POST",
+              });
+            } catch (err) {
+              console.debug("[WikiView] mark-obsidian-seen failed:", err);
+            }
+          }}
+        />
+      )}
+
+      {treeQuery.isError ? (
+        <div className="flex flex-1 items-center justify-center p-6">
+          <div
+            role="alert"
+            className="max-w-md rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+            data-testid="wiki-tree-error"
+          >
+            {t("wiki_view.load_error")}
+          </div>
+        </div>
+      ) : !treeQuery.isLoading && totalPages === 0 ? (
+        <EmptyState />
+      ) : (
+        <div
+          id="wiki-workspace"
+          className={cn(
+            "flex flex-1 min-h-0 overflow-hidden",
+            // Expanded means the whole window, not "the middle column, but
+            // wider". The map is the one thing in this app that gets better
+            // the more room it has, and leaving the nav rail, the header and
+            // two status strips around it was most of why it never looked
+            // like anything. Fixed to the viewport, above everything.
+            isGraphExpanded && "fixed inset-0 z-[100]",
+          )}
+          data-testid="wiki-workspace"
+          data-graph-expanded={isGraphExpanded ? "true" : "false"}
+        >
+          {!isGraphExpanded && (
+            <TreeSidebar
+              selectedSlug={selectedSlug}
+              onSelect={handleSelect}
+            />
+          )}
+
+          <section className="flex flex-1 min-w-0 flex-col">
+            <div className="flex items-stretch border-b border-border">
+              <TabButton
+                active={centreTab === "graph"}
+                onClick={() => setCentreTab("graph")}
+                icon={<Network className="h-3.5 w-3.5" />}
+                label="Memory Map"
+              />
+              <TabButton
+                active={centreTab === "page"}
+                onClick={() => {
+                  setCentreTab("page");
+                  setIsGraphExpanded(false);
+                }}
+                icon={<FileText className="h-3.5 w-3.5" />}
+                label={
+                  selectedSlug
+                    ? `Page · ${selectedSlug}.md`
+                    : "Page"
+                }
+                disabled={!selectedSlug}
+              />
+              {centreTab === "graph" && (
+                <button
+                  type="button"
+                  className="ml-auto mr-2 my-1.5 inline-flex items-center gap-1.5 self-center rounded-md border border-border bg-background/70 px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+                  onClick={() => setIsGraphExpanded((expanded) => !expanded)}
+                  aria-controls="wiki-workspace"
+                  aria-expanded={isGraphExpanded}
+                  aria-label={t(
+                    isGraphExpanded
+                      ? "wiki_graph.restore_view_title"
+                      : "wiki_graph.expand_view_title",
+                  )}
+                  title={t(
+                    isGraphExpanded
+                      ? "wiki_graph.restore_view_title"
+                      : "wiki_graph.expand_view_title",
+                  )}
+                  data-testid="wiki-graph-expand-toggle"
+                >
+                  {isGraphExpanded ? (
+                    <Minimize2 className="h-3.5 w-3.5" aria-hidden />
+                  ) : (
+                    <Maximize2 className="h-3.5 w-3.5" aria-hidden />
+                  )}
+                  <span>
+                    {t(
+                      isGraphExpanded
+                        ? "wiki_graph.restore"
+                        : "wiki_graph.expand",
+                    )}
+                  </span>
+                </button>
+              )}
+            </div>
+
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              {centreTab === "graph" && (
+                <Suspense fallback={<GraphSkeleton />}>
+                  <WikiGraph
+                    onNodeClick={handleSelect}
+                    highlightSlug={selectedSlug ?? undefined}
+                  />
+                </Suspense>
+              )}
+
+              {centreTab === "page" && (
+                <>
+                  {selectedSlug ? (
+                    <PageRenderer
+                      slug={selectedSlug}
+                      onWikilinkClick={handleSelect}
+                    />
+                  ) : (
+                    <div
+                      className="px-7 py-10 text-center text-sm text-muted-foreground"
+                      data-testid="wiki-page-no-selection"
+                    >
+                      {t("wiki_view.no_selection_hint")}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </section>
+
+          {!isGraphExpanded &&
+            (selectedSlug ? (
+              <BacklinksPanel slug={selectedSlug} onSelect={handleSelect} />
+            ) : (
+              <aside
+                className="flex h-full w-[380px] shrink-0 flex-col border-l border-border p-4"
+                data-testid="wiki-backlinks-placeholder"
+              >
+                <div className="rounded-lg border border-border bg-secondary/30 p-4 text-xs text-muted-foreground">
+                  {t("wiki_view.backlinks_hint")}
+                </div>
+              </aside>
+            ))}
+        </div>
+      )}
+      </>
+      )}
+
+      {toast && (
+        <div
+          className="pointer-events-none fixed bottom-12 right-6 z-50 max-w-sm rounded-lg border border-border bg-card px-4 py-3 text-sm text-foreground shadow-xl"
+          data-testid="wiki-toast"
+          role="status"
+        >
+          {toast.message}
+        </div>
+      )}
+    </div>
+  );
+}
+
+type WikiHealthVisual = "green" | "amber" | "red" | "unknown";
+
+const HEALTH_DOT_STYLE: Record<WikiHealthVisual, string> = {
+  green: "bg-[#5bd4a4]",
+  amber: "bg-[#ffb84d]",
+  red: "bg-destructive",
+  unknown: "bg-muted-foreground/40",
+};
+
+function classifyWikiHealth(health: WikiHealthSnapshot): WikiHealthVisual {
+  if (
+    health.bootstrap_ok === false ||
+    health.last_write?.ok === false ||
+    health.last_chain_failure
+  ) {
+    return "red";
+  }
+  if (
+    health.journal_backlog > 0 ||
+    health.vault_legacy_conflict ||
+    health.index_state === "stale"
+  ) {
+    return "amber";
+  }
+  // At this point `last_write?.ok === false` and `last_chain_failure` are
+  // both already ruled out by the guard above, so the remaining green
+  // condition collapses to `bootstrap_ok` alone.
+  if (health.bootstrap_ok) {
+    return "green";
+  }
+  // bootstrap_ok is null (never run yet) and nothing else flagged a problem —
+  // neither a clean pass nor a known failure, so stay neutral rather than
+  // claim "green" for a state we haven't actually verified.
+  return "unknown";
+}
+
+function describeWikiWriteStatus(
+  health: WikiHealthSnapshot,
+  t: (key: string) => string,
+): string {
+  if (health.bootstrap_ok === false) {
+    return health.bootstrap_error
+      ? t("wiki_health.bootstrap_failed").replace("{0}", health.bootstrap_error)
+      : t("wiki_health.bootstrap_failed_unknown");
+  }
+  if (health.last_chain_failure) {
+    return t("wiki_health.chain_failure").replace(
+      "{0}",
+      health.last_chain_failure.detail,
+    );
+  }
+  if (health.last_write?.ok === false) {
+    return health.last_write.error
+      ? t("wiki_health.last_write_failed").replace("{0}", health.last_write.error)
+      : t("wiki_health.last_write_failed_unknown");
+  }
+  if (health.last_write?.ok) {
+    const page = health.last_write.pages.join(", ") || health.last_write.source;
+    return t("wiki_health.last_write_ok").replace("{0}", page);
+  }
+  if (health.journal_backlog > 0) {
+    return t("wiki_health.pending_writes").replace(
+      "{0}",
+      String(health.journal_backlog),
+    );
+  }
+  return t("wiki_health.no_writes_yet");
+}
+
+/**
+ * Compact status strip at the top of the Wiki tab (spec A5). Polled by the
+ * caller on a timer; this component only renders whatever snapshot it was
+ * given. "Honest, not silent": a failed bootstrap, a failed write, or a
+ * growing journal backlog shows up here instead of failing quietly.
+ */
+function WikiHealthStrip({
+  health,
+  isLoading,
+  isReindexing,
+  reindexError,
+  onReindex,
+}: {
+  health: WikiHealthSnapshot | null | undefined;
+  isLoading: boolean;
+  isReindexing: boolean;
+  reindexError: string | null;
+  onReindex: () => void;
+}): JSX.Element {
+  const t = useT();
+
+  if (isLoading) {
+    return (
+      <div
+        className="flex items-center gap-2 border-b border-border px-4 py-2 text-xs text-muted-foreground"
+        data-testid="wiki-health-strip"
+      >
+        <span
+          className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-muted-foreground/40"
+          data-testid="wiki-health-dot"
+          data-visual="loading"
+          aria-hidden
+        />
+        <span data-testid="wiki-health-checking">{t("wiki_health.checking")}</span>
+      </div>
+    );
+  }
+
+  if (!health) {
+    return (
+      <div
+        className="flex items-center gap-2 border-b border-border px-4 py-2 text-xs text-muted-foreground"
+        data-testid="wiki-health-strip"
+      >
+        <span
+          className="h-2 w-2 shrink-0 rounded-full bg-muted-foreground/40"
+          data-testid="wiki-health-dot"
+          data-visual="unknown"
+          aria-hidden
+        />
+        <span data-testid="wiki-health-unavailable">{t("wiki_health.unavailable")}</span>
+      </div>
+    );
+  }
+
+  const visual = classifyWikiHealth(health);
+  const vaultText = health.vault_root
+    ? t("wiki_health.vault_prefix").replace("{0}", health.vault_root)
+    : t("wiki_health.vault_unknown");
+  const writeText = describeWikiWriteStatus(health, t);
+
+  return (
+    <div
+      className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-border px-4 py-2 text-xs text-muted-foreground"
+      data-testid="wiki-health-strip"
+    >
+      <span
+        className={cn("h-2 w-2 shrink-0 rounded-full", HEALTH_DOT_STYLE[visual])}
+        data-testid="wiki-health-dot"
+        data-visual={visual}
+        aria-hidden
+      />
+      <span data-testid="wiki-health-vault" className="truncate">
+        {vaultText}
+      </span>
+      <span aria-hidden>·</span>
+      <span
+        data-testid="wiki-health-write"
+        className={visual === "red" ? "text-destructive" : undefined}
+      >
+        {writeText}
+      </span>
+      {health.journal_backlog > 0 && (
+        <span
+          data-testid="wiki-health-backlog"
+          className="rounded-full border border-[#ffb84d]/40 bg-[#ffb84d]/10 px-1.5 py-0.5 text-[#ffb84d]"
+        >
+          {t("wiki_health.backlog_count").replace(
+            "{0}",
+            String(health.journal_backlog),
+          )}
+        </span>
+      )}
+      {health.index_state === "stale" && (
+        <>
+          <span
+            data-testid="wiki-health-index-stale"
+            className="rounded-full border border-[#ffb84d]/40 bg-[#ffb84d]/10 px-1.5 py-0.5 text-[#ffb84d]"
+          >
+            {t("wiki_health.index_stale")
+              .replace("{0}", String(health.indexed_pages))
+              .replace("{1}", String(health.vault_pages))}
+          </span>
+          <button
+            type="button"
+            onClick={onReindex}
+            disabled={isReindexing}
+            data-testid="wiki-health-reindex"
+            className="inline-flex items-center gap-1 rounded-md border border-border px-1.5 py-0.5 text-foreground hover:bg-muted disabled:opacity-50"
+          >
+            <RefreshCw className={cn("h-3 w-3", isReindexing && "animate-spin")} />
+            {t(isReindexing ? "wiki_health.reindexing" : "wiki_health.reindex")}
+          </button>
+          {reindexError && (
+            <span
+              role="alert"
+              data-testid="wiki-health-reindex-error"
+              className="font-medium text-destructive"
+            >
+              {t("wiki_health.reindex_failed_detail").replace("{0}", reindexError)}
+            </span>
+          )}
+        </>
+      )}
+      {health.vault_legacy_conflict && (
+        <span
+          data-testid="wiki-health-legacy-conflict"
+          className="rounded-full border border-[#ffb84d]/40 bg-[#ffb84d]/10 px-1.5 py-0.5 text-[#ffb84d]"
+        >
+          {t("wiki_health.legacy_conflict")}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function WikiCaptureFunnelStrip({
+  error,
+  funnel,
+}: {
+  error: string | null | undefined;
+  funnel: WikiCaptureFunnel | undefined;
+}): JSX.Element | null {
+  const t = useT();
+  if (!funnel) return null;
+
+  const windowHours = Math.max(1, Math.round(funnel.window_hours));
+  const metrics = [
+    ["reviewed", t("wiki_health.capture_reviewed"), funnel.total],
+    ["candidate-reviews", t("wiki_health.capture_candidate_reviews"), funnel.candidates],
+    ["candidate-facts", t("wiki_health.capture_candidate_facts"), funnel.facts],
+    ["writes", t("wiki_health.capture_writes"), funnel.writes],
+    ["noop", t("wiki_health.capture_noop"), funnel.stage2_noop],
+    ["rejected", t("wiki_health.capture_rejected"), funnel.stage2_rejected],
+    ["skipped", t("wiki_health.capture_skipped"), funnel.stage2_skipped],
+    ["pending", t("wiki_health.capture_pending"), funnel.stage2_pending],
+    ["filtered", t("wiki_health.capture_filtered"), funnel.filtered],
+    ["empty", t("wiki_health.capture_empty"), funnel.empty],
+    ["failed", t("wiki_health.capture_failed"), funnel.failed],
+    ["in-progress", t("wiki_health.capture_in_progress"), funnel.started],
+    ["session-sweeps", t("wiki_health.capture_session_sweeps"), funnel.sessions_swept],
+  ] as const;
+  const windowLabel = t("wiki_health.capture_window").replace(
+    "{0}",
+    String(windowHours),
+  );
+  const errorText =
+    error === "capture_store_unavailable"
+      ? t("wiki_health.capture_store_unavailable")
+      : error
+        ? t("wiki_health.capture_store_error").replace("{0}", error)
+        : null;
+
+  return (
+    <section
+      aria-label={t("wiki_health.capture_aria").replace("{0}", String(windowHours))}
+      className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-border px-4 py-1.5 text-[11px]"
+      data-testid="wiki-capture-funnel"
+    >
+      <span className="font-medium text-foreground">{windowLabel}</span>
+      {errorText && (
+        <span
+          className="font-medium text-destructive"
+          data-testid="wiki-capture-error"
+          role="alert"
+        >
+          {errorText}
+        </span>
+      )}
+      {!error && funnel.failed > 0 && (
+        <span
+          className="font-medium text-destructive"
+          data-testid="wiki-capture-failed-detail"
+          role="status"
+        >
+          {t("wiki_health.capture_failed_detail").replace(
+            "{0}",
+            String(funnel.failed),
+          )}
+        </span>
+      )}
+      <dl className="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground">
+        {metrics.map(([key, label, value]) => (
+          <div
+            className={cn(
+              "flex items-baseline gap-1",
+              key === "failed" && value > 0 && "text-destructive",
+            )}
+            data-testid={`wiki-capture-${key}`}
+            key={key}
+          >
+            <dt>{label}</dt>
+            <dd
+              className={cn(
+                "font-medium",
+                key === "failed" && value > 0
+                  ? "text-destructive"
+                  : "text-foreground",
+              )}
+            >
+              {value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  icon,
+  label,
+  disabled,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "flex items-center gap-1.5 border-b-2 px-4 py-2.5 text-xs transition-colors",
+        active
+          ? "border-primary text-foreground"
+          : "border-transparent text-muted-foreground hover:text-foreground",
+        disabled && "cursor-not-allowed opacity-50 hover:text-muted-foreground",
+      )}
+      data-active={active ? "true" : "false"}
+      data-testid={`wiki-tab-${label.toLowerCase().replace(/\s+/g, "-")}`}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+function EmptyState() {
+  const t = useT();
+  const assistantName = useEventStore((s) => s.assistantName);
+  return (
+    <div className="flex flex-1 items-center justify-center p-6">
+      <div
+        className="max-w-lg rounded-xl border border-dashed border-border/70 bg-card/30 px-8 py-10 text-center"
+        data-testid="wiki-empty-state"
+      >
+        <Notebook className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
+        <h3 className="mb-2 text-base font-semibold text-foreground">
+          {t("wiki_view.empty_title")}
+        </h3>
+        <p className="mb-2 text-sm text-muted-foreground">
+          {t("wiki_view.empty_body_a")} {assistantName} {t("wiki_view.empty_body_b")}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {t("wiki_view.manual_a")}{" "}
+          <code className="rounded bg-background px-1 py-0.5 font-mono text-[12px]">
+            .md
+          </code>
+          {t("wiki_view.manual_b")}{" "}
+          <code className="rounded bg-background px-1 py-0.5 font-mono text-[12px]">
+            wiki/obsidian-vault/entities/
+          </code>{" "}
+          {t("wiki_view.manual_c")}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Shown while `GET /api/ultrawiki/status` has not answered once — typically
+ * the few seconds after the in-app Restart, when the window is already back
+ * but the backend is still coming up.
+ *
+ * It waits quietly at first because that is the normal case, and only says
+ * something once the silence has lasted long enough to be a real problem.
+ * Rendering the normal wiki instead would be a claim about which mode owns
+ * this section, and the wrong one for every Ultra install.
+ */
+function ModeProbe({
+  unansweredProbes,
+  onRetry,
+}: {
+  unansweredProbes: number;
+  onRetry: () => void;
+}): JSX.Element {
+  const t = useT();
+  // ~3 polls at 3 s: past a slow-but-normal start, into "this is not coming".
+  const stalled = unansweredProbes >= 3;
+  return (
+    <div
+      className="flex flex-1 items-center justify-center p-6"
+      data-testid="wiki-mode-probe"
+      data-stalled={stalled ? "true" : "false"}
+    >
+      <div className="max-w-md rounded-xl border border-border bg-card/40 px-6 py-5 text-center">
+        <p className="text-sm text-muted-foreground">
+          {t(stalled ? "ultrawiki.mode.probe_stalled" : "ultrawiki.mode.probing")}
+        </p>
+        {stalled && (
+          <button
+            type="button"
+            onClick={onRetry}
+            data-testid="wiki-mode-probe-retry"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs text-foreground transition-colors hover:bg-secondary"
+          >
+            <RefreshCw className="h-3 w-3" aria-hidden />
+            {t("ultrawiki.mode.probe_retry")}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function GraphSkeleton() {
+  return (
+    <div
+      className="flex h-full min-h-[400px] items-center justify-center p-6"
+      data-testid="wiki-graph-skeleton"
+    >
+      <div className="h-full w-full max-w-3xl animate-pulse rounded-xl bg-muted/30" />
+    </div>
+  );
+}
+
+function collectSlugs(
+  folders: Array<{ files: Array<{ slug: string }> }>,
+): Set<string> {
+  const out = new Set<string>();
+  for (const folder of folders) {
+    for (const file of folder.files) {
+      out.add(file.slug);
+    }
+  }
+  return out;
+}
