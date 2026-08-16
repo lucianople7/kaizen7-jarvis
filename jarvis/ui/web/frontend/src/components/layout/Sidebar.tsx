@@ -21,6 +21,7 @@ import {
   MessagesSquare,
   Frame,
   Image as ImageIcon,
+  Orbit,
   Loader2,
   type LucideIcon,
   ChevronRight,
@@ -77,6 +78,12 @@ const LOGO_RETRY_BASE_MS = 1500;
 const NAV_GROUPS: NavItem[][] = [
   // 1) Daily tools — what the user reaches for most often.
   [
+    {
+      id: "kaizen7",
+      labelKey: "nav.kaizen7",
+      icon: Orbit,
+      fallbackLabel: "KAIZEN7",
+    },
     { id: "chats", labelKey: "nav.chats", icon: MessageSquare },
     { id: "agents", labelKey: "nav.agents", icon: Users },
     // Skills & Tools — Skills + Plugins + MCPs behind one tab switch. The id
