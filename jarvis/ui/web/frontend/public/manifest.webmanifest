@@ -1,0 +1,41 @@
+{
+  "name": "KAIZEN7 Personal Jarvis",
+  "short_name": "Jarvis",
+  "description": "Personal Jarvis companion for local desktop control and mobile approvals.",
+  "id": "/?view=mobile",
+  "start_url": "/?view=mobile",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0a0e14",
+  "theme_color": "#0a0e14",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/jarvis-gigi-256.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/jarvis-logo.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Mobile Companion",
+      "short_name": "Mobile",
+      "url": "/?view=mobile",
+      "description": "Open mobile approvals and intent capture."
+    },
+    {
+      "name": "KAIZEN7 Capsule",
+      "short_name": "KAIZEN7",
+      "url": "/?view=kaizen7",
+      "description": "Open the read-only KAIZEN7 capsule."
+    }
+  ]
+}
