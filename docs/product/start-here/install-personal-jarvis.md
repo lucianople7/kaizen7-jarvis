@@ -62,7 +62,7 @@ manual installs do not show the in-app update button.
 2. Run the official installer:
 
    ```powershell
-   irm https://raw.githubusercontent.com/PersonalJarvis/PersonalJarvis/main/install/install.ps1 | iex
+   irm https://raw.githubusercontent.com/lucianople7/kaizen7-personal-jarvis/main/install/install.ps1 | iex
    ```
 
 3. Approve any offer to add Python or Git. The installer checks again and
@@ -77,10 +77,10 @@ manual installs do not show the in-app update button.
 
    ```bash
    # Desktop on macOS or Linux
-   curl -fsSL https://raw.githubusercontent.com/PersonalJarvis/PersonalJarvis/main/install/install.sh | bash
+   curl -fsSL https://raw.githubusercontent.com/lucianople7/kaizen7-personal-jarvis/main/install/install.sh | bash
 
    # Headless Linux
-   curl -fsSL https://raw.githubusercontent.com/PersonalJarvis/PersonalJarvis/main/install/install.sh | bash -s -- --headless
+   curl -fsSL https://raw.githubusercontent.com/lucianople7/kaizen7-personal-jarvis/main/install/install.sh | bash -s -- --headless
    ```
 
 3. Confirm the installation and review any prerequisite or Linux desktop-

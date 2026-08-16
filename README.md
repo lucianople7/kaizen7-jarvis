@@ -1,12 +1,12 @@
 <p align="center">
-  <a href="https://github.com/PersonalJarvis/PersonalJarvis">
-    <img src="https://github.com/PersonalJarvis/PersonalJarvis/raw/main/assets/brand/banner.png" alt="Personal Jarvis, a voice-driven meta-orchestrator" width="860" />
+  <a href="https://github.com/lucianople7/kaizen7-personal-jarvis">
+    <img src="https://github.com/lucianople7/kaizen7-personal-jarvis/raw/main/assets/brand/banner.png" alt="Personal Jarvis, a voice-driven meta-orchestrator" width="860" />
   </a>
 </p>
 
 <p align="center">
   <a href="https://pypi.org/project/personal-jarvis/"><img alt="PyPI: personal-jarvis" src="https://img.shields.io/pypi/v/personal-jarvis?style=for-the-badge&labelColor=242424&color=e7c46e" /></a>
-  <a href="https://github.com/PersonalJarvis/PersonalJarvis/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-e7c46e?style=for-the-badge&labelColor=242424" /></a>
+  <a href="https://github.com/lucianople7/kaizen7-personal-jarvis/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-e7c46e?style=for-the-badge&labelColor=242424" /></a>
   <a href="https://discord.gg/x7USduHxbc"><img alt="Discord" src="https://img.shields.io/badge/Discord-Join-5865F2?style=for-the-badge&logo=discord&logoColor=white&labelColor=242424" /></a>
   <a href="https://x.com/Ruben_Luetke"><img alt="Follow @Ruben_Luetke on X" src="https://img.shields.io/badge/Follow-%40Ruben__Luetke-e7c46e?style=for-the-badge&logo=x&logoColor=white&labelColor=242424" /></a>
   <a href="https://personaljarvis.ai/"><img alt="Personal Jarvis website" src="https://img.shields.io/badge/Website-personaljarvis.ai-e7c46e?style=for-the-badge&labelColor=242424" /></a>
@@ -23,6 +23,12 @@
 
 ---
 
+> **KAIZEN7 Personal Jarvis distribution.** This repository is a separate
+> KAIZEN7-focused distribution of Personal Jarvis with THE FOCUX capsule,
+> KAIZEN7 assistant mode, and a bundled KAIZEN7 panel. It keeps upstream
+> Personal Jarvis notices in `NOTICE.md` and `KAIZEN7_DISTRIBUTION.md`, while
+> install and update paths point to this repository.
+
 A typical voice assistant talks back. Personal Jarvis does the thing. At the center of
 every voice conversation sits a tool model: it decides how much a request actually needs,
 runs shell commands, takes the mouse and keyboard, and reaches any service that speaks
@@ -38,7 +44,7 @@ Claude, OpenAI, or OpenRouter, one setting for each. It can rewrite its own conf
 and it runs on a headless server just as well as on a desktop with a microphone.
 
 <p align="center">
-  <img src="https://github.com/PersonalJarvis/PersonalJarvis/raw/main/assets/screenshots/app-chat.webp" alt="The desktop app's chat view: voice history in the sidebar, the ghost mascot over a golden wave wallpaper, and the Ready for commands prompt" width="900" />
+  <img src="https://github.com/lucianople7/kaizen7-personal-jarvis/raw/main/assets/screenshots/app-chat.webp" alt="The desktop app's chat view: voice history in the sidebar, the ghost mascot over a golden wave wallpaper, and the Ready for commands prompt" width="900" />
 </p>
 
 <p align="center">
@@ -104,7 +110,7 @@ the table above is genuinely local.
 
 <p align="center">
   <a href="https://www.youtube.com/watch?v=6xoxgNu5fd8">
-    <img src="https://raw.githubusercontent.com/PersonalJarvis/PersonalJarvis/main/assets/demo/personal-jarvis-demo.gif" alt="Animated demo showing the spoken prompt, Jarvis opening Windows Settings, and switching display mode from dark to light" width="860" />
+    <img src="https://raw.githubusercontent.com/lucianople7/kaizen7-personal-jarvis/main/assets/demo/personal-jarvis-demo.gif" alt="Animated demo showing the spoken prompt, Jarvis opening Windows Settings, and switching display mode from dark to light" width="860" />
   </a>
 </p>
 
@@ -135,7 +141,7 @@ audited pipeline, the full mechanics are under Self-modification below.
 ## How it works
 
 <img
-  src="https://github.com/PersonalJarvis/PersonalJarvis/raw/main/assets/brand/how-personal-jarvis-works.png"
+  src="https://github.com/lucianople7/kaizen7-personal-jarvis/raw/main/assets/brand/how-personal-jarvis-works.png"
   width="1064"
   height="568"
   alt="How Personal Jarvis works: routing voice and chat through safe actions or reviewed missions"
@@ -160,7 +166,7 @@ L0  OS / Hardware   Mic, speakers, global hotkeys, optional GPU
 ```
 
 A deeper engineering map, with anti-patterns, bug classes, and phase status down to
-`file:line`, lives in [`docs/LLM-CONTEXT.md`](https://github.com/PersonalJarvis/PersonalJarvis/blob/main/docs/LLM-CONTEXT.md).
+`file:line`, lives in [`docs/LLM-CONTEXT.md`](https://github.com/lucianople7/kaizen7-personal-jarvis/blob/main/docs/LLM-CONTEXT.md).
 
 </details>
 
@@ -181,13 +187,13 @@ pieces: a phone call runs on your own Twilio account at Twilio's prices.
 **Windows** (PowerShell)
 
 ```powershell
-irm https://raw.githubusercontent.com/PersonalJarvis/PersonalJarvis/main/install/install.ps1 | iex
+irm https://raw.githubusercontent.com/lucianople7/kaizen7-personal-jarvis/main/install/install.ps1 | iex
 ```
 
 **macOS and Linux**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/PersonalJarvis/PersonalJarvis/main/install/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/lucianople7/kaizen7-personal-jarvis/main/install/install.sh | bash
 ```
 
 > This is open source, so read the installer before you run it. It creates a venv, installs
@@ -210,7 +216,7 @@ bash ~/.personal-jarvis/install/uninstall.sh
 
 Both of those run the uninstaller that is already on your disk. If it is missing or refuses
 to start, the app can uninstall itself instead: see
-[`install/README.md`](https://github.com/PersonalJarvis/PersonalJarvis/blob/main/install/README.md#uninstalling).
+[`install/README.md`](https://github.com/lucianople7/kaizen7-personal-jarvis/blob/main/install/README.md#uninstalling).
 
 <details>
 <summary><b>Optional extras, install flags, pipx & manual clone</b></summary>
@@ -247,8 +253,8 @@ pip install "personal-jarvis[full]"  # everything: desktop app, telephony, chann
 **Manual**: clone it, read every line, then run:
 
 ```bash
-git clone https://github.com/PersonalJarvis/PersonalJarvis
-cd PersonalJarvis
+git clone https://github.com/lucianople7/kaizen7-personal-jarvis
+cd kaizen7-personal-jarvis
 python -m venv .venv && source .venv/bin/activate   # Windows: .\.venv\Scripts\Activate.ps1
 pip install -e .[full]
 jarvis serve
@@ -297,7 +303,7 @@ to that workspace for as long as you want, then switches back cleanly.
 
 <p align="center">
   <a href="https://youtu.be/wFBdmdOn6EU">
-    <img src="https://github.com/PersonalJarvis/PersonalJarvis/raw/main/assets/demo/agentic-ide-demo.gif" alt="Two coding agents side by side in the Agentic IDE, one receiving a prompt with its full mission brief while its thinking counter runs" width="860" />
+    <img src="https://github.com/lucianople7/kaizen7-personal-jarvis/raw/main/assets/demo/agentic-ide-demo.gif" alt="Two coding agents side by side in the Agentic IDE, one receiving a prompt with its full mission brief while its thinking counter runs" width="860" />
   </a>
 </p>
 
@@ -361,7 +367,7 @@ second is a toggle, both can be armed together, and a third re-pastes the last t
 dictated into whatever field just ate it.
 
 <p align="center">
-  <img src="https://github.com/PersonalJarvis/PersonalJarvis/releases/download/v1.3.1/readme-demo-dictation.gif" alt="Dictation demo: a spoken sentence arrives as clean text in the chat input" width="860" />
+  <img src="https://github.com/lucianople7/kaizen7-personal-jarvis/releases/download/v1.3.1/readme-demo-dictation.gif" alt="Dictation demo: a spoken sentence arrives as clean text in the chat input" width="860" />
 </p>
 
 <p align="center">
@@ -392,7 +398,7 @@ woodblock, each tagged light or dark so the app can match the wallpaper to your 
 Filter the grid, preview fullscreen, mark favorites, or add your own image.
 
 <p align="center">
-  <img src="https://github.com/PersonalJarvis/PersonalJarvis/releases/download/v1.3.1/readme-demo-wallpapers.gif" alt="Scrolling the wallpaper gallery and opening a fullscreen preview" width="860" />
+  <img src="https://github.com/lucianople7/kaizen7-personal-jarvis/releases/download/v1.3.1/readme-demo-wallpapers.gif" alt="Scrolling the wallpaper gallery and opening a fullscreen preview" width="860" />
 </p>
 
 ## Drive it from the terminal
@@ -409,13 +415,13 @@ jarvis api <tag> <op>         # EVERY REST endpoint, auto-generated from OpenAPI
 
 It is a thin client over the local REST API on `127.0.0.1:47821`, so it inherits every
 guardrail (risk tiers, atomic config writes, the audit log) instead of going around them.
-Full guide: [`docs/jarvis-cli.md`](https://github.com/PersonalJarvis/PersonalJarvis/blob/main/docs/jarvis-cli.md).
+Full guide: [`docs/jarvis-cli.md`](https://github.com/lucianople7/kaizen7-personal-jarvis/blob/main/docs/jarvis-cli.md).
 
 ## Configuration
 
 You do not need a config file. Every setting has a built-in default, and the one-time
 in-app setup covers the rest. For finer control there is one optional, documented file
-([`jarvis.toml.example`](https://github.com/PersonalJarvis/PersonalJarvis/blob/main/jarvis.toml.example)):
+([`jarvis.toml.example`](https://github.com/lucianople7/kaizen7-personal-jarvis/blob/main/jarvis.toml.example)):
 
 ```toml
 [profile]
@@ -452,7 +458,7 @@ Memory is plain files. The Knowledge Wiki is Markdown on your disk, not a hosted
 ## Extend it
 
 Every pluggable part is a Python entry point. Write a class against the protocols in
-[`jarvis/core/protocols.py`](https://github.com/PersonalJarvis/PersonalJarvis/blob/main/jarvis/core/protocols.py), register one line in
+[`jarvis/core/protocols.py`](https://github.com/lucianople7/kaizen7-personal-jarvis/blob/main/jarvis/core/protocols.py), register one line in
 `pyproject.toml`, reinstall. No fork, no core edits.
 
 | Plugin group | What you can add |
@@ -469,7 +475,7 @@ Three rules keep it stable: implement the protocol, stream everything (`AsyncIte
 where non-streaming yields one element), and pass the contract suite
 (`pytest tests/contract/`). The deep engineering map, with anti-patterns, recurring bug
 classes, and phase status, lives in
-[`docs/LLM-CONTEXT.md`](https://github.com/PersonalJarvis/PersonalJarvis/blob/main/docs/LLM-CONTEXT.md), and is built to be pasted into
+[`docs/LLM-CONTEXT.md`](https://github.com/lucianople7/kaizen7-personal-jarvis/blob/main/docs/LLM-CONTEXT.md), and is built to be pasted into
 an LLM chat whole.
 
 <details>
@@ -517,13 +523,13 @@ PersonalJarvis/
 
 | Document | What's in it |
 |---|---|
-| [`docs/architecture-overview.md`](https://github.com/PersonalJarvis/PersonalJarvis/blob/main/docs/architecture-overview.md) | The full architecture: layers, module catalog, data flow |
-| [`docs/LLM-CONTEXT.md`](https://github.com/PersonalJarvis/PersonalJarvis/blob/main/docs/LLM-CONTEXT.md) | Dense project snapshot, built to paste into an LLM chat whole |
-| [`CLAUDE.md`](https://github.com/PersonalJarvis/PersonalJarvis/blob/main/CLAUDE.md) | Binding contributor guide: conventions, doctrine, anti-patterns |
-| [`docs/PHILOSOPHY.md`](https://github.com/PersonalJarvis/PersonalJarvis/blob/main/docs/PHILOSOPHY.md) | Cross-platform, provider-agnostic design doctrine |
-| [`docs/adr/`](https://github.com/PersonalJarvis/PersonalJarvis/tree/main/docs/adr/) | Architecture Decision Records |
-| [`docs/BUGS.md`](https://github.com/PersonalJarvis/PersonalJarvis/blob/main/docs/BUGS.md) | The recurring-bug register |
-| [`docs/BRAND.md`](https://github.com/PersonalJarvis/PersonalJarvis/blob/main/docs/BRAND.md) | Brand guidelines: colors, typography, the wordmark |
+| [`docs/architecture-overview.md`](https://github.com/lucianople7/kaizen7-personal-jarvis/blob/main/docs/architecture-overview.md) | The full architecture: layers, module catalog, data flow |
+| [`docs/LLM-CONTEXT.md`](https://github.com/lucianople7/kaizen7-personal-jarvis/blob/main/docs/LLM-CONTEXT.md) | Dense project snapshot, built to paste into an LLM chat whole |
+| [`CLAUDE.md`](https://github.com/lucianople7/kaizen7-personal-jarvis/blob/main/CLAUDE.md) | Binding contributor guide: conventions, doctrine, anti-patterns |
+| [`docs/PHILOSOPHY.md`](https://github.com/lucianople7/kaizen7-personal-jarvis/blob/main/docs/PHILOSOPHY.md) | Cross-platform, provider-agnostic design doctrine |
+| [`docs/adr/`](https://github.com/lucianople7/kaizen7-personal-jarvis/tree/main/docs/adr/) | Architecture Decision Records |
+| [`docs/BUGS.md`](https://github.com/lucianople7/kaizen7-personal-jarvis/blob/main/docs/BUGS.md) | The recurring-bug register |
+| [`docs/BRAND.md`](https://github.com/lucianople7/kaizen7-personal-jarvis/blob/main/docs/BRAND.md) | Brand guidelines: colors, typography, the wordmark |
 
 ## Community
 
@@ -539,21 +545,21 @@ land anywhere else, and questions are welcome there.
   <a href="https://discord.gg/x7USduHxbc">Discord</a> ·
   <a href="https://x.com/Ruben_Luetke">@Ruben_Luetke</a> ·
   <a href="https://www.instagram.com/personaljarvis/">Instagram</a> ·
-  <a href="https://github.com/PersonalJarvis/PersonalJarvis">GitHub</a>
+  <a href="https://github.com/lucianople7/kaizen7-personal-jarvis">GitHub</a>
 </p>
 
 ## Contributing
 
-Pull requests are welcome, and [`CONTRIBUTING.md`](https://github.com/PersonalJarvis/PersonalJarvis/blob/main/CONTRIBUTING.md) has the full
-guide. The short version: artifacts are English, read [`CLAUDE.md`](https://github.com/PersonalJarvis/PersonalJarvis/blob/main/CLAUDE.md)
+Pull requests are welcome, and [`CONTRIBUTING.md`](https://github.com/lucianople7/kaizen7-personal-jarvis/blob/main/CONTRIBUTING.md) has the full
+guide. The short version: artifacts are English, read [`CLAUDE.md`](https://github.com/lucianople7/kaizen7-personal-jarvis/blob/main/CLAUDE.md)
 before larger changes, new providers must pass `pytest tests/contract/`, and security issues
-go to [`SECURITY.md`](https://github.com/PersonalJarvis/PersonalJarvis/blob/main/SECURITY.md) privately.
+go to [`SECURITY.md`](https://github.com/lucianople7/kaizen7-personal-jarvis/blob/main/SECURITY.md) privately.
 
 ## License
 
 MIT. Free to use, modify, and distribute, including commercially; see
-[`LICENSE`](https://github.com/PersonalJarvis/PersonalJarvis/blob/main/LICENSE). Third-party names and logos belong to their owners,
-see [`TRADEMARK.md`](https://github.com/PersonalJarvis/PersonalJarvis/blob/main/TRADEMARK.md).
+[`LICENSE`](https://github.com/lucianople7/kaizen7-personal-jarvis/blob/main/LICENSE). Third-party names and logos belong to their owners,
+see [`TRADEMARK.md`](https://github.com/lucianople7/kaizen7-personal-jarvis/blob/main/TRADEMARK.md).
 
 <br/>
 

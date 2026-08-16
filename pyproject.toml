@@ -248,11 +248,11 @@ dependencies = [
 # These are the sidebar of the PyPI project page — for many visitors the first
 # and only place they meet the project, so every route out of it is listed.
 [project.urls]
-Homepage = "https://personaljarvis.ai/"
-Repository = "https://github.com/PersonalJarvis/PersonalJarvis"
-Issues = "https://github.com/PersonalJarvis/PersonalJarvis/issues"
-Documentation = "https://github.com/PersonalJarvis/PersonalJarvis/blob/main/README.md"
-Changelog = "https://github.com/PersonalJarvis/PersonalJarvis/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/lucianople7/kaizen7-personal-jarvis"
+Repository = "https://github.com/lucianople7/kaizen7-personal-jarvis"
+Issues = "https://github.com/lucianople7/kaizen7-personal-jarvis/issues"
+Documentation = "https://github.com/lucianople7/kaizen7-personal-jarvis/blob/main/README.md"
+Changelog = "https://github.com/lucianople7/kaizen7-personal-jarvis/blob/main/CHANGELOG.md"
 Discord = "https://discord.gg/x7USduHxbc"
 
 [project.optional-dependencies]

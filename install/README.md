@@ -1,18 +1,19 @@
 # `install/` — Quick-install bootstrap
 
-This directory ships the one-liner installer for Personal Jarvis. Users
-never read these files; they just paste the URL into their shell.
+This directory ships the one-liner installer for the KAIZEN7 Personal Jarvis
+distribution. Users never read these files; they just paste the URL into their
+shell.
 
 ## End-user one-liner
 
 ```powershell
 # Windows (PowerShell)
-irm https://raw.githubusercontent.com/PersonalJarvis/PersonalJarvis/main/install/install.ps1 | iex
+irm https://raw.githubusercontent.com/lucianople7/kaizen7-personal-jarvis/main/install/install.ps1 | iex
 ```
 
 ```bash
 # macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/PersonalJarvis/PersonalJarvis/main/install/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/lucianople7/kaizen7-personal-jarvis/main/install/install.sh | bash
 ```
 
 When Python 3.11+ and Git are already present, the installer is fully
@@ -89,7 +90,7 @@ shell and PowerShell version. The safest pattern for ad-hoc testing is to
 clone manually and call `installer.py` directly:
 
 ```bash
-git clone https://github.com/PersonalJarvis/PersonalJarvis ~/.personal-jarvis
+git clone https://github.com/lucianople7/kaizen7-personal-jarvis ~/.personal-jarvis
 cd ~/.personal-jarvis && python -m venv .venv
 . .venv/bin/activate           # Windows: .\.venv\Scripts\Activate.ps1
 pip install rich packaging
@@ -162,7 +163,7 @@ Before that flip:
 2. Strip Maintainer-only paths: `data/_final_verdict_runtime/`, `data/workspace/`, `data/sessions.db` removed from history (consider `git filter-repo`).
 3. Confirm `.env` is in `.gitignore` and never committed.
 4. Smoke-test the one-liner on a clean VM (Win11 fresh box, Ubuntu 22.04 server, macOS).
-5. Flip visibility: `gh repo edit PersonalJarvis/PersonalJarvis --visibility public --accept-visibility-change-consequences`.
+5. Flip visibility: `gh repo edit lucianople7/kaizen7-personal-jarvis --visibility public --accept-visibility-change-consequences`.
 
 ## Future work (not in this PR)
 
