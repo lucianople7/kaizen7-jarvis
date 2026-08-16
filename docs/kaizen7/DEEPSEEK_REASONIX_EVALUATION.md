@@ -27,26 +27,54 @@ release notes, documentation, or repository metadata at execution time.
 
 ### `deepseek-harness`
 
-Primary source: https://github.com/HenryZ838978/deepseek-harness
+Primary source: https://github.com/deepseek-ai/deepseek-harness
 
-Observed from the project README:
+Verified from the official repository and README on 2026-08-16:
 
-- MIT-licensed public repository.
-- Published forms: Python library `deepseek-harness`, CLI `deepseek-harness-cli`, MCP server `@deepseek-harness/mcp`, and a SKILL.md package.
-- Purpose: protocol-aware adapters for DeepSeek V4-Pro and V4-Flash.
-- It codifies DeepSeek-specific protocol rules: preserving `reasoning_content`,
-  handling parallel tool-call streaming by index, setting `max_tokens`, avoiding
-  `/beta` for tool calls, validating the 1,048,576-token ceiling, and keeping a
-  cache-stable prefix.
-- It is not primarily a desktop agent platform. It is a compatibility harness
-  for safer DeepSeek API usage.
+- Official public repository under `deepseek-ai/deepseek-harness`.
+- The README describes DeepSeek Harness (`dsh`) as an open-source agent harness
+  developed by DeepSeek AI.
+- License: MIT.
+- Status: developer preview with rapid iteration and expected compatibility
+  breaks.
+- Architecture: "everything is a plugin", powered by Cordis.
+- Runtime entry: `npx @deepseek-ai/dsh web`.
+- Default Web UI: `http://127.0.0.1:3080`.
+- Source run path: clone, `pnpm install`, `pnpm run build`, `pnpm dsh web`.
+- Plugin discovery signal: repositories can use the `dsh-plugin` topic.
+- Community/support surfaces: GitHub Discussions and DeepSeek Harness Discord.
+- The repository has large public traction in the visible GitHub metadata.
+
+Architecture notes from `docs/architecture.md`:
+
+- Cordis plugins contribute services, typed events, and reversible effects to a
+  shared context.
+- Model adapters, tool registry, session log, and agent loop are all replaceable
+  from configuration.
+- Profiles compose ordered plugin bundles at boot; `web` and `headless` ship as
+  templates.
+- `dsh-base` contributes model adapters, tools, persistence, sandbox, approval
+  policy, settings, credentials, and telemetry.
+- Tool execution has `tools/pre-execute`, `tools/execute`, and
+  `tools/post-execute` events.
+- New behavior should attach to documented extension points rather than patching
+  the loop directly.
+
+Correction: an earlier note incorrectly treated another `deepseek-harness`
+repository as the main source. The official source for KAIZEN7 evaluation is now
+`deepseek-ai/deepseek-harness`.
 
 Potential KAIZEN7 use:
 
-- Add as an optional adapter only if we select DeepSeek V4 as a provider path.
-- Prefer MCP form first for isolation: `npx -y @deepseek-harness/mcp` with
-  `DEEPSEEK_API_KEY` supplied by environment or credential store, never Git.
-- Use its validation tools without API spend where possible.
+- Treat it as a serious peer runtime to inspect, not merely a DeepSeek API
+  adapter.
+- Run a read-only local smoke test first with `npx @deepseek-ai/dsh web`, no
+  API keys committed and no paid calls.
+- Study whether its Cordis plugin/event model can inspire a KAIZEN7 plugin
+  bridge for Jarvis.
+- If adopted, pin the npm package version or repository commit before executing
+  real tasks.
+- Keep all credentials in environment or OS credential storage, never Git.
 
 ### `DeepSeek-Reasonix`
 
