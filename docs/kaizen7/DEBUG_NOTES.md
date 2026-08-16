@@ -42,6 +42,10 @@ Use this repo as a private local operating-agent lab. Keep KAIZEN7-specific logi
 additive and clearly marked. Do not commit credentials, local data, `.env`,
 `jarvis.toml`, model downloads, caches, voice recordings, or venvs.
 
+THE FOCUX visual identity is tracked separately from the upstream Personal
+Jarvis brand. See `docs/kaizen7/THE_FOCUX_BRAND.md` for the logo capsule and
+asset paths.
+
 For Luciano's use, the strongest existing surfaces are:
 
 - `jarvis.brain` entry points for provider specialization.
