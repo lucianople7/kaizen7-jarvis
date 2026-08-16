@@ -7,6 +7,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0a0e14" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Assistant" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/jarvis-gigi-256.png" />
     <link rel="icon" href="/jarvis.ico" sizes="any" />
     <link rel="icon" type="image/png" sizes="256x256" href="/jarvis-gigi-256.png" />
     <link rel="icon" type="image/x-icon" href="/jarvis-gigi.ico" />
@@ -146,6 +152,17 @@
         };
         requestAnimationFrame(function () {
           requestAnimationFrame(acknowledgePaint);
+        });
+      })();
+    </script>
+    <script>
+      (function () {
+        if (!("serviceWorker" in navigator)) return;
+        if (!window.isSecureContext && location.hostname !== "127.0.0.1" && location.hostname !== "localhost") return;
+        window.addEventListener("load", function () {
+          navigator.serviceWorker.register("/mobile-sw.js").catch(function () {
+            /* Installability is opportunistic; the browser app still works normally. */
+          });
         });
       })();
     </script>

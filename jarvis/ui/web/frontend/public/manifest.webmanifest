@@ -1,0 +1,27 @@
+{
+  "name": "Assistant",
+  "short_name": "Assistant",
+  "description": "Installable local assistant companion for desktop and mobile browsers.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a0e14",
+  "theme_color": "#0a0e14",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/jarvis-gigi-256.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/jarvis-logo.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
