@@ -36,11 +36,11 @@ def _isolate(tmp_path, monkeypatch: pytest.MonkeyPatch):
 
 
 # ---------------------------------------------------------------------------
-# The five built-ins
+# The built-ins
 # ---------------------------------------------------------------------------
 
 
-def test_all_five_builtins_ship_and_are_marked_built_in() -> None:
+def test_all_builtins_ship_and_are_marked_built_in() -> None:
     by_slug = {m.slug: m for m in modes.list_modes()}
     assert set(modes.BUILTIN_SLUGS) <= by_slug.keys()
     assert all(by_slug[s].built_in for s in modes.BUILTIN_SLUGS)
@@ -57,6 +57,16 @@ def test_every_builtin_carries_a_name_and_a_description() -> None:
     for mode in modes.list_modes():
         assert mode.name.strip(), f"{mode.slug} has no name"
         assert mode.description.strip(), f"{mode.slug} has no description"
+
+
+def test_kaizen7_mode_carries_focus_execution_and_approval_rules() -> None:
+    mode = modes.get_mode(modes.MODE_KAIZEN7)
+    assert mode is not None
+    block = modes.mode_prompt_block(mode)
+    assert "Luciano decides" in block
+    assert "Life does not disperse" in block
+    assert "Separate recommendation from execution" in block
+    assert "Human approval is mandatory" in block
 
 
 # ---------------------------------------------------------------------------

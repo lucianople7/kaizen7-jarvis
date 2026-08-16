@@ -47,7 +47,8 @@ def test_risk_tiers_match_what_each_tool_actually_does() -> None:
 async def test_list_modes_reports_the_shelf_and_the_active_one() -> None:
     result = await ListModesTool().execute({}, None)
     assert result.success
-    assert [m["slug"] for m in result.output["modes"]][:5] == list(modes.BUILTIN_SLUGS)
+    listed = [m["slug"] for m in result.output["modes"]]
+    assert listed[: len(modes.BUILTIN_SLUGS)] == list(modes.BUILTIN_SLUGS)
     assert result.output["active"] == modes.DEFAULT_MODE
 
 
