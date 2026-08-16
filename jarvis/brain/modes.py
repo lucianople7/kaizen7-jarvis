@@ -354,9 +354,9 @@ def has_user_copy(slug: str) -> bool:
 def _configured_slug() -> str:
     """The user's sticky choice from ``[persona] active_mode``."""
     try:
-        from jarvis.core.config import get_config
+        from jarvis.core.config import load_config
 
-        raw = getattr(getattr(get_config(), "persona", None), "active_mode", "")
+        raw = getattr(getattr(load_config(), "persona", None), "active_mode", "")
     except Exception:  # noqa: BLE001 - config unavailable mid-reload
         return DEFAULT_MODE
     slug = (raw or "").strip().lower()
