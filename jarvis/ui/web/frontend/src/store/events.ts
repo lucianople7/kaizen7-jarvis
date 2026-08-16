@@ -81,6 +81,7 @@ export type SectionId =
   // shown at full size instead of as a filename in a list.
   | "visualization"
   | "kaizen7"
+  | "mobile"
   | "agentic-ide"
   // The rebuilt chat surface — projects, their chats, one conversation on
   // screen. Lives alongside "agentic-ide" until its parity checklist is empty.
@@ -129,6 +130,7 @@ export const SECTION_IDS = [
   "voice-api-keys",
   "visualization",
   "kaizen7",
+  "mobile",
   "agentic-ide",
   "chat-workspace",
   "agentic-ide-classic",
@@ -197,6 +199,7 @@ export const SECTION_LABELS: Record<SectionId, string> = {
   "voice-api-keys": "Voice Input Keys",
   visualization: "Visualization",
   kaizen7: "KAIZEN7",
+  mobile: "Mobile",
   "agentic-ide": "Agentic IDE",
   "chat-workspace": "Chat",
   "agentic-ide-classic": "Terminal grid",

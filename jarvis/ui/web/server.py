@@ -360,6 +360,7 @@ class WebServer:
         from .kaizen7_routes import router as kaizen7_router
         from .marketplace_routes import router as marketplace_router
         from .mcp_routes import router as mcp_router
+        from .mobile_routes import router as mobile_router
         from .missions_auth import router as missions_auth_router
         from .missions_pty_routes import router as missions_pty_router
         from .missions_routes import router as missions_router
@@ -444,6 +445,7 @@ class WebServer:
         app.include_router(docs_router)
         app.include_router(cli_router)
         app.include_router(kaizen7_router)
+        app.include_router(mobile_router)
         # Command Registry — the one machine-readable catalog of app commands
         # (consumed by the app-command brain tool, the UI, CLI, and docs gen).
         app.include_router(commands_router)

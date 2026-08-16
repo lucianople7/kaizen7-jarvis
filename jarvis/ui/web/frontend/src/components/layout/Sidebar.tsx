@@ -27,6 +27,7 @@ import {
   ChevronRight,
   PanelLeftClose,
   PanelLeftOpen,
+  Smartphone,
 } from "lucide-react";
 import { useEventStore, type SectionId } from "@/store/events";
 import { useVoiceReadiness } from "@/hooks/useVoiceReadiness";
@@ -83,6 +84,12 @@ const NAV_GROUPS: NavItem[][] = [
       labelKey: "nav.kaizen7",
       icon: Orbit,
       fallbackLabel: "KAIZEN7",
+    },
+    {
+      id: "mobile",
+      labelKey: "nav.mobile",
+      icon: Smartphone,
+      fallbackLabel: "Mobile",
     },
     { id: "chats", labelKey: "nav.chats", icon: MessageSquare },
     { id: "agents", labelKey: "nav.agents", icon: Users },
