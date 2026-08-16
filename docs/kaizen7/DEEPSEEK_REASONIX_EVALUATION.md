@@ -4,6 +4,25 @@ Date: 2026-08-15
 Purpose: identify whether new DeepSeek ecosystem tooling should influence the
 KAIZEN7 private Jarvis direction.
 
+## Evidence Discipline
+
+This note must not treat conversational search summaries as verified facts.
+Claims about launch dates, star counts, community size, official status,
+supported tools, pricing, authentication, or enterprise readiness are unstable
+and must be checked against primary sources before they drive implementation.
+
+The useful signal from the conversation is the target shape Luciano wants:
+
+- a personal and business Jarvis that actually performs tasks;
+- desktop control, web UI, CLI, voice, plugins, MCP, and community extensions;
+- e-commerce and content workflows;
+- long-term memory, approvals, receipts, and rollback/checkpoints;
+- modular providers instead of being locked into one model vendor.
+
+Do not internalize claims such as "just launched", exact GitHub popularity, or
+"official DeepSeek Work" unless they are verified from the project owner,
+release notes, documentation, or repository metadata at execution time.
+
 ## Source Findings
 
 ### `deepseek-harness`
