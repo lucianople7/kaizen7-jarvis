@@ -36,3 +36,15 @@ explicit Luciano approval.
 This repository exists to test whether Personal Jarvis can serve as a local,
 audited, voice-capable operating partner for KAIZEN7, while keeping the upstream
 runtime legally attributed and technically separable.
+
+## Install Status
+
+The source install path is owned by this repository:
+
+- Windows: `irm https://raw.githubusercontent.com/lucianople7/kaizen7-personal-jarvis/main/install/install.ps1 | iex`
+- macOS/Linux: `curl -fsSL https://raw.githubusercontent.com/lucianople7/kaizen7-personal-jarvis/main/install/install.sh | bash`
+
+Release verification assets from upstream are preserved for attribution and
+future migration, but KAIZEN7 has not yet issued its own signed release channel.
+Until that release exists, use the source install commands above or inspect and
+run `install/installer.py` from a local clone.

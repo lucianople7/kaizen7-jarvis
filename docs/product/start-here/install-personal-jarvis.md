@@ -88,9 +88,9 @@ manual installs do not show the in-app update button.
 4. Wait for all six phases. Desktop installs open from Spotlight or the Linux
    application menu. Headless installs print a local browser address.
 
-> [!note] These commands download the current public installer. Review the
-> [Windows source](https://github.com/PersonalJarvis/PersonalJarvis/blob/main/install/install.ps1)
-> or [macOS and Linux source](https://github.com/PersonalJarvis/PersonalJarvis/blob/main/install/install.sh)
+> [!note] These commands download the current KAIZEN7 distribution installer.
+> Review the [Windows source](https://github.com/lucianople7/kaizen7-personal-jarvis/blob/main/install/install.ps1)
+> or [macOS and Linux source](https://github.com/lucianople7/kaizen7-personal-jarvis/blob/main/install/install.sh)
 > first if you want to inspect it.
 
 ## Install the Isolated PyPI Package
