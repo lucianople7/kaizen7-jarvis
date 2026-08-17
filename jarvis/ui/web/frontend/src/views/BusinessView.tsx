@@ -72,6 +72,17 @@ interface WorkspaceBackup {
   workspace: BusinessWorkspace;
 }
 
+interface BusinessDiagnostics {
+  generatedAt: string;
+  currentUrl: string;
+  storageWritable: boolean;
+  workspacePayloadBytes: number;
+  serviceWorkerSupport: boolean;
+  serviceWorkerControlled: boolean;
+  cacheSupport: boolean;
+  userAgent: string;
+}
+
 const DEFAULT_WORKSPACE: BusinessWorkspace = {
   mission:
     "Turn verified attention into THE FOCUX: signal → dossier → founding list → offer test. Own product later. No premature checkout.",
@@ -291,6 +302,37 @@ function currentAccessUrl(): string {
   return `${window.location.origin}${window.location.pathname}`;
 }
 
+function storageWritable(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const key = "jarvis.business.debug.check";
+    window.localStorage.setItem(key, "ok");
+    window.localStorage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function collectBusinessDiagnostics(workspace: BusinessWorkspace): BusinessDiagnostics {
+  const payload = JSON.stringify(workspace);
+  return {
+    generatedAt: new Date().toISOString(),
+    currentUrl: currentAccessUrl(),
+    storageWritable: storageWritable(),
+    workspacePayloadBytes: payload.length,
+    serviceWorkerSupport: typeof navigator !== "undefined" && "serviceWorker" in navigator,
+    serviceWorkerControlled:
+      typeof navigator !== "undefined" && Boolean(navigator.serviceWorker?.controller),
+    cacheSupport: typeof window !== "undefined" && "caches" in window,
+    userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "unknown",
+  };
+}
+
+function yesNo(value: boolean): string {
+  return value ? "yes" : "no";
+}
+
 function buildDailyReview({
   workspace,
   activePriorities,
@@ -326,6 +368,25 @@ function buildDailyReview({
   ].join("\n");
 }
 
+function buildDebugReport(diagnostics: BusinessDiagnostics, workspace: BusinessWorkspace): string {
+  return [
+    "# Business OS Debug Report",
+    "",
+    `Generated at: ${diagnostics.generatedAt}`,
+    `Current URL: ${diagnostics.currentUrl}`,
+    `Storage writable: ${yesNo(diagnostics.storageWritable)}`,
+    `Workspace payload bytes: ${diagnostics.workspacePayloadBytes}`,
+    `Service worker support: ${yesNo(diagnostics.serviceWorkerSupport)}`,
+    `Service worker controlled: ${yesNo(diagnostics.serviceWorkerControlled)}`,
+    `Cache API support: ${yesNo(diagnostics.cacheSupport)}`,
+    `Actions: ${workspace.actions.length}`,
+    `Receipts: ${workspace.decisions.length}`,
+    `Priorities: ${workspace.priorities.length}`,
+    `Metrics: ${workspace.metrics.length}`,
+    `User agent: ${diagnostics.userAgent}`,
+  ].join("\n");
+}
+
 export function BusinessView() {
   const [workspace, setWorkspace] = useState<BusinessWorkspace>(() => readWorkspace());
   const [saved, setSaved] = useState(false);
@@ -340,6 +401,7 @@ export function BusinessView() {
   const [metricDraft, setMetricDraft] = useState("");
   const [actionDraft, setActionDraft] = useState("");
   const [actionRisk, setActionRisk] = useState<DecisionRisk>("low");
+  const [diagnosticTick, setDiagnosticTick] = useState(0);
   const [decisionDraft, setDecisionDraft] = useState({
     title: "",
     evidence: "",
@@ -382,6 +444,10 @@ export function BusinessView() {
   );
   const doneCount = doneActions.length;
   const totalCount = workspace.actions.length;
+  const diagnostics = useMemo(
+    () => collectBusinessDiagnostics(workspace),
+    [workspace, diagnosticTick],
+  );
 
   const addPriority = () => {
     const value = priorityDraft.trim();
@@ -520,6 +586,10 @@ export function BusinessView() {
         totalCount,
       }),
     );
+  };
+
+  const copyDebugReport = async () => {
+    await writeClipboard(buildDebugReport(diagnostics, workspace));
   };
 
   const saveDailyReview = () => {
@@ -677,6 +747,66 @@ export function BusinessView() {
                   </Button>
                 </div>
               )}
+            </article>
+
+            <article className="card-outline p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <CircleAlert className="h-4 w-4 text-primary" />
+                  Debug kit
+                </div>
+                <Badge variant="outline">Local diagnostics</Badge>
+              </div>
+              <div className="grid gap-2 text-sm">
+                <DebugRow
+                  label="Storage writable"
+                  value={diagnostics.storageWritable ? "OK" : "Blocked"}
+                  ok={diagnostics.storageWritable}
+                />
+                <DebugRow
+                  label="Workspace payload"
+                  value={`${diagnostics.workspacePayloadBytes} bytes`}
+                  ok={diagnostics.workspacePayloadBytes > 0}
+                />
+                <DebugRow
+                  label="Service worker"
+                  value={
+                    diagnostics.serviceWorkerSupport
+                      ? diagnostics.serviceWorkerControlled
+                        ? "Controlling page"
+                        : "Supported"
+                      : "Unavailable"
+                  }
+                  ok={diagnostics.serviceWorkerSupport}
+                />
+                <DebugRow
+                  label="Cache API"
+                  value={diagnostics.cacheSupport ? "Available" : "Unavailable"}
+                  ok={diagnostics.cacheSupport}
+                />
+              </div>
+              <div className="mt-3 rounded-md border border-border/70 bg-background/50 px-3 py-2">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Current URL
+                </div>
+                <div className="mt-1 break-all font-mono text-xs text-muted-foreground">
+                  {diagnostics.currentUrl}
+                </div>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button size="sm" variant="secondary" onClick={copyDebugReport}>
+                  <Clipboard className="mr-1 h-4 w-4" />
+                  Copy debug report
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setDiagnosticTick((value) => value + 1)}
+                >
+                  <RotateCcw className="mr-1 h-4 w-4" />
+                  Refresh diagnostics
+                </Button>
+              </div>
             </article>
 
             <article className="card-outline p-4">
@@ -1124,6 +1254,15 @@ export function BusinessView() {
           </aside>
         </div>
       </ScrollArea>
+    </div>
+  );
+}
+
+function DebugRow({ label, value, ok }: { label: string; value: string; ok: boolean }) {
+  return (
+    <div className="flex items-center gap-2 rounded-md border border-border/70 bg-background/50 px-3 py-2">
+      <span className="min-w-0 flex-1">{label}</span>
+      <Badge variant={ok ? "secondary" : "outline"}>{value}</Badge>
     </div>
   );
 }

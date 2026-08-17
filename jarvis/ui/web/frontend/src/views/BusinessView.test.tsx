@@ -260,6 +260,34 @@ describe("BusinessView", () => {
     expect(writeText.mock.calls[0][0]).toContain("Android");
   });
 
+  it("shows a debug kit with local runtime diagnostics", () => {
+    render(<BusinessView />);
+
+    expect(screen.getByText("Debug kit")).toBeTruthy();
+    expect(screen.getByText("Storage writable")).toBeTruthy();
+    expect(screen.getByText("Workspace payload")).toBeTruthy();
+    expect(screen.getByText("Service worker")).toBeTruthy();
+    expect(screen.getByText("Cache API")).toBeTruthy();
+  });
+
+  it("copies a debug report for support and troubleshooting", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    render(<BusinessView />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Copy debug report/i }));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(writeText).toHaveBeenCalledOnce();
+    expect(writeText.mock.calls[0][0]).toContain("Business OS Debug Report");
+    expect(writeText.mock.calls[0][0]).toContain("Storage writable: yes");
+    expect(writeText.mock.calls[0][0]).toContain("Service worker support:");
+    expect(writeText.mock.calls[0][0]).toContain("Workspace payload bytes:");
+  });
+
   it("copies a portable workspace backup as JSON", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });
