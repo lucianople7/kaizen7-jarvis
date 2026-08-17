@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import {
   BadgeCheck,
   BriefcaseBusiness,
@@ -834,6 +834,38 @@ export function BusinessView() {
             <article className="card-outline p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-sm font-semibold">
+                  <Target className="h-4 w-4 text-primary" />
+                  Start-to-finish flow
+                </div>
+                <Badge variant="outline">One loop</Badge>
+              </div>
+              <div className="grid gap-2 md:grid-cols-4">
+                <FlowStep
+                  icon={<Target className="h-4 w-4 text-primary" />}
+                  label="Focus"
+                  value={activePriorities[0] ?? "Define one priority"}
+                />
+                <FlowStep
+                  icon={<CheckCircle2 className="h-4 w-4 text-primary" />}
+                  label="Do"
+                  value={nextAction?.title ?? "All clear for today"}
+                />
+                <FlowStep
+                  icon={<ClipboardCheck className="h-4 w-4 text-primary" />}
+                  label="Review"
+                  value={`${doneCount} of ${totalCount} completed`}
+                />
+                <FlowStep
+                  icon={<BadgeCheck className="h-4 w-4 text-primary" />}
+                  label="Receipt"
+                  value={`${workspace.decisions.length} saved receipts`}
+                />
+              </div>
+            </article>
+
+            <article className="card-outline p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm font-semibold">
                   <CircleAlert className="h-4 w-4 text-primary" />
                   Debug kit
                 </div>
@@ -1326,6 +1358,18 @@ export function BusinessView() {
           </aside>
         </div>
       </ScrollArea>
+    </div>
+  );
+}
+
+function FlowStep({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+  return (
+    <div className="min-h-[92px] rounded-md border border-border/70 bg-background/50 px-3 py-3">
+      <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {icon}
+        {label}
+      </div>
+      <div className="mt-2 text-sm font-medium leading-snug">{value}</div>
     </div>
   );
 }

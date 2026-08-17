@@ -197,6 +197,23 @@ describe("BusinessView", () => {
     expect(screen.getAllByText("Capture one verified signal").length).toBeGreaterThan(0);
   });
 
+  it("shows a clean start-to-finish operating flow", () => {
+    render(<BusinessView />);
+
+    expect(screen.getByText("Start-to-finish flow")).toBeTruthy();
+    expect(screen.getByText("Focus")).toBeTruthy();
+    expect(screen.getByText("Do")).toBeTruthy();
+    expect(screen.getByText("Review")).toBeTruthy();
+    expect(screen.getByText("Receipt")).toBeTruthy();
+    expect(
+      screen.getAllByText("Capture one verified signal and turn it into a dossier or piece.")
+        .length,
+    ).toBeGreaterThan(0);
+    expect(screen.getAllByText("Capture one verified signal").length).toBeGreaterThan(0);
+    expect(screen.getByText("0 of 5 completed")).toBeTruthy();
+    expect(screen.getAllByText("2 receipts").length).toBeGreaterThan(0);
+  });
+
   it("copies a daily review digest with next action and priorities", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });
