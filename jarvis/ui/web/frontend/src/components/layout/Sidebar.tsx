@@ -3,6 +3,7 @@ import {
   Users,
   Boxes,
   BookOpen,
+  BriefcaseBusiness,
   KeyRound,
   Settings,
   UserCircle2,
@@ -94,6 +95,12 @@ const NAV_GROUPS: NavItem[][] = [
   // 2) Content & data — things the user reads, edits, or browses.
   [
     { id: "tasks", labelKey: "nav.tasks", icon: ListTodo },
+    {
+      id: "business",
+      labelKey: "nav.business",
+      icon: BriefcaseBusiness,
+      fallbackLabel: "Business",
+    },
     { id: "sessions", labelKey: "nav.sessions", icon: Mic },
     { id: "run_inspector", labelKey: "nav.run_inspector", icon: Gauge },
     // The visual stage. Sits with the content group next to Outputs on

@@ -49,6 +49,7 @@ export type SectionId =
   | "docs"
   | "mcps"
   | "tasks"
+  | "business"
   | "sessions"
   | "run_inspector"
   | "clis"
@@ -99,6 +100,7 @@ export const SECTION_IDS = [
   "docs",
   "mcps",
   "tasks",
+  "business",
   "sessions",
   "run_inspector",
   "clis",
@@ -166,6 +168,7 @@ export const SECTION_LABELS: Record<SectionId, string> = {
   docs: "Docs",
   mcps: "MCPs",
   tasks: "Tasks",
+  business: "Business",
   sessions: "Transcription",
   run_inspector: "Run Inspector",
   clis: "CLIs",

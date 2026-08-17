@@ -96,6 +96,9 @@ const AgenticIdeView = lazyPropView<AgenticIdeViewProps>(() =>
 const TasksView = lazyView(() =>
   import("@/views/TasksView").then((m) => ({ default: m.TasksView })),
 );
+const BusinessView = lazyView(() =>
+  import("@/views/BusinessView").then((m) => ({ default: m.BusinessView })),
+);
 const SessionsView = lazyView(() =>
   import("@/views/SessionsView").then((m) => ({ default: m.SessionsView })),
 );
@@ -378,6 +381,8 @@ function SwitchOnActiveSection({ active }: { active: string }) {
       return <DocsView />;
     case "tasks":
       return <TasksView />;
+    case "business":
+      return <BusinessView />;
     case "sessions":
       return <SessionsView />;
     case "run_inspector":
