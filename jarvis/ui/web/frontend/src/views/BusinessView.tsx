@@ -83,6 +83,12 @@ interface BusinessDiagnostics {
   userAgent: string;
 }
 
+interface ReadinessCheck {
+  label: string;
+  passed: boolean;
+  detail: string;
+}
+
 const DEFAULT_WORKSPACE: BusinessWorkspace = {
   mission:
     "Turn verified attention into THE FOCUX: signal → dossier → founding list → offer test. Own product later. No premature checkout.",
@@ -333,6 +339,66 @@ function yesNo(value: boolean): string {
   return value ? "yes" : "no";
 }
 
+function buildReadinessChecks(
+  diagnostics: BusinessDiagnostics,
+  workspace: BusinessWorkspace,
+  activePriorities: string[],
+  openActions: BusinessAction[],
+): ReadinessCheck[] {
+  return [
+    {
+      label: "Storage writable",
+      passed: diagnostics.storageWritable,
+      detail: diagnostics.storageWritable ? "Local memory can persist" : "Browser storage blocked",
+    },
+    {
+      label: "Workspace payload",
+      passed: diagnostics.workspacePayloadBytes > 0,
+      detail: `${diagnostics.workspacePayloadBytes} bytes`,
+    },
+    {
+      label: "Service worker",
+      passed: diagnostics.serviceWorkerSupport,
+      detail: diagnostics.serviceWorkerControlled ? "Controlling page" : "Supported",
+    },
+    {
+      label: "Cache API",
+      passed: diagnostics.cacheSupport,
+      detail: diagnostics.cacheSupport ? "Available" : "Unavailable",
+    },
+    {
+      label: "Mission defined",
+      passed: workspace.mission.trim().length > 0,
+      detail: workspace.mission.trim() ? "Active mission present" : "Mission missing",
+    },
+    {
+      label: "Active priorities limited",
+      passed: activePriorities.length > 0 && activePriorities.length <= MAX_ACTIVE_PRIORITIES,
+      detail: `${activePriorities.length}/${MAX_ACTIVE_PRIORITIES} active`,
+    },
+    {
+      label: "Metrics defined",
+      passed: workspace.metrics.length > 0,
+      detail: `${workspace.metrics.length} metrics`,
+    },
+    {
+      label: "Open action available",
+      passed: openActions.length > 0,
+      detail: `${openActions.length} open`,
+    },
+    {
+      label: "Approval gate present",
+      passed: workspace.actions.some((action) => action.risk === "approval"),
+      detail: "Guarded execution is separated",
+    },
+    {
+      label: "Receipts available",
+      passed: workspace.decisions.length > 0,
+      detail: `${workspace.decisions.length} receipts`,
+    },
+  ];
+}
+
 function buildDailyReview({
   workspace,
   activePriorities,
@@ -368,11 +434,17 @@ function buildDailyReview({
   ].join("\n");
 }
 
-function buildDebugReport(diagnostics: BusinessDiagnostics, workspace: BusinessWorkspace): string {
+function buildDebugReport(
+  diagnostics: BusinessDiagnostics,
+  workspace: BusinessWorkspace,
+  readinessChecks: ReadinessCheck[],
+): string {
+  const passedChecks = readinessChecks.filter((check) => check.passed).length;
   return [
     "# Business OS Debug Report",
     "",
     `Generated at: ${diagnostics.generatedAt}`,
+    `Readiness: ${passedChecks}/${readinessChecks.length}`,
     `Current URL: ${diagnostics.currentUrl}`,
     `Storage writable: ${yesNo(diagnostics.storageWritable)}`,
     `Workspace payload bytes: ${diagnostics.workspacePayloadBytes}`,
@@ -384,6 +456,11 @@ function buildDebugReport(diagnostics: BusinessDiagnostics, workspace: BusinessW
     `Priorities: ${workspace.priorities.length}`,
     `Metrics: ${workspace.metrics.length}`,
     `User agent: ${diagnostics.userAgent}`,
+    "",
+    "Readiness checks:",
+    ...readinessChecks.map(
+      (check) => `- ${check.label}: ${check.passed ? "pass" : "check"} (${check.detail})`,
+    ),
   ].join("\n");
 }
 
@@ -448,6 +525,11 @@ export function BusinessView() {
     () => collectBusinessDiagnostics(workspace),
     [workspace, diagnosticTick],
   );
+  const readinessChecks = useMemo(
+    () => buildReadinessChecks(diagnostics, workspace, activePriorities, openActions),
+    [diagnostics, workspace, activePriorities, openActions],
+  );
+  const passedReadinessChecks = readinessChecks.filter((check) => check.passed).length;
 
   const addPriority = () => {
     const value = priorityDraft.trim();
@@ -589,7 +671,7 @@ export function BusinessView() {
   };
 
   const copyDebugReport = async () => {
-    await writeClipboard(buildDebugReport(diagnostics, workspace));
+    await writeClipboard(buildDebugReport(diagnostics, workspace, readinessChecks));
   };
 
   const saveDailyReview = () => {
@@ -755,35 +837,25 @@ export function BusinessView() {
                   <CircleAlert className="h-4 w-4 text-primary" />
                   Debug kit
                 </div>
-                <Badge variant="outline">Local diagnostics</Badge>
+                <Badge variant="outline">
+                  {passedReadinessChecks}/{readinessChecks.length} ready
+                </Badge>
+              </div>
+              <div className="mb-3 rounded-md border border-primary/30 bg-primary/5 px-3 py-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm font-semibold">10-point readiness</div>
+                  <Badge variant="secondary">10 checks</Badge>
+                </div>
               </div>
               <div className="grid gap-2 text-sm">
-                <DebugRow
-                  label="Storage writable"
-                  value={diagnostics.storageWritable ? "OK" : "Blocked"}
-                  ok={diagnostics.storageWritable}
-                />
-                <DebugRow
-                  label="Workspace payload"
-                  value={`${diagnostics.workspacePayloadBytes} bytes`}
-                  ok={diagnostics.workspacePayloadBytes > 0}
-                />
-                <DebugRow
-                  label="Service worker"
-                  value={
-                    diagnostics.serviceWorkerSupport
-                      ? diagnostics.serviceWorkerControlled
-                        ? "Controlling page"
-                        : "Supported"
-                      : "Unavailable"
-                  }
-                  ok={diagnostics.serviceWorkerSupport}
-                />
-                <DebugRow
-                  label="Cache API"
-                  value={diagnostics.cacheSupport ? "Available" : "Unavailable"}
-                  ok={diagnostics.cacheSupport}
-                />
+                {readinessChecks.map((check) => (
+                  <DebugRow
+                    key={check.label}
+                    label={check.label}
+                    value={check.detail}
+                    ok={check.passed}
+                  />
+                ))}
               </div>
               <div className="mt-3 rounded-md border border-border/70 bg-background/50 px-3 py-2">
                 <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">

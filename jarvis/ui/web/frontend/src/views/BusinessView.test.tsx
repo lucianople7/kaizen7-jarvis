@@ -264,10 +264,18 @@ describe("BusinessView", () => {
     render(<BusinessView />);
 
     expect(screen.getByText("Debug kit")).toBeTruthy();
+    expect(screen.getByText("10-point readiness")).toBeTruthy();
+    expect(screen.getByText("10 checks")).toBeTruthy();
     expect(screen.getByText("Storage writable")).toBeTruthy();
     expect(screen.getByText("Workspace payload")).toBeTruthy();
     expect(screen.getByText("Service worker")).toBeTruthy();
     expect(screen.getByText("Cache API")).toBeTruthy();
+    expect(screen.getByText("Mission defined")).toBeTruthy();
+    expect(screen.getByText("Active priorities limited")).toBeTruthy();
+    expect(screen.getByText("Metrics defined")).toBeTruthy();
+    expect(screen.getByText("Open action available")).toBeTruthy();
+    expect(screen.getByText("Approval gate present")).toBeTruthy();
+    expect(screen.getByText("Receipts available")).toBeTruthy();
   });
 
   it("copies a debug report for support and troubleshooting", async () => {
@@ -283,7 +291,11 @@ describe("BusinessView", () => {
 
     expect(writeText).toHaveBeenCalledOnce();
     expect(writeText.mock.calls[0][0]).toContain("Business OS Debug Report");
+    expect(writeText.mock.calls[0][0]).toContain("Readiness: ");
+    expect(writeText.mock.calls[0][0]).toContain("Readiness checks:");
     expect(writeText.mock.calls[0][0]).toContain("Storage writable: yes");
+    expect(writeText.mock.calls[0][0]).toContain("Mission defined: pass");
+    expect(writeText.mock.calls[0][0]).toContain("Approval gate present: pass");
     expect(writeText.mock.calls[0][0]).toContain("Service worker support:");
     expect(writeText.mock.calls[0][0]).toContain("Workspace payload bytes:");
   });
