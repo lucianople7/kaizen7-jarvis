@@ -19,10 +19,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 const STORAGE_KEY = "jarvis.business.workspace.v1";
 const LEGACY_STORAGE_KEY = "jarvis.business.workspace.v1";
+const BACKUP_SCHEMA = "jarvis.business.workspace";
+const BACKUP_VERSION = 1;
 const MAX_ACTIVE_PRIORITIES = 3;
 
 type DecisionRisk = "low" | "approval";
 type CopyStatus = "idle" | "copied" | "error";
+type BackupStatus = "idle" | "restored" | "invalid";
 
 interface BusinessDecision {
   id: string;
@@ -56,6 +59,13 @@ interface BusinessWorkspace {
   actions: BusinessAction[];
   decisions: BusinessDecision[];
   lastComplete: LastComplete | null;
+}
+
+interface WorkspaceBackup {
+  schema: typeof BACKUP_SCHEMA;
+  version: typeof BACKUP_VERSION;
+  exportedAt: string;
+  workspace: BusinessWorkspace;
 }
 
 const DEFAULT_WORKSPACE: BusinessWorkspace = {
@@ -202,6 +212,54 @@ function persistWorkspace(workspace: BusinessWorkspace): void {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(workspace));
 }
 
+function toWorkspaceBackup(workspace: BusinessWorkspace): WorkspaceBackup {
+  return {
+    schema: BACKUP_SCHEMA,
+    version: BACKUP_VERSION,
+    exportedAt: new Date().toISOString(),
+    workspace,
+  };
+}
+
+function parseWorkspaceBackup(raw: string): BusinessWorkspace | null {
+  try {
+    const parsed = JSON.parse(raw) as Partial<WorkspaceBackup>;
+    if (parsed.schema !== BACKUP_SCHEMA || parsed.version !== BACKUP_VERSION) {
+      return null;
+    }
+    if (!parsed.workspace || typeof parsed.workspace !== "object") return null;
+    const candidate = parsed.workspace as Partial<BusinessWorkspace>;
+    if (
+      typeof candidate.mission !== "string" ||
+      typeof candidate.offer !== "string" ||
+      typeof candidate.audience !== "string" ||
+      typeof candidate.northStar !== "string" ||
+      typeof candidate.weeklyObjective !== "string" ||
+      !Array.isArray(candidate.priorities) ||
+      !Array.isArray(candidate.metrics) ||
+      !Array.isArray(candidate.actions) ||
+      !Array.isArray(candidate.decisions)
+    ) {
+      return null;
+    }
+    return {
+      ...DEFAULT_WORKSPACE,
+      mission: candidate.mission,
+      offer: candidate.offer,
+      audience: candidate.audience,
+      northStar: candidate.northStar,
+      weeklyObjective: candidate.weeklyObjective,
+      priorities: normalizeList(candidate.priorities, DEFAULT_WORKSPACE.priorities),
+      metrics: normalizeList(candidate.metrics, DEFAULT_WORKSPACE.metrics),
+      actions: candidate.actions.filter(isAction),
+      decisions: candidate.decisions.filter(isDecision),
+      lastComplete: isLastComplete(candidate.lastComplete) ? candidate.lastComplete : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 function formatWhen(value: string): string {
   if (!value || value === "seed") return "Seed";
   const date = new Date(value);
@@ -232,6 +290,8 @@ export function BusinessView() {
   const [showPlan, setShowPlan] = useState(false);
   const [completingId, setCompletingId] = useState<string | null>(null);
   const [completeDraft, setCompleteDraft] = useState({ evidence: "", result: "" });
+  const [backupDraft, setBackupDraft] = useState("");
+  const [backupStatus, setBackupStatus] = useState<BackupStatus>("idle");
   const [priorityDraft, setPriorityDraft] = useState("");
   const [metricDraft, setMetricDraft] = useState("");
   const [actionDraft, setActionDraft] = useState("");
@@ -398,6 +458,22 @@ export function BusinessView() {
       ...workspace.metrics.map((metric) => `- ${metric}`),
     ].join("\n");
     await writeClipboard(briefing);
+  };
+
+  const copyBackup = async () => {
+    const backup = JSON.stringify(toWorkspaceBackup(workspace), null, 2);
+    await writeClipboard(backup);
+  };
+
+  const restoreBackup = () => {
+    const restored = parseWorkspaceBackup(backupDraft);
+    if (!restored) {
+      setBackupStatus("invalid");
+      return;
+    }
+    setWorkspace(restored);
+    setBackupDraft("");
+    setBackupStatus("restored");
   };
 
   const copyForApproval = async (action: BusinessAction) => {
@@ -796,6 +872,43 @@ export function BusinessView() {
                   </ul>
                 </div>
               )}
+            </article>
+
+            <article className="card-outline p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <Clipboard className="h-4 w-4 text-primary" />
+                  Workspace backup
+                </div>
+                {backupStatus === "restored" && <Badge variant="default">Restored</Badge>}
+                {backupStatus === "invalid" && (
+                  <Badge variant="destructive">Invalid backup</Badge>
+                )}
+              </div>
+              <label className="block">
+                <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Workspace backup JSON
+                </span>
+                <textarea
+                  value={backupDraft}
+                  rows={5}
+                  onChange={(event) => {
+                    setBackupDraft(event.target.value);
+                    setBackupStatus("idle");
+                  }}
+                  aria-label="Workspace backup JSON"
+                  className="w-full resize-none rounded-md border border-border bg-background/60 px-3 py-2 font-mono text-xs leading-relaxed outline-none transition-colors focus:border-primary/60"
+                />
+              </label>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button size="sm" variant="secondary" onClick={copyBackup}>
+                  <Clipboard className="mr-1 h-4 w-4" />
+                  Copy backup
+                </Button>
+                <Button size="sm" onClick={restoreBackup}>
+                  Restore backup
+                </Button>
+              </div>
             </article>
 
             <article className="card-outline p-4">

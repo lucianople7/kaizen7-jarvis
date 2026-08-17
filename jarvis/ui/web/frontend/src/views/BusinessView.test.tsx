@@ -196,4 +196,81 @@ describe("BusinessView", () => {
 
     expect(screen.getByText("Clipboard unavailable")).toBeTruthy();
   });
+
+  it("copies a portable workspace backup as JSON", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    render(<BusinessView />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Copy backup/i }));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(writeText).toHaveBeenCalledOnce();
+    const backup = JSON.parse(writeText.mock.calls[0][0]);
+    expect(backup.schema).toBe("jarvis.business.workspace");
+    expect(backup.version).toBe(1);
+    expect(backup.workspace.mission).toContain("THE FOCUX");
+    expect(backup.workspace.actions.length).toBeGreaterThan(0);
+  });
+
+  it("restores a portable workspace backup from JSON", () => {
+    render(<BusinessView />);
+
+    const backup = {
+      schema: "jarvis.business.workspace",
+      version: 1,
+      workspace: {
+        mission: "Run one mobile-first Jarvis operating loop.",
+        offer: "A personal operating system for daily execution.",
+        audience: "Luciano and future operators.",
+        northStar: "Daily usable progress.",
+        weeklyObjective: "Finish one usable mobile access path.",
+        priorities: ["Mobile access", "Voice control", "Receipts"],
+        metrics: ["Sessions", "Completed actions"],
+        actions: [
+          {
+            id: "mobile-test",
+            title: "Open Jarvis from Android on local network",
+            risk: "low",
+            done: false,
+          },
+        ],
+        decisions: [
+          {
+            id: "mobile-route",
+            title: "Use local network first",
+            evidence: "No publishing or cloud cost needed.",
+            result: "Android can validate the product loop safely.",
+            risk: "low",
+            createdAt: "2026-08-17T09:00:00.000Z",
+          },
+        ],
+        lastComplete: null,
+      },
+    };
+
+    fireEvent.change(screen.getByLabelText("Workspace backup JSON"), {
+      target: { value: JSON.stringify(backup) },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Restore backup/i }));
+
+    expect(screen.getByText("Run one mobile-first Jarvis operating loop.")).toBeTruthy();
+    expect(screen.getByText("Open Jarvis from Android on local network")).toBeTruthy();
+    expect(screen.getByText("Use local network first")).toBeTruthy();
+  });
+
+  it("rejects invalid workspace backup JSON without replacing current work", () => {
+    render(<BusinessView />);
+
+    fireEvent.change(screen.getByLabelText("Workspace backup JSON"), {
+      target: { value: "{\"schema\":\"wrong\"}" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Restore backup/i }));
+
+    expect(screen.getByText("Invalid backup")).toBeTruthy();
+    expect(screen.getByText("Capture one verified signal")).toBeTruthy();
+  });
 });
