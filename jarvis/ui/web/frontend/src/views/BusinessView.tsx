@@ -5,12 +5,15 @@ import {
   CheckCircle2,
   CircleAlert,
   Clipboard,
+  Download,
   LockKeyhole,
   Plus,
   RotateCcw,
   Save,
+  Smartphone,
   Target,
   TrendingUp,
+  Wifi,
 } from "lucide-react";
 import { ViewHeader } from "@/views/ChatsView";
 import { Button } from "@/components/ui/button";
@@ -282,6 +285,11 @@ function todayLabel(): string {
   });
 }
 
+function currentAccessUrl(): string {
+  if (typeof window === "undefined") return "";
+  return `${window.location.origin}${window.location.pathname}`;
+}
+
 export function BusinessView() {
   const [workspace, setWorkspace] = useState<BusinessWorkspace>(() => readWorkspace());
   const [saved, setSaved] = useState(false);
@@ -463,6 +471,26 @@ export function BusinessView() {
   const copyBackup = async () => {
     const backup = JSON.stringify(toWorkspaceBackup(workspace), null, 2);
     await writeClipboard(backup);
+  };
+
+  const copyMobileSetup = async () => {
+    const accessUrl = currentAccessUrl();
+    const instructions = [
+      "# Mobile Access",
+      "",
+      `Current URL: ${accessUrl}`,
+      "",
+      "Android:",
+      "1. Keep the desktop app running on this computer.",
+      "2. Open the same URL from Chrome on the phone while both devices are on the same network.",
+      "3. Use Add to Home screen when Chrome offers installation.",
+      "",
+      "Limits:",
+      "- No cloud account is required.",
+      "- The phone needs network access to the running local web app.",
+      "- Business OS data is local to the browser unless you use Copy backup and Restore backup.",
+    ].join("\n");
+    await writeClipboard(instructions);
   };
 
   const restoreBackup = () => {
@@ -755,6 +783,40 @@ export function BusinessView() {
           </section>
 
           <aside className="space-y-4">
+            <article className="card-outline border-primary/30 bg-primary/5 p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <Smartphone className="h-4 w-4 text-primary" />
+                  Mobile access
+                </div>
+                <Badge variant="outline">Local-first</Badge>
+              </div>
+              <div className="grid gap-2 text-sm">
+                <div className="flex items-center gap-2 rounded-md border border-border/70 bg-background/50 px-3 py-2">
+                  <Download className="h-4 w-4 text-primary" />
+                  <span className="min-w-0 flex-1">Installable PWA</span>
+                  <Badge variant="secondary">Ready</Badge>
+                </div>
+                <div className="flex items-center gap-2 rounded-md border border-border/70 bg-background/50 px-3 py-2">
+                  <Wifi className="h-4 w-4 text-primary" />
+                  <span className="min-w-0 flex-1">Offline shell</span>
+                  <Badge variant="secondary">Cached</Badge>
+                </div>
+              </div>
+              <div className="mt-3 rounded-md border border-border/70 bg-background/50 px-3 py-2">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Current URL
+                </div>
+                <div className="mt-1 break-all font-mono text-xs text-muted-foreground">
+                  {currentAccessUrl()}
+                </div>
+              </div>
+              <Button size="sm" variant="secondary" className="mt-3" onClick={copyMobileSetup}>
+                <Clipboard className="mr-1 h-4 w-4" />
+                Copy mobile setup
+              </Button>
+            </article>
+
             <article className="card-outline p-4">
               <button
                 type="button"

@@ -36,6 +36,9 @@ describe("BusinessView", () => {
 
     expect(screen.getByText("Business OS")).toBeTruthy();
     expect(screen.getByText("Active mission")).toBeTruthy();
+    expect(screen.getByText("Mobile access")).toBeTruthy();
+    expect(screen.getByText("Installable PWA")).toBeTruthy();
+    expect(screen.getByText("Offline shell")).toBeTruthy();
     expect(screen.getByText("Priority filter")).toBeTruthy();
     expect(screen.getAllByText("Human approval").length).toBeGreaterThan(0);
     expect(screen.getByText("Publishing")).toBeTruthy();
@@ -195,6 +198,23 @@ describe("BusinessView", () => {
     });
 
     expect(screen.getByText("Clipboard unavailable")).toBeTruthy();
+  });
+
+  it("copies mobile access instructions with the current URL", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    render(<BusinessView />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Copy mobile setup/i }));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(writeText).toHaveBeenCalledOnce();
+    expect(writeText.mock.calls[0][0]).toContain("Mobile Access");
+    expect(writeText.mock.calls[0][0]).toContain(window.location.origin);
+    expect(writeText.mock.calls[0][0]).toContain("Android");
   });
 
   it("copies a portable workspace backup as JSON", async () => {
