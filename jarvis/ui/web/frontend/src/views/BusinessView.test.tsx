@@ -44,7 +44,7 @@ describe("BusinessView", () => {
     expect(screen.getByText("Publishing")).toBeTruthy();
     expect(screen.getByText("Financial operation")).toBeTruthy();
     expect(screen.getByText("Next")).toBeTruthy();
-    expect(screen.getByText("Capture one verified signal")).toBeTruthy();
+    expect(screen.getAllByText("Capture one verified signal").length).toBeGreaterThan(0);
   });
 
   it("limits active priorities and parks the rest", () => {
@@ -187,6 +187,49 @@ describe("BusinessView", () => {
     expect(screen.getByText("Copied")).toBeTruthy();
   });
 
+  it("shows a daily business review with progress and approval queue", () => {
+    render(<BusinessView />);
+
+    expect(screen.getByText("Daily review")).toBeTruthy();
+    expect(screen.getByText("0/5 completed")).toBeTruthy();
+    expect(screen.getByText("1 approval waiting")).toBeTruthy();
+    expect(screen.getByText("Next action")).toBeTruthy();
+    expect(screen.getAllByText("Capture one verified signal").length).toBeGreaterThan(0);
+  });
+
+  it("copies a daily review digest with next action and priorities", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    render(<BusinessView />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Copy daily review/i }));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(writeText).toHaveBeenCalledOnce();
+    expect(writeText.mock.calls[0][0]).toContain("Daily Review");
+    expect(writeText.mock.calls[0][0]).toContain("Progress: 0/5 completed");
+    expect(writeText.mock.calls[0][0]).toContain(
+      "Next action: Capture one verified signal",
+    );
+    expect(writeText.mock.calls[0][0]).toContain("Approvals waiting: 1");
+    expect(writeText.mock.calls[0][0]).toContain("Active priorities");
+  });
+
+  it("saves the daily review as a decision receipt", () => {
+    render(<BusinessView />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Save daily review/i }));
+
+    expect(screen.getByText("Daily review: 0/5 completed")).toBeTruthy();
+    expect(screen.getByText("Evidence: Open actions: 5. Approvals waiting: 1.")).toBeTruthy();
+    expect(
+      screen.getByText("Result: Next action: Capture one verified signal."),
+    ).toBeTruthy();
+  });
+
   it("shows an error when the clipboard is unavailable", async () => {
     Object.assign(navigator, { clipboard: undefined });
     render(<BusinessView />);
@@ -278,7 +321,9 @@ describe("BusinessView", () => {
     fireEvent.click(screen.getByRole("button", { name: /Restore backup/i }));
 
     expect(screen.getByText("Run one mobile-first Jarvis operating loop.")).toBeTruthy();
-    expect(screen.getByText("Open Jarvis from Android on local network")).toBeTruthy();
+    expect(
+      screen.getAllByText("Open Jarvis from Android on local network").length,
+    ).toBeGreaterThan(0);
     expect(screen.getByText("Use local network first")).toBeTruthy();
   });
 
@@ -291,6 +336,6 @@ describe("BusinessView", () => {
     fireEvent.click(screen.getByRole("button", { name: /Restore backup/i }));
 
     expect(screen.getByText("Invalid backup")).toBeTruthy();
-    expect(screen.getByText("Capture one verified signal")).toBeTruthy();
+    expect(screen.getAllByText("Capture one verified signal").length).toBeGreaterThan(0);
   });
 });

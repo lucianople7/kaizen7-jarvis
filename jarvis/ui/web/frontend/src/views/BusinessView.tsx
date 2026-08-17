@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   CircleAlert,
   Clipboard,
+  ClipboardCheck,
   Download,
   LockKeyhole,
   Plus,
@@ -290,6 +291,41 @@ function currentAccessUrl(): string {
   return `${window.location.origin}${window.location.pathname}`;
 }
 
+function buildDailyReview({
+  workspace,
+  activePriorities,
+  openActions,
+  nextAction,
+  approvalActions,
+  doneCount,
+  totalCount,
+}: {
+  workspace: BusinessWorkspace;
+  activePriorities: string[];
+  openActions: BusinessAction[];
+  nextAction: BusinessAction | null;
+  approvalActions: BusinessAction[];
+  doneCount: number;
+  totalCount: number;
+}): string {
+  return [
+    "# Daily Review",
+    "",
+    `Mission: ${workspace.mission}`,
+    `Weekly objective: ${workspace.weeklyObjective}`,
+    `Progress: ${doneCount}/${totalCount} completed`,
+    `Open actions: ${openActions.length}`,
+    `Approvals waiting: ${approvalActions.length}`,
+    `Next action: ${nextAction?.title ?? "All clear for today"}`,
+    "",
+    "Active priorities:",
+    ...activePriorities.map((priority, index) => `${index + 1}. ${priority}`),
+    "",
+    "Metrics to inspect:",
+    ...workspace.metrics.map((metric) => `- ${metric}`),
+  ].join("\n");
+}
+
 export function BusinessView() {
   const [workspace, setWorkspace] = useState<BusinessWorkspace>(() => readWorkspace());
   const [saved, setSaved] = useState(false);
@@ -338,6 +374,10 @@ export function BusinessView() {
   );
   const nextAction = useMemo(
     () => openActions.find((action) => action.risk === "low") ?? openActions[0] ?? null,
+    [openActions],
+  );
+  const approvalActions = useMemo(
+    () => openActions.filter((action) => action.risk === "approval"),
     [openActions],
   );
   const doneCount = doneActions.length;
@@ -466,6 +506,38 @@ export function BusinessView() {
       ...workspace.metrics.map((metric) => `- ${metric}`),
     ].join("\n");
     await writeClipboard(briefing);
+  };
+
+  const copyDailyReview = async () => {
+    await writeClipboard(
+      buildDailyReview({
+        workspace,
+        activePriorities,
+        openActions,
+        nextAction,
+        approvalActions,
+        doneCount,
+        totalCount,
+      }),
+    );
+  };
+
+  const saveDailyReview = () => {
+    const decisionId = `review-${Date.now()}`;
+    setWorkspace((current) => ({
+      ...current,
+      decisions: [
+        {
+          id: decisionId,
+          title: `Daily review: ${doneCount}/${totalCount} completed`,
+          evidence: `Open actions: ${openActions.length}. Approvals waiting: ${approvalActions.length}.`,
+          result: `Next action: ${nextAction?.title ?? "All clear for today"}.`,
+          risk: "low",
+          createdAt: new Date().toISOString(),
+        },
+        ...current.decisions,
+      ],
+    }));
   };
 
   const copyBackup = async () => {
@@ -605,6 +677,58 @@ export function BusinessView() {
                   </Button>
                 </div>
               )}
+            </article>
+
+            <article className="card-outline p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <ClipboardCheck className="h-4 w-4 text-primary" />
+                  Daily review
+                </div>
+                <div className="flex flex-wrap justify-end gap-2">
+                  <Badge variant="outline">
+                    {doneCount}/{totalCount} completed
+                  </Badge>
+                  <Badge variant={approvalActions.length > 0 ? "destructive" : "secondary"}>
+                    {approvalActions.length}{" "}
+                    {approvalActions.length === 1 ? "approval" : "approvals"} waiting
+                  </Badge>
+                </div>
+              </div>
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="rounded-md border border-border/70 bg-background/50 px-3 py-2">
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Next action
+                  </div>
+                  <div className="mt-1 text-sm font-medium">
+                    {nextAction?.title ?? "All clear for today"}
+                  </div>
+                </div>
+                <div className="rounded-md border border-border/70 bg-background/50 px-3 py-2">
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Active focus
+                  </div>
+                  <div className="mt-1 text-sm font-medium">
+                    {activePriorities[0] ?? "Define one priority"}
+                  </div>
+                </div>
+                <div className="rounded-md border border-border/70 bg-background/50 px-3 py-2">
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Metrics
+                  </div>
+                  <div className="mt-1 text-sm font-medium">{workspace.metrics.join(", ")}</div>
+                </div>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button size="sm" variant="secondary" onClick={copyDailyReview}>
+                  <Clipboard className="mr-1 h-4 w-4" />
+                  Copy daily review
+                </Button>
+                <Button size="sm" onClick={saveDailyReview}>
+                  <Save className="mr-1 h-4 w-4" />
+                  Save daily review
+                </Button>
+              </div>
             </article>
 
             <article className="card-outline p-4">
