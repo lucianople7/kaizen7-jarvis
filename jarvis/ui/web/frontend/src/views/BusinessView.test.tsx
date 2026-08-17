@@ -82,4 +82,45 @@ describe("BusinessView", () => {
     expect(raw).toContain("Ship mobile onboarding");
     expect(raw).toContain("approval");
   });
+
+  it("turns a daily action into a completed receipt", () => {
+    render(<BusinessView />);
+
+    expect(screen.getByText("Daily execution")).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole("button", { name: /Complete Publish one proof of progress/i }),
+    );
+
+    expect(screen.getByText("Completed action: Publish one proof of progress")).toBeTruthy();
+  });
+
+  it("keeps guarded actions recommendation-only until human approval", () => {
+    render(<BusinessView />);
+
+    fireEvent.change(screen.getByLabelText("New action"), {
+      target: { value: "Publish launch offer" },
+    });
+    fireEvent.change(screen.getByLabelText("Action risk"), {
+      target: { value: "approval" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Add action/i }));
+
+    expect(screen.getByText("Publish launch offer")).toBeTruthy();
+    expect(screen.getAllByText("Approval required").length).toBeGreaterThan(0);
+    expect(
+      screen.queryByRole("button", { name: /Complete Publish launch offer/i }),
+    ).toBeNull();
+  });
+
+  it("copies an operational briefing for use outside the app", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    render(<BusinessView />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Copy briefing/i }));
+
+    expect(writeText).toHaveBeenCalledOnce();
+    expect(writeText.mock.calls[0][0]).toContain("Business OS Briefing");
+    expect(writeText.mock.calls[0][0]).toContain("Active priorities");
+  });
 });

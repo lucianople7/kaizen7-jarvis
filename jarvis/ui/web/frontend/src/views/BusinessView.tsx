@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import {
   BadgeCheck,
   BriefcaseBusiness,
+  CheckCircle2,
   CircleAlert,
+  Clipboard,
   LockKeyhole,
   Plus,
   Save,
@@ -28,6 +30,13 @@ interface BusinessDecision {
   createdAt: string;
 }
 
+interface BusinessAction {
+  id: string;
+  title: string;
+  risk: DecisionRisk;
+  done: boolean;
+}
+
 interface BusinessWorkspace {
   mission: string;
   offer: string;
@@ -36,6 +45,7 @@ interface BusinessWorkspace {
   weeklyObjective: string;
   priorities: string[];
   metrics: string[];
+  actions: BusinessAction[];
   decisions: BusinessDecision[];
 }
 
@@ -58,6 +68,26 @@ const DEFAULT_WORKSPACE: BusinessWorkspace = {
     "Completed business receipts",
     "Blocked unsafe actions",
     "Weekly shipped improvements",
+  ],
+  actions: [
+    {
+      id: "seed-proof",
+      title: "Publish one proof of progress",
+      risk: "low",
+      done: false,
+    },
+    {
+      id: "seed-offer",
+      title: "Review the active offer and next lead path",
+      risk: "low",
+      done: false,
+    },
+    {
+      id: "seed-risk",
+      title: "Prepare one guarded action for human approval",
+      risk: "approval",
+      done: false,
+    },
   ],
   decisions: [
     {
@@ -99,6 +129,9 @@ function readWorkspace(): BusinessWorkspace {
       ...parsed,
       priorities: normalizeList(parsed.priorities, DEFAULT_WORKSPACE.priorities),
       metrics: normalizeList(parsed.metrics, DEFAULT_WORKSPACE.metrics),
+      actions: Array.isArray(parsed.actions)
+        ? parsed.actions.filter(isAction)
+        : DEFAULT_WORKSPACE.actions,
       decisions: Array.isArray(parsed.decisions)
         ? parsed.decisions.filter(isDecision)
         : DEFAULT_WORKSPACE.decisions,
@@ -112,6 +145,17 @@ function normalizeList(value: unknown, fallback: string[]): string[] {
   if (!Array.isArray(value)) return fallback;
   const clean = value.filter((item): item is string => typeof item === "string");
   return clean.length ? clean : fallback;
+}
+
+function isAction(value: unknown): value is BusinessAction {
+  if (!value || typeof value !== "object") return false;
+  const item = value as Record<string, unknown>;
+  return (
+    typeof item.id === "string" &&
+    typeof item.title === "string" &&
+    (item.risk === "low" || item.risk === "approval") &&
+    typeof item.done === "boolean"
+  );
 }
 
 function isDecision(value: unknown): value is BusinessDecision {
@@ -136,6 +180,8 @@ export function BusinessView() {
   const [saved, setSaved] = useState(false);
   const [priorityDraft, setPriorityDraft] = useState("");
   const [metricDraft, setMetricDraft] = useState("");
+  const [actionDraft, setActionDraft] = useState("");
+  const [actionRisk, setActionRisk] = useState<DecisionRisk>("low");
   const [decisionDraft, setDecisionDraft] = useState({
     title: "",
     evidence: "",
@@ -178,6 +224,73 @@ export function BusinessView() {
     setMetricDraft("");
   };
 
+  const addAction = () => {
+    const value = actionDraft.trim();
+    if (!value) return;
+    setWorkspace((current) => ({
+      ...current,
+      actions: [
+        ...current.actions,
+        {
+          id: `${Date.now()}`,
+          title: value,
+          risk: actionRisk,
+          done: false,
+        },
+      ],
+    }));
+    setActionDraft("");
+    setActionRisk("low");
+  };
+
+  const completeAction = (action: BusinessAction) => {
+    if (action.risk === "approval") return;
+    setWorkspace((current) => ({
+      ...current,
+      actions: current.actions.map((candidate) =>
+        candidate.id === action.id ? { ...candidate, done: true } : candidate,
+      ),
+      decisions: [
+        {
+          id: `action-${Date.now()}`,
+          title: `Completed action: ${action.title}`,
+          evidence: "Completed inside the Business OS daily execution list.",
+          result: "Action marked done and recorded as an operating receipt.",
+          risk: "low",
+          createdAt: new Date().toISOString(),
+        },
+        ...current.decisions,
+      ],
+    }));
+  };
+
+  const copyBriefing = async () => {
+    const briefing = [
+      "# Business OS Briefing",
+      "",
+      `Mission: ${workspace.mission}`,
+      `Offer: ${workspace.offer}`,
+      `Audience: ${workspace.audience}`,
+      `North star: ${workspace.northStar}`,
+      `This week: ${workspace.weeklyObjective}`,
+      "",
+      "Active priorities:",
+      ...activePriorities.map((priority, index) => `${index + 1}. ${priority}`),
+      "",
+      "Daily execution:",
+      ...workspace.actions
+        .filter((action) => !action.done)
+        .map(
+          (action) =>
+            `- ${action.title}${action.risk === "approval" ? " [approval required]" : ""}`,
+        ),
+      "",
+      "Metrics:",
+      ...workspace.metrics.map((metric) => `- ${metric}`),
+    ].join("\n");
+    await navigator.clipboard?.writeText(briefing);
+  };
+
   const addDecision = () => {
     const title = decisionDraft.title.trim();
     const evidence = decisionDraft.evidence.trim();
@@ -207,10 +320,16 @@ export function BusinessView() {
         title="Business OS"
         subtitle="One mission, limited priorities, local receipts and human approval gates."
         right={
-          <Badge variant={saved ? "default" : "outline"} className="gap-1">
-            <Save className="h-3 w-3" />
-            {saved ? "Saved locally" : "Local workspace"}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="secondary" onClick={copyBriefing}>
+              <Clipboard className="mr-1 h-4 w-4" />
+              Copy briefing
+            </Button>
+            <Badge variant={saved ? "default" : "outline"} className="gap-1">
+              <Save className="h-3 w-3" />
+              {saved ? "Saved locally" : "Local workspace"}
+            </Badge>
+          </div>
         }
       />
 
@@ -374,6 +493,74 @@ export function BusinessView() {
           </section>
 
           <aside className="space-y-4">
+            <article className="card-outline p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  Daily execution
+                </div>
+                <Badge variant="outline">
+                  {workspace.actions.filter((action) => !action.done).length} open
+                </Badge>
+              </div>
+              <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_150px_auto]">
+                <input
+                  value={actionDraft}
+                  onChange={(event) => setActionDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") addAction();
+                  }}
+                  aria-label="New action"
+                  className="rounded-md border border-border bg-background/60 px-3 py-2 text-sm"
+                />
+                <select
+                  value={actionRisk}
+                  onChange={(event) => setActionRisk(event.target.value as DecisionRisk)}
+                  aria-label="Action risk"
+                  className="rounded-md border border-border bg-background/60 px-3 py-2 text-sm"
+                >
+                  <option value="low">Recommendation</option>
+                  <option value="approval">Needs approval</option>
+                </select>
+                <Button size="sm" onClick={addAction}>
+                  <Plus className="mr-1 h-4 w-4" />
+                  Add action
+                </Button>
+              </div>
+              <ul className="mt-3 space-y-2">
+                {workspace.actions.map((action) => (
+                  <li
+                    key={action.id}
+                    className="flex items-center gap-2 rounded-md border border-border/70 bg-card/40 px-3 py-2 text-sm"
+                  >
+                    <span
+                      className={
+                        action.done
+                          ? "min-w-0 flex-1 line-through text-muted-foreground"
+                          : "min-w-0 flex-1"
+                      }
+                    >
+                      {action.title}
+                    </span>
+                    {action.risk === "approval" ? (
+                      <Badge variant="destructive">Approval required</Badge>
+                    ) : action.done ? (
+                      <Badge variant="secondary">Done</Badge>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => completeAction(action)}
+                        aria-label={`Complete ${action.title}`}
+                      >
+                        Complete
+                      </Button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </article>
+
             <article className="card-outline p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div className="text-sm font-semibold">Priority filter</div>
