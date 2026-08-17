@@ -7,6 +7,7 @@ import {
   Clipboard,
   LockKeyhole,
   Plus,
+  RotateCcw,
   Save,
   Target,
   TrendingUp,
@@ -17,9 +18,11 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const STORAGE_KEY = "jarvis.business.workspace.v1";
+const LEGACY_STORAGE_KEY = "jarvis.business.workspace.v1";
 const MAX_ACTIVE_PRIORITIES = 3;
 
 type DecisionRisk = "low" | "approval";
+type CopyStatus = "idle" | "copied" | "error";
 
 interface BusinessDecision {
   id: string;
@@ -37,6 +40,11 @@ interface BusinessAction {
   done: boolean;
 }
 
+interface LastComplete {
+  actionId: string;
+  decisionId: string;
+}
+
 interface BusinessWorkspace {
   mission: string;
   offer: string;
@@ -47,44 +55,53 @@ interface BusinessWorkspace {
   metrics: string[];
   actions: BusinessAction[];
   decisions: BusinessDecision[];
+  lastComplete: LastComplete | null;
 }
 
 const DEFAULT_WORKSPACE: BusinessWorkspace = {
   mission:
-    "Build a practical personal agent that turns attention into useful business execution without scattering focus.",
+    "Turn verified attention into THE FOCUX: signal → dossier → founding list → offer test. Own product later. No premature checkout.",
   offer:
-    "A local-first assistant for planning, research, content, tasks and controlled execution.",
+    "A content-led digital business: verified signal, a useful piece, a founding list, then a tested offer.",
   audience:
-    "Solo builders and digital operators who need one clear operating cockpit across desktop and mobile.",
-  northStar: "One active mission, three priorities, visible receipts.",
-  weeklyObjective: "Convert the assistant from a technical shell into a daily business operating surface.",
+    "Operators who want one focused loop for content, leads and offer tests — not another checkout bot.",
+  northStar: "Leads, assets and validated offers. Irreversible actions stay with the human.",
+  weeklyObjective:
+    "Move one verified signal into a dossier and one founding-list or offer-test step.",
   priorities: [
-    "Keep the mobile web shell installable and useful.",
-    "Make every business action leave evidence and a result.",
-    "Block irreversible execution until a human approves it.",
+    "Capture one verified signal and turn it into a dossier or piece.",
+    "Grow the founding list without selling.",
+    "Test one offer without charging.",
   ],
-  metrics: [
-    "Active mission clarity",
-    "Completed business receipts",
-    "Blocked unsafe actions",
-    "Weekly shipped improvements",
-  ],
+  metrics: ["Leads", "Assets", "Validated offers"],
   actions: [
     {
-      id: "seed-proof",
-      title: "Publish one proof of progress",
+      id: "seed-signal",
+      title: "Capture one verified signal",
       risk: "low",
       done: false,
     },
     {
-      id: "seed-offer",
-      title: "Review the active offer and next lead path",
+      id: "seed-dossier",
+      title: "Turn the signal into a dossier or piece",
       risk: "low",
       done: false,
     },
     {
-      id: "seed-risk",
-      title: "Prepare one guarded action for human approval",
+      id: "seed-list",
+      title: "Add people to the founding list",
+      risk: "low",
+      done: false,
+    },
+    {
+      id: "seed-offer-test",
+      title: "Draft one offer test with no checkout",
+      risk: "low",
+      done: false,
+    },
+    {
+      id: "seed-publish",
+      title: "Prepare one publish or outbound message for approval",
       risk: "approval",
       done: false,
     },
@@ -107,6 +124,7 @@ const DEFAULT_WORKSPACE: BusinessWorkspace = {
       createdAt: "seed",
     },
   ],
+  lastComplete: null,
 };
 
 const GUARDED_ACTIONS = [
@@ -121,7 +139,9 @@ const GUARDED_ACTIONS = [
 function readWorkspace(): BusinessWorkspace {
   if (typeof window === "undefined") return DEFAULT_WORKSPACE;
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw =
+      window.localStorage.getItem(STORAGE_KEY) ??
+      window.localStorage.getItem(LEGACY_STORAGE_KEY);
     if (!raw) return DEFAULT_WORKSPACE;
     const parsed = JSON.parse(raw) as Partial<BusinessWorkspace>;
     return {
@@ -135,6 +155,7 @@ function readWorkspace(): BusinessWorkspace {
       decisions: Array.isArray(parsed.decisions)
         ? parsed.decisions.filter(isDecision)
         : DEFAULT_WORKSPACE.decisions,
+      lastComplete: isLastComplete(parsed.lastComplete) ? parsed.lastComplete : null,
     };
   } catch {
     return DEFAULT_WORKSPACE;
@@ -171,13 +192,46 @@ function isDecision(value: unknown): value is BusinessDecision {
   );
 }
 
+function isLastComplete(value: unknown): value is LastComplete {
+  if (!value || typeof value !== "object") return false;
+  const item = value as Record<string, unknown>;
+  return typeof item.actionId === "string" && typeof item.decisionId === "string";
+}
+
 function persistWorkspace(workspace: BusinessWorkspace): void {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(workspace));
+}
+
+function formatWhen(value: string): string {
+  if (!value || value === "seed") return "Seed";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function todayLabel(): string {
+  return new Date().toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 export function BusinessView() {
   const [workspace, setWorkspace] = useState<BusinessWorkspace>(() => readWorkspace());
   const [saved, setSaved] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<CopyStatus>("idle");
+  const [showDone, setShowDone] = useState(false);
+  const [showPlan, setShowPlan] = useState(false);
+  const [completingId, setCompletingId] = useState<string | null>(null);
+  const [completeDraft, setCompleteDraft] = useState({ evidence: "", result: "" });
   const [priorityDraft, setPriorityDraft] = useState("");
   const [metricDraft, setMetricDraft] = useState("");
   const [actionDraft, setActionDraft] = useState("");
@@ -206,6 +260,20 @@ export function BusinessView() {
     () => workspace.priorities.slice(MAX_ACTIVE_PRIORITIES),
     [workspace.priorities],
   );
+  const openActions = useMemo(
+    () => workspace.actions.filter((action) => !action.done),
+    [workspace.actions],
+  );
+  const doneActions = useMemo(
+    () => workspace.actions.filter((action) => action.done),
+    [workspace.actions],
+  );
+  const nextAction = useMemo(
+    () => openActions.find((action) => action.risk === "low") ?? openActions[0] ?? null,
+    [openActions],
+  );
+  const doneCount = doneActions.length;
+  const totalCount = workspace.actions.length;
 
   const addPriority = () => {
     const value = priorityDraft.trim();
@@ -243,8 +311,18 @@ export function BusinessView() {
     setActionRisk("low");
   };
 
-  const completeAction = (action: BusinessAction) => {
+  const startComplete = (action: BusinessAction) => {
+    if (action.risk === "approval" || action.done) return;
+    setCompletingId(action.id);
+    setCompleteDraft({ evidence: "", result: "" });
+  };
+
+  const saveComplete = (action: BusinessAction) => {
     if (action.risk === "approval") return;
+    const evidence = completeDraft.evidence.trim();
+    const result = completeDraft.result.trim();
+    if (!evidence || !result) return;
+    const decisionId = `action-${Date.now()}`;
     setWorkspace((current) => ({
       ...current,
       actions: current.actions.map((candidate) =>
@@ -252,16 +330,49 @@ export function BusinessView() {
       ),
       decisions: [
         {
-          id: `action-${Date.now()}`,
+          id: decisionId,
           title: `Completed action: ${action.title}`,
-          evidence: "Completed inside the Business OS daily execution list.",
-          result: "Action marked done and recorded as an operating receipt.",
+          evidence,
+          result,
           risk: "low",
           createdAt: new Date().toISOString(),
         },
         ...current.decisions,
       ],
+      lastComplete: { actionId: action.id, decisionId },
     }));
+    setCompletingId(null);
+    setCompleteDraft({ evidence: "", result: "" });
+  };
+
+  const undoLastComplete = () => {
+    const last = workspace.lastComplete;
+    if (!last) return;
+    setWorkspace((current) => ({
+      ...current,
+      actions: current.actions.map((action) =>
+        action.id === last.actionId ? { ...action, done: false } : action,
+      ),
+      decisions: current.decisions.filter((decision) => decision.id !== last.decisionId),
+      lastComplete: null,
+    }));
+    setCompletingId(null);
+  };
+
+  const writeClipboard = async (text: string): Promise<boolean> => {
+    try {
+      if (!navigator.clipboard?.writeText) {
+        setCopyStatus("error");
+        return false;
+      }
+      await navigator.clipboard.writeText(text);
+      setCopyStatus("copied");
+      window.setTimeout(() => setCopyStatus("idle"), 1800);
+      return true;
+    } catch {
+      setCopyStatus("error");
+      return false;
+    }
   };
 
   const copyBriefing = async () => {
@@ -278,17 +389,28 @@ export function BusinessView() {
       ...activePriorities.map((priority, index) => `${index + 1}. ${priority}`),
       "",
       "Daily execution:",
-      ...workspace.actions
-        .filter((action) => !action.done)
-        .map(
-          (action) =>
-            `- ${action.title}${action.risk === "approval" ? " [approval required]" : ""}`,
-        ),
+      ...openActions.map(
+        (action) =>
+          `- ${action.title}${action.risk === "approval" ? " [approval required]" : ""}`,
+      ),
       "",
       "Metrics:",
       ...workspace.metrics.map((metric) => `- ${metric}`),
     ].join("\n");
-    await navigator.clipboard?.writeText(briefing);
+    await writeClipboard(briefing);
+  };
+
+  const copyForApproval = async (action: BusinessAction) => {
+    const briefing = [
+      "# Approval request",
+      "",
+      `Action: ${action.title}`,
+      "Risk: needs human approval",
+      `Mission: ${workspace.mission}`,
+      "",
+      "Business OS will not execute this. Approve outside the app, then record a receipt.",
+    ].join("\n");
+    await writeClipboard(briefing);
   };
 
   const addDecision = () => {
@@ -318,13 +440,17 @@ export function BusinessView() {
       <ViewHeader
         icon={<BriefcaseBusiness className="h-4 w-4 text-primary" />}
         title="Business OS"
-        subtitle="One mission, limited priorities, local receipts and human approval gates."
+        subtitle="Today first. Evidence on complete. Human approval stays outside execution."
         right={
           <div className="flex items-center gap-2">
             <Button size="sm" variant="secondary" onClick={copyBriefing}>
               <Clipboard className="mr-1 h-4 w-4" />
               Copy briefing
             </Button>
+            {copyStatus === "copied" && <Badge variant="default">Copied</Badge>}
+            {copyStatus === "error" && (
+              <Badge variant="destructive">Clipboard unavailable</Badge>
+            )}
             <Badge variant={saved ? "default" : "outline"} className="gap-1">
               <Save className="h-3 w-3" />
               {saved ? "Saved locally" : "Local workspace"}
@@ -334,68 +460,125 @@ export function BusinessView() {
       />
 
       <ScrollArea className="flex-1">
-        <div className="grid gap-4 p-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)]">
+        <div className="grid gap-4 p-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
           <section className="space-y-4">
-            <article className="card-outline p-4">
-              <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
-                <Target className="h-4 w-4 text-primary" />
-                Active mission
+            <article className="card-outline border-primary/40 bg-primary/5 p-5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                {todayLabel()}
+              </p>
+              <p className="mt-2 text-base font-semibold leading-snug">{workspace.mission}</p>
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                <Badge variant="outline">
+                  {doneCount}/{totalCount} done
+                </Badge>
+                <span>{openActions.length} open</span>
               </div>
-              <EditableField
-                label="Mission"
-                value={workspace.mission}
-                onChange={(mission) => setWorkspace((current) => ({ ...current, mission }))}
-                rows={3}
-              />
-              <div className="mt-3 grid gap-3 md:grid-cols-2">
-                <EditableField
-                  label="Offer"
-                  value={workspace.offer}
-                  onChange={(offer) => setWorkspace((current) => ({ ...current, offer }))}
-                />
-                <EditableField
-                  label="Audience"
-                  value={workspace.audience}
-                  onChange={(audience) =>
-                    setWorkspace((current) => ({ ...current, audience }))
-                  }
-                />
-              </div>
+              {nextAction ? (
+                <div className="mt-4 rounded-md border border-primary/40 bg-background/70 p-4">
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-primary">
+                    Next
+                  </div>
+                  <h2 className="mt-1 text-lg font-semibold leading-snug">{nextAction.title}</h2>
+                  <ActionControls
+                    action={nextAction}
+                    completingId={completingId}
+                    completeDraft={completeDraft}
+                    onStartComplete={startComplete}
+                    onDraft={setCompleteDraft}
+                    onSaveComplete={saveComplete}
+                    onCancelComplete={() => setCompletingId(null)}
+                    onCopyApproval={copyForApproval}
+                  />
+                </div>
+              ) : (
+                <p className="mt-4 text-sm text-muted-foreground">All clear for today.</p>
+              )}
+              {workspace.lastComplete && (
+                <div className="mt-3">
+                  <Button size="sm" variant="ghost" onClick={undoLastComplete}>
+                    <RotateCcw className="mr-1 h-4 w-4" />
+                    Undo last complete
+                  </Button>
+                </div>
+              )}
             </article>
 
             <article className="card-outline p-4">
-              <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                Objective and metrics
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  Daily execution
+                </div>
+                <Badge variant="outline">{openActions.length} open</Badge>
               </div>
-              <EditableField
-                label="North star"
-                value={workspace.northStar}
-                onChange={(northStar) =>
-                  setWorkspace((current) => ({ ...current, northStar }))
-                }
-              />
-              <EditableField
-                label="This week"
-                value={workspace.weeklyObjective}
-                onChange={(weeklyObjective) =>
-                  setWorkspace((current) => ({ ...current, weeklyObjective }))
-                }
-                className="mt-3"
-              />
-              <ListEditor
-                label="Metrics"
-                values={workspace.metrics}
-                draft={metricDraft}
-                onDraft={setMetricDraft}
-                onAdd={addMetric}
-                onRemove={(index) =>
-                  setWorkspace((current) => ({
-                    ...current,
-                    metrics: current.metrics.filter((_, i) => i !== index),
-                  }))
-                }
-              />
+              <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_150px_auto]">
+                <input
+                  value={actionDraft}
+                  onChange={(event) => setActionDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") addAction();
+                  }}
+                  aria-label="New action"
+                  className="rounded-md border border-border bg-background/60 px-3 py-2 text-sm"
+                />
+                <select
+                  value={actionRisk}
+                  onChange={(event) => setActionRisk(event.target.value as DecisionRisk)}
+                  aria-label="Action risk"
+                  className="rounded-md border border-border bg-background/60 px-3 py-2 text-sm"
+                >
+                  <option value="low">Recommendation</option>
+                  <option value="approval">Needs approval</option>
+                </select>
+                <Button size="sm" onClick={addAction}>
+                  <Plus className="mr-1 h-4 w-4" />
+                  Add action
+                </Button>
+              </div>
+              <ul className="mt-3 space-y-2">
+                {openActions
+                  .filter((action) => action.id !== nextAction?.id)
+                  .map((action) => (
+                  <li
+                    key={action.id}
+                    className="rounded-md border border-border/70 bg-card/40 px-3 py-2 text-sm"
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className="min-w-0 flex-1 pt-1">{action.title}</span>
+                    </div>
+                    <ActionControls
+                      action={action}
+                      completingId={completingId}
+                      completeDraft={completeDraft}
+                      onStartComplete={startComplete}
+                      onDraft={setCompleteDraft}
+                      onSaveComplete={saveComplete}
+                      onCancelComplete={() => setCompletingId(null)}
+                      onCopyApproval={copyForApproval}
+                    />
+                  </li>
+                ))}
+              </ul>
+              {doneActions.length > 0 && (
+                <div className="mt-3">
+                  <Button size="sm" variant="ghost" onClick={() => setShowDone((value) => !value)}>
+                    {showDone ? "Hide done" : `Show done (${doneActions.length})`}
+                  </Button>
+                  {showDone && (
+                    <ul className="mt-2 space-y-2">
+                      {doneActions.map((action) => (
+                        <li
+                          key={action.id}
+                          className="flex items-center gap-2 rounded-md border border-border/50 px-3 py-2 text-sm text-muted-foreground line-through"
+                        >
+                          <span className="min-w-0 flex-1">{action.title}</span>
+                          <Badge variant="secondary">Done</Badge>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
             </article>
 
             <article className="card-outline p-4">
@@ -479,6 +662,9 @@ export function BusinessView() {
                           ? "Approval required"
                           : "Recommendation"}
                       </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {formatWhen(decision.createdAt)}
+                      </span>
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">
                       Evidence: {decision.evidence}
@@ -494,71 +680,78 @@ export function BusinessView() {
 
           <aside className="space-y-4">
             <article className="card-outline p-4">
-              <div className="mb-3 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                className="mb-3 flex w-full items-center justify-between gap-3 text-left"
+                onClick={() => setShowPlan((value) => !value)}
+              >
                 <div className="flex items-center gap-2 text-sm font-semibold">
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
-                  Daily execution
+                  <Target className="h-4 w-4 text-primary" />
+                  Active mission
                 </div>
-                <Badge variant="outline">
-                  {workspace.actions.filter((action) => !action.done).length} open
-                </Badge>
-              </div>
-              <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_150px_auto]">
-                <input
-                  value={actionDraft}
-                  onChange={(event) => setActionDraft(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") addAction();
-                  }}
-                  aria-label="New action"
-                  className="rounded-md border border-border bg-background/60 px-3 py-2 text-sm"
-                />
-                <select
-                  value={actionRisk}
-                  onChange={(event) => setActionRisk(event.target.value as DecisionRisk)}
-                  aria-label="Action risk"
-                  className="rounded-md border border-border bg-background/60 px-3 py-2 text-sm"
-                >
-                  <option value="low">Recommendation</option>
-                  <option value="approval">Needs approval</option>
-                </select>
-                <Button size="sm" onClick={addAction}>
-                  <Plus className="mr-1 h-4 w-4" />
-                  Add action
-                </Button>
-              </div>
-              <ul className="mt-3 space-y-2">
-                {workspace.actions.map((action) => (
-                  <li
-                    key={action.id}
-                    className="flex items-center gap-2 rounded-md border border-border/70 bg-card/40 px-3 py-2 text-sm"
-                  >
-                    <span
-                      className={
-                        action.done
-                          ? "min-w-0 flex-1 line-through text-muted-foreground"
-                          : "min-w-0 flex-1"
+                <span className="text-xs text-muted-foreground">
+                  {showPlan ? "Hide plan" : "Edit plan"}
+                </span>
+              </button>
+              {showPlan && (
+                <>
+                  <EditableField
+                    label="Mission"
+                    value={workspace.mission}
+                    onChange={(mission) => setWorkspace((current) => ({ ...current, mission }))}
+                    rows={3}
+                  />
+                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+                    <EditableField
+                      label="Offer"
+                      value={workspace.offer}
+                      onChange={(offer) => setWorkspace((current) => ({ ...current, offer }))}
+                    />
+                    <EditableField
+                      label="Audience"
+                      value={workspace.audience}
+                      onChange={(audience) =>
+                        setWorkspace((current) => ({ ...current, audience }))
                       }
-                    >
-                      {action.title}
-                    </span>
-                    {action.risk === "approval" ? (
-                      <Badge variant="destructive">Approval required</Badge>
-                    ) : action.done ? (
-                      <Badge variant="secondary">Done</Badge>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => completeAction(action)}
-                        aria-label={`Complete ${action.title}`}
-                      >
-                        Complete
-                      </Button>
-                    )}
-                  </li>
-                ))}
-              </ul>
+                    />
+                  </div>
+                </>
+              )}
+            </article>
+
+            <article className="card-outline p-4">
+              <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                Objective and metrics
+              </div>
+              <EditableField
+                label="North star"
+                value={workspace.northStar}
+                onChange={(northStar) =>
+                  setWorkspace((current) => ({ ...current, northStar }))
+                }
+              />
+              <EditableField
+                label="This week"
+                value={workspace.weeklyObjective}
+                onChange={(weeklyObjective) =>
+                  setWorkspace((current) => ({ ...current, weeklyObjective }))
+                }
+                className="mt-3"
+              />
+              <ListEditor
+                label="Metrics"
+                values={workspace.metrics}
+                draft={metricDraft}
+                onDraft={setMetricDraft}
+                onAdd={addMetric}
+                onRemove={(index) =>
+                  setWorkspace((current) => ({
+                    ...current,
+                    metrics: current.metrics.filter((_, i) => i !== index),
+                  }))
+                }
+              />
             </article>
 
             <article className="card-outline p-4">
@@ -632,6 +825,91 @@ export function BusinessView() {
           </aside>
         </div>
       </ScrollArea>
+    </div>
+  );
+}
+
+function ActionControls({
+  action,
+  completingId,
+  completeDraft,
+  onStartComplete,
+  onDraft,
+  onSaveComplete,
+  onCancelComplete,
+  onCopyApproval,
+}: {
+  action: BusinessAction;
+  completingId: string | null;
+  completeDraft: { evidence: string; result: string };
+  onStartComplete: (action: BusinessAction) => void;
+  onDraft: (value: { evidence: string; result: string }) => void;
+  onSaveComplete: (action: BusinessAction) => void;
+  onCancelComplete: () => void;
+  onCopyApproval: (action: BusinessAction) => void;
+}) {
+  if (action.risk === "approval") {
+    return (
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <Badge variant="destructive">Approval required</Badge>
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={() => onCopyApproval(action)}
+          aria-label={`Copy for approval ${action.title}`}
+        >
+          Copy for approval
+        </Button>
+      </div>
+    );
+  }
+
+  if (completingId === action.id) {
+    const fieldsId = action.id;
+    return (
+      <div className="mt-3 space-y-2">
+        <input
+          value={completeDraft.evidence}
+          onChange={(event) =>
+            onDraft({ ...completeDraft, evidence: event.target.value })
+          }
+          placeholder="What did you actually do?"
+          aria-label={`Action evidence ${fieldsId}`}
+          className="w-full rounded-md border border-border bg-background/60 px-3 py-2 text-sm"
+        />
+        <input
+          value={completeDraft.result}
+          onChange={(event) => onDraft({ ...completeDraft, result: event.target.value })}
+          placeholder="What changed?"
+          aria-label={`Action result ${fieldsId}`}
+          className="w-full rounded-md border border-border bg-background/60 px-3 py-2 text-sm"
+        />
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            onClick={() => onSaveComplete(action)}
+            aria-label={`Save receipt ${action.title}`}
+          >
+            Save receipt
+          </Button>
+          <Button size="sm" variant="ghost" onClick={onCancelComplete}>
+            Cancel
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-2">
+      <Button
+        size="sm"
+        variant="secondary"
+        onClick={() => onStartComplete(action)}
+        aria-label={`Complete ${action.title}`}
+      >
+        Complete
+      </Button>
     </div>
   );
 }

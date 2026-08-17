@@ -40,6 +40,8 @@ describe("BusinessView", () => {
     expect(screen.getAllByText("Human approval").length).toBeGreaterThan(0);
     expect(screen.getByText("Publishing")).toBeTruthy();
     expect(screen.getByText("Financial operation")).toBeTruthy();
+    expect(screen.getByText("Next")).toBeTruthy();
+    expect(screen.getByText("Capture one verified signal")).toBeTruthy();
   });
 
   it("limits active priorities and parks the rest", () => {
@@ -83,15 +85,65 @@ describe("BusinessView", () => {
     expect(raw).toContain("approval");
   });
 
-  it("turns a daily action into a completed receipt", () => {
+  it("turns a daily action into a completed receipt with evidence", () => {
     render(<BusinessView />);
 
     expect(screen.getByText("Daily execution")).toBeTruthy();
     fireEvent.click(
-      screen.getByRole("button", { name: /Complete Publish one proof of progress/i }),
+      screen.getByRole("button", { name: /Complete Capture one verified signal/i }),
+    );
+    fireEvent.change(screen.getByLabelText("Action evidence seed-signal"), {
+      target: { value: "Saved a real comment thread from today" },
+    });
+    fireEvent.change(screen.getByLabelText("Action result seed-signal"), {
+      target: { value: "Signal is ready for a dossier" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /Save receipt Capture one verified signal/i }),
     );
 
-    expect(screen.getByText("Completed action: Publish one proof of progress")).toBeTruthy();
+    expect(screen.getByText("Completed action: Capture one verified signal")).toBeTruthy();
+    expect(screen.getByText("Evidence: Saved a real comment thread from today")).toBeTruthy();
+  });
+
+  it("does not complete a low-risk action without evidence", () => {
+    render(<BusinessView />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /Complete Capture one verified signal/i }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: /Save receipt Capture one verified signal/i }),
+    );
+
+    expect(screen.queryByText("Completed action: Capture one verified signal")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: /Save receipt Capture one verified signal/i }),
+    ).toBeTruthy();
+  });
+
+  it("undoes the last completed action", () => {
+    render(<BusinessView />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /Complete Capture one verified signal/i }),
+    );
+    fireEvent.change(screen.getByLabelText("Action evidence seed-signal"), {
+      target: { value: "Note from a buyer comment" },
+    });
+    fireEvent.change(screen.getByLabelText("Action result seed-signal"), {
+      target: { value: "Queued for dossier" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /Save receipt Capture one verified signal/i }),
+    );
+
+    expect(screen.getByText("Completed action: Capture one verified signal")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /Undo last complete/i }));
+    expect(screen.queryByText("Completed action: Capture one verified signal")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: /Complete Capture one verified signal/i }),
+    ).toBeTruthy();
   });
 
   it("keeps guarded actions recommendation-only until human approval", () => {
@@ -110,6 +162,9 @@ describe("BusinessView", () => {
     expect(
       screen.queryByRole("button", { name: /Complete Publish launch offer/i }),
     ).toBeNull();
+    expect(
+      screen.getByRole("button", { name: /Copy for approval Publish launch offer/i }),
+    ).toBeTruthy();
   });
 
   it("copies an operational briefing for use outside the app", async () => {
@@ -119,8 +174,26 @@ describe("BusinessView", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Copy briefing/i }));
 
+    await act(async () => {
+      await Promise.resolve();
+    });
+
     expect(writeText).toHaveBeenCalledOnce();
     expect(writeText.mock.calls[0][0]).toContain("Business OS Briefing");
     expect(writeText.mock.calls[0][0]).toContain("Active priorities");
+    expect(screen.getByText("Copied")).toBeTruthy();
+  });
+
+  it("shows an error when the clipboard is unavailable", async () => {
+    Object.assign(navigator, { clipboard: undefined });
+    render(<BusinessView />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Copy briefing/i }));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText("Clipboard unavailable")).toBeTruthy();
   });
 });
