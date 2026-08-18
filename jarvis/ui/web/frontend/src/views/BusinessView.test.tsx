@@ -62,7 +62,7 @@ describe("BusinessView", () => {
     expect(screen.getAllByText("Fourth priority").length).toBeGreaterThan(0);
   });
 
-  it("persists decision receipts locally", async () => {
+  it("persists decision receipts locally", () => {
     render(<BusinessView />);
 
     fireEvent.change(screen.getByLabelText("Decision"), {
@@ -74,9 +74,8 @@ describe("BusinessView", () => {
     fireEvent.change(screen.getByLabelText("Result"), {
       target: { value: "Added to weekly focus" },
     });
-    fireEvent.change(screen.getByLabelText("Decision risk"), {
-      target: { value: "approval" },
-    });
+    fireEvent.click(screen.getByLabelText("Decision risk"));
+    fireEvent.click(screen.getByRole("option", { name: "Needs human approval" }));
     fireEvent.click(screen.getByRole("button", { name: /Add receipt/i }));
 
     act(() => {
@@ -155,9 +154,8 @@ describe("BusinessView", () => {
     fireEvent.change(screen.getByLabelText("New action"), {
       target: { value: "Publish launch offer" },
     });
-    fireEvent.change(screen.getByLabelText("Action risk"), {
-      target: { value: "approval" },
-    });
+    fireEvent.click(screen.getByLabelText("Action risk"));
+    fireEvent.click(screen.getByRole("option", { name: "Needs approval" }));
     fireEvent.click(screen.getByRole("button", { name: /Add action/i }));
 
     expect(screen.getByText("Publish launch offer")).toBeTruthy();
@@ -236,6 +234,27 @@ describe("BusinessView", () => {
     const raw = window.localStorage.getItem("jarvis.business.workspace.v1");
     expect(raw).toContain("\"current\":7");
     expect(raw).toContain("\"target\":25");
+  });
+
+  it("copies a cockpit report with targets, gaps and next action", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    render(<BusinessView />);
+
+    fireEvent.change(screen.getByLabelText("Current Lead velocity"), {
+      target: { value: "7" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Copy cockpit report/i }));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(writeText).toHaveBeenCalledOnce();
+    expect(writeText.mock.calls[0][0]).toContain("Business Cockpit Report");
+    expect(writeText.mock.calls[0][0]).toContain("Lead velocity: 7/25 leads, 18 remaining");
+    expect(writeText.mock.calls[0][0]).toContain("Next action: Capture one verified signal");
+    expect(writeText.mock.calls[0][0]).toContain("Approval queue: 1");
   });
 
   it("copies a daily review digest with next action and priorities", async () => {

@@ -20,6 +20,7 @@ import { ViewHeader } from "@/views/ChatsView";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { BrandedSelect } from "@/components/ui/select";
 
 const STORAGE_KEY = "jarvis.business.workspace.v1";
 const LEGACY_STORAGE_KEY = "jarvis.business.workspace.v1";
@@ -197,6 +198,16 @@ const GUARDED_ACTIONS = [
   "Credential change",
   "Financial operation",
   "Irreversible file or account change",
+];
+
+const ACTION_RISK_OPTIONS = [
+  { value: "low", label: "Recommendation" },
+  { value: "approval", label: "Needs approval" },
+];
+
+const DECISION_RISK_OPTIONS = [
+  { value: "low", label: "Recommendation only" },
+  { value: "approval", label: "Needs human approval" },
 ];
 
 function readWorkspace(): BusinessWorkspace {
@@ -486,6 +497,31 @@ function buildDailyReview({
   ].join("\n");
 }
 
+function buildCockpitReport({
+  workspace,
+  nextAction,
+  approvalActions,
+}: {
+  workspace: BusinessWorkspace;
+  nextAction: BusinessAction | null;
+  approvalActions: BusinessAction[];
+}): string {
+  return [
+    "# Business Cockpit Report",
+    "",
+    `Mission: ${workspace.mission}`,
+    `Weekly objective: ${workspace.weeklyObjective}`,
+    `Next action: ${nextAction?.title ?? "All clear for today"}`,
+    `Approval queue: ${approvalActions.length}`,
+    "",
+    "Metric targets:",
+    ...workspace.metricTargets.map((metric) => {
+      const remaining = Math.max(metric.target - metric.current, 0);
+      return `- ${metric.label}: ${metric.current}/${metric.target} ${metric.unit}, ${remaining} remaining`;
+    }),
+  ].join("\n");
+}
+
 function buildDebugReport(
   diagnostics: BusinessDiagnostics,
   workspace: BusinessWorkspace,
@@ -737,6 +773,16 @@ export function BusinessView() {
     );
   };
 
+  const copyCockpitReport = async () => {
+    await writeClipboard(
+      buildCockpitReport({
+        workspace,
+        nextAction,
+        approvalActions,
+      }),
+    );
+  };
+
   const copyDebugReport = async () => {
     await writeClipboard(buildDebugReport(diagnostics, workspace, readinessChecks));
   };
@@ -947,6 +993,12 @@ export function BusinessView() {
                   />
                 ))}
               </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button size="sm" variant="secondary" onClick={copyCockpitReport}>
+                  <Clipboard className="mr-1 h-4 w-4" />
+                  Copy cockpit report
+                </Button>
+              </div>
             </article>
 
             <article className="card-outline p-4">
@@ -1069,15 +1121,13 @@ export function BusinessView() {
                   aria-label="New action"
                   className="rounded-md border border-border bg-background/60 px-3 py-2 text-sm"
                 />
-                <select
+                <BrandedSelect
                   value={actionRisk}
-                  onChange={(event) => setActionRisk(event.target.value as DecisionRisk)}
-                  aria-label="Action risk"
+                  onValueChange={(value) => setActionRisk(value as DecisionRisk)}
+                  ariaLabel="Action risk"
+                  options={ACTION_RISK_OPTIONS}
                   className="rounded-md border border-border bg-background/60 px-3 py-2 text-sm"
-                >
-                  <option value="low">Recommendation</option>
-                  <option value="approval">Needs approval</option>
-                </select>
+                />
                 <Button size="sm" onClick={addAction}>
                   <Plus className="mr-1 h-4 w-4" />
                   Add action
@@ -1176,20 +1226,18 @@ export function BusinessView() {
                 />
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <select
+                <BrandedSelect
                   value={decisionDraft.risk}
-                  onChange={(event) =>
+                  onValueChange={(value) =>
                     setDecisionDraft((current) => ({
                       ...current,
-                      risk: event.target.value as DecisionRisk,
+                      risk: value as DecisionRisk,
                     }))
                   }
-                  aria-label="Decision risk"
+                  ariaLabel="Decision risk"
+                  options={DECISION_RISK_OPTIONS}
                   className="rounded-md border border-border bg-background/60 px-3 py-2 text-sm"
-                >
-                  <option value="low">Recommendation only</option>
-                  <option value="approval">Needs human approval</option>
-                </select>
+                />
                 <Button size="sm" onClick={addDecision}>
                   <Plus className="mr-1 h-4 w-4" />
                   Add receipt

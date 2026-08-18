@@ -932,6 +932,7 @@ describe("Agentic IDE running workspace", () => {
       // here, because this instruction was typed with nothing attached.
       expect(api.promptTerminal).toHaveBeenCalledWith("Mika", "run the tests", {
         attachments: [],
+        compose: true,
       }),
     );
   });
