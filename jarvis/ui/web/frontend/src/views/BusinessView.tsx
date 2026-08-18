@@ -47,6 +47,14 @@ interface BusinessAction {
   done: boolean;
 }
 
+interface BusinessMetricTarget {
+  id: string;
+  label: string;
+  current: number;
+  target: number;
+  unit: string;
+}
+
 interface LastComplete {
   actionId: string;
   decisionId: string;
@@ -60,6 +68,7 @@ interface BusinessWorkspace {
   weeklyObjective: string;
   priorities: string[];
   metrics: string[];
+  metricTargets: BusinessMetricTarget[];
   actions: BusinessAction[];
   decisions: BusinessDecision[];
   lastComplete: LastComplete | null;
@@ -105,6 +114,29 @@ const DEFAULT_WORKSPACE: BusinessWorkspace = {
     "Test one offer without charging.",
   ],
   metrics: ["Leads", "Assets", "Validated offers"],
+  metricTargets: [
+    {
+      id: "lead-velocity",
+      label: "Lead velocity",
+      current: 0,
+      target: 25,
+      unit: "leads",
+    },
+    {
+      id: "asset-output",
+      label: "Asset output",
+      current: 0,
+      target: 5,
+      unit: "assets",
+    },
+    {
+      id: "offer-tests",
+      label: "Offer tests",
+      current: 0,
+      target: 1,
+      unit: "tests",
+    },
+  ],
   actions: [
     {
       id: "seed-signal",
@@ -180,6 +212,9 @@ function readWorkspace(): BusinessWorkspace {
       ...parsed,
       priorities: normalizeList(parsed.priorities, DEFAULT_WORKSPACE.priorities),
       metrics: normalizeList(parsed.metrics, DEFAULT_WORKSPACE.metrics),
+      metricTargets: Array.isArray(parsed.metricTargets)
+        ? parsed.metricTargets.filter(isMetricTarget)
+        : DEFAULT_WORKSPACE.metricTargets,
       actions: Array.isArray(parsed.actions)
         ? parsed.actions.filter(isAction)
         : DEFAULT_WORKSPACE.actions,
@@ -207,6 +242,20 @@ function isAction(value: unknown): value is BusinessAction {
     typeof item.title === "string" &&
     (item.risk === "low" || item.risk === "approval") &&
     typeof item.done === "boolean"
+  );
+}
+
+function isMetricTarget(value: unknown): value is BusinessMetricTarget {
+  if (!value || typeof value !== "object") return false;
+  const item = value as Record<string, unknown>;
+  return (
+    typeof item.id === "string" &&
+    typeof item.label === "string" &&
+    typeof item.current === "number" &&
+    Number.isFinite(item.current) &&
+    typeof item.target === "number" &&
+    Number.isFinite(item.target) &&
+    typeof item.unit === "string"
   );
 }
 
@@ -272,6 +321,9 @@ function parseWorkspaceBackup(raw: string): BusinessWorkspace | null {
       weeklyObjective: candidate.weeklyObjective,
       priorities: normalizeList(candidate.priorities, DEFAULT_WORKSPACE.priorities),
       metrics: normalizeList(candidate.metrics, DEFAULT_WORKSPACE.metrics),
+      metricTargets: Array.isArray(candidate.metricTargets)
+        ? candidate.metricTargets.filter(isMetricTarget)
+        : DEFAULT_WORKSPACE.metricTargets,
       actions: candidate.actions.filter(isAction),
       decisions: candidate.decisions.filter(isDecision),
       lastComplete: isLastComplete(candidate.lastComplete) ? candidate.lastComplete : null,
@@ -546,6 +598,21 @@ export function BusinessView() {
     if (!value) return;
     setWorkspace((current) => ({ ...current, metrics: [...current.metrics, value] }));
     setMetricDraft("");
+  };
+
+  const updateMetricTarget = (
+    id: string,
+    field: "current" | "target",
+    rawValue: string,
+  ) => {
+    const parsed = Number.parseInt(rawValue, 10);
+    const value = Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+    setWorkspace((current) => ({
+      ...current,
+      metricTargets: current.metricTargets.map((metric) =>
+        metric.id === id ? { ...metric, [field]: value } : metric,
+      ),
+    }));
   };
 
   const addAction = () => {
@@ -860,6 +927,25 @@ export function BusinessView() {
                   label="Receipt"
                   value={`${workspace.decisions.length} saved receipts`}
                 />
+              </div>
+            </article>
+
+            <article className="card-outline p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                  Business cockpit
+                </div>
+                <Badge variant="outline">Targets</Badge>
+              </div>
+              <div className="grid gap-2 md:grid-cols-3">
+                {workspace.metricTargets.map((metric) => (
+                  <MetricTargetRow
+                    key={metric.id}
+                    metric={metric}
+                    onChange={updateMetricTarget}
+                  />
+                ))}
               </div>
             </article>
 
@@ -1370,6 +1456,58 @@ function FlowStep({ icon, label, value }: { icon: ReactNode; label: string; valu
         {label}
       </div>
       <div className="mt-2 text-sm font-medium leading-snug">{value}</div>
+    </div>
+  );
+}
+
+function MetricTargetRow({
+  metric,
+  onChange,
+}: {
+  metric: BusinessMetricTarget;
+  onChange: (id: string, field: "current" | "target", value: string) => void;
+}) {
+  const remaining = Math.max(metric.target - metric.current, 0);
+  return (
+    <div className="rounded-md border border-border/70 bg-background/50 px-3 py-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-sm font-semibold">{metric.label}</div>
+        <Badge variant={remaining === 0 ? "default" : "outline"}>
+          {remaining} remaining
+        </Badge>
+      </div>
+      <div className="mt-2 text-lg font-semibold">
+        {metric.current} / {metric.target}
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <label>
+          <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Current
+          </span>
+          <input
+            type="number"
+            min="0"
+            value={metric.current}
+            onChange={(event) => onChange(metric.id, "current", event.target.value)}
+            aria-label={`Current ${metric.label}`}
+            className="w-full rounded-md border border-border bg-background/60 px-2 py-1.5 text-sm"
+          />
+        </label>
+        <label>
+          <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Target
+          </span>
+          <input
+            type="number"
+            min="0"
+            value={metric.target}
+            onChange={(event) => onChange(metric.id, "target", event.target.value)}
+            aria-label={`Target ${metric.label}`}
+            className="w-full rounded-md border border-border bg-background/60 px-2 py-1.5 text-sm"
+          />
+        </label>
+      </div>
+      <div className="mt-2 text-xs text-muted-foreground">{metric.unit}</div>
     </div>
   );
 }

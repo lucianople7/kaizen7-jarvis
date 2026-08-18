@@ -214,6 +214,30 @@ describe("BusinessView", () => {
     expect(screen.getAllByText("2 receipts").length).toBeGreaterThan(0);
   });
 
+  it("tracks real business metrics against numeric targets", () => {
+    render(<BusinessView />);
+
+    expect(screen.getByText("Business cockpit")).toBeTruthy();
+    expect(screen.getByText("Lead velocity")).toBeTruthy();
+    expect(screen.getByText("0 / 25")).toBeTruthy();
+    expect(screen.getByText("25 remaining")).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("Current Lead velocity"), {
+      target: { value: "7" },
+    });
+
+    expect(screen.getByText("7 / 25")).toBeTruthy();
+    expect(screen.getByText("18 remaining")).toBeTruthy();
+
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+
+    const raw = window.localStorage.getItem("jarvis.business.workspace.v1");
+    expect(raw).toContain("\"current\":7");
+    expect(raw).toContain("\"target\":25");
+  });
+
   it("copies a daily review digest with next action and priorities", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });
