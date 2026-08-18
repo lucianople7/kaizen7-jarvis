@@ -120,8 +120,12 @@ describe("ModesView", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Build my Jarvis/i }));
 
-    expect((screen.getByLabelText("Mode name") as HTMLInputElement).value).toBe(
-      "Jarvis Focus Operator",
+    const modeName = screen.getByLabelText("Mode name") as HTMLInputElement;
+    expect(modeName.value).toBe("Jarvis Focus Operator");
+    expect(document.activeElement).toBe(modeName);
+    expect(pushToast).toHaveBeenCalledWith(
+      "info",
+      "Jarvis draft ready. Review it, then save the mode.",
     );
     expect((screen.getByLabelText("One-line description") as HTMLInputElement).value).toBe(
       "Executive operating mode for one focused business move at a time.",

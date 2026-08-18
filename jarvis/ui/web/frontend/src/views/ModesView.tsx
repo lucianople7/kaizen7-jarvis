@@ -15,7 +15,7 @@
  * Colours come from theme tokens only, so the view is correct in light and dark
  * without a second palette to keep in step.
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Mic, MicOff, Plus, RotateCcw, Sparkles, Trash2, Check } from "lucide-react";
 
 import { ViewHeader } from "@/views/ChatsView";
@@ -182,6 +182,7 @@ export function ModesView() {
   const [draft, setDraft] = useState(EMPTY_DRAFT);
   const [saving, setSaving] = useState(false);
   const [written, setWritten] = useState("");
+  const draftNameRef = useRef<HTMLInputElement>(null);
   const [recipe, setRecipe] = useState({
     mission: "",
     tone: "executive" as JarvisTone,
@@ -261,6 +262,8 @@ export function ModesView() {
 
   const buildCustomJarvis = () => {
     setDraft(buildJarvisDraft(recipe));
+    draftNameRef.current?.focus();
+    pushToast("info", "Jarvis draft ready. Review it, then save the mode.");
   };
 
   const startInterview = async () => {
@@ -509,6 +512,7 @@ export function ModesView() {
                   />
                   <input
                     aria-label="Mode name"
+                    ref={draftNameRef}
                     value={draft.name}
                     onChange={(e) => setDraft({ ...draft, name: e.target.value })}
                     placeholder="Night Owl"
