@@ -65,6 +65,61 @@ const PROACTIVITY_LABELS: Record<Proactivity, string> = {
   forward: "Thinks a step ahead",
 };
 
+type JarvisTone = "executive" | "warm" | "direct";
+type JarvisEnergy = "focused" | "calm" | "high";
+
+const JARVIS_TONE_OPTIONS = [
+  { value: "executive", label: "Executive" },
+  { value: "warm", label: "Warm" },
+  { value: "direct", label: "Direct" },
+] as const;
+
+const JARVIS_ENERGY_OPTIONS = [
+  { value: "focused", label: "Focused" },
+  { value: "calm", label: "Calm" },
+  { value: "high", label: "High focus" },
+] as const;
+
+const JARVIS_TONE_COPY = {
+  executive: {
+    name: "Jarvis Focus Operator",
+    description: "Executive operating mode for one focused business move at a time.",
+    voice:
+      "Operate like a concise chief of staff: clear priorities, sharp tradeoffs, no theatrical filler.",
+  },
+  warm: {
+    name: "Jarvis Steady Companion",
+    description: "Warm operating mode for calm clarity and humane momentum.",
+    voice:
+      "Stay warm, steady and direct. Help Luciano feel oriented without losing operational edge.",
+  },
+  direct: {
+    name: "Jarvis Precision Driver",
+    description: "Direct operating mode for blunt decisions and fast execution.",
+    voice:
+      "Be blunt, concise and evidence-led. Cut ambiguity and name the next concrete move.",
+  },
+} satisfies Record<JarvisTone, { name: string; description: string; voice: string }>;
+
+const JARVIS_ENERGY_COPY = {
+  focused: {
+    verbosity: "normal" as Verbosity,
+    proactivity: "normal" as Proactivity,
+    voice: "Keep one active mission visible. Limit priorities before adding work.",
+  },
+  calm: {
+    verbosity: "brief" as Verbosity,
+    proactivity: "reactive" as Proactivity,
+    voice: "Slow the pace down. Reduce options. Ask before widening scope.",
+  },
+  high: {
+    verbosity: "normal" as Verbosity,
+    proactivity: "forward" as Proactivity,
+    voice:
+      "Drive the day with urgency, but keep the mission narrow and approval gates intact.",
+  },
+} satisfies Record<JarvisEnergy, { verbosity: Verbosity; proactivity: Proactivity; voice: string }>;
+
 const EMPTY_DRAFT = {
   name: "",
   emoji: "",
@@ -86,6 +141,36 @@ const proactivityOptions = (values: readonly Proactivity[] = []) =>
     label: PROACTIVITY_LABELS[value],
   }));
 
+function buildJarvisDraft(recipe: {
+  mission: string;
+  tone: JarvisTone;
+  energy: JarvisEnergy;
+  guardrails: string;
+}) {
+  const tone = JARVIS_TONE_COPY[recipe.tone];
+  const energy = JARVIS_ENERGY_COPY[recipe.energy];
+  const mission = recipe.mission.trim() || "Keep Luciano focused on the next useful move.";
+  const guardrails =
+    recipe.guardrails.trim() ||
+    "Never publish, pay, message, change credentials, operate money, or make irreversible changes without explicit approval.";
+
+  return {
+    name: tone.name,
+    emoji: "K7",
+    description: tone.description,
+    character: [
+      tone.voice,
+      energy.voice,
+      `Mission: ${mission}`,
+      `Guardrails: ${guardrails}`,
+      "Always separate recommendation from execution.",
+      "Every answer should end with the smallest useful next action when action is needed.",
+    ].join("\n\n"),
+    verbosity: energy.verbosity,
+    proactivity: energy.proactivity,
+  };
+}
+
 export function ModesView() {
   const pushToast = useEventStore((s) => s.pushToast);
   const setActiveSection = useEventStore((s) => s.setActiveSection);
@@ -97,6 +182,12 @@ export function ModesView() {
   const [draft, setDraft] = useState(EMPTY_DRAFT);
   const [saving, setSaving] = useState(false);
   const [written, setWritten] = useState("");
+  const [recipe, setRecipe] = useState({
+    mission: "",
+    tone: "executive" as JarvisTone,
+    energy: "focused" as JarvisEnergy,
+    guardrails: "",
+  });
 
   const refresh = useCallback(async () => {
     try {
@@ -166,6 +257,10 @@ export function ModesView() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const buildCustomJarvis = () => {
+    setDraft(buildJarvisDraft(recipe));
   };
 
   const startInterview = async () => {
@@ -283,6 +378,72 @@ export function ModesView() {
                 Describe the assistant you want and let it write the mode, or fill it in yourself.
               </p>
             </div>
+
+            <article className="flex flex-col gap-4 rounded-xl border border-primary/30 bg-primary/5 p-4">
+              <div className="flex flex-col gap-1">
+                <h4 className="font-display text-sm font-semibold tracking-tight">
+                  Jarvis a la carta
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                  Build a ready-to-save Jarvis from mission, tone, energy and hard boundaries.
+                </p>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
+                  Jarvis mission
+                  <textarea
+                    aria-label="Jarvis mission"
+                    value={recipe.mission}
+                    onChange={(e) => setRecipe({ ...recipe, mission: e.target.value })}
+                    rows={3}
+                    placeholder="Keep Luciano focused on one business move at a time"
+                    className="resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
+                  Jarvis guardrails
+                  <textarea
+                    aria-label="Jarvis guardrails"
+                    value={recipe.guardrails}
+                    onChange={(e) => setRecipe({ ...recipe, guardrails: e.target.value })}
+                    rows={3}
+                    placeholder="Never publish, pay or message without approval"
+                    className="resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                  />
+                </label>
+                <div className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
+                  Jarvis tone
+                  <BrandedSelect
+                    value={recipe.tone}
+                    onValueChange={(value) =>
+                      setRecipe({ ...recipe, tone: value as JarvisTone })
+                    }
+                    ariaLabel="Jarvis tone"
+                    options={JARVIS_TONE_OPTIONS}
+                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+                <div className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
+                  Jarvis energy
+                  <BrandedSelect
+                    value={recipe.energy}
+                    onValueChange={(value) =>
+                      setRecipe({ ...recipe, energy: value as JarvisEnergy })
+                    }
+                    ariaLabel="Jarvis energy"
+                    options={JARVIS_ENERGY_OPTIONS}
+                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={buildCustomJarvis}
+                className="self-start rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              >
+                Build my Jarvis
+              </button>
+            </article>
 
             <div className="grid gap-4 lg:grid-cols-2">
               <div className="flex flex-col gap-3 rounded-xl border border-border bg-secondary/30 p-4">
