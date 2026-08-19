@@ -109,7 +109,7 @@ class ControlBridgeStore:
             "requires_human_approval": True,
             "created_at": now,
         }
-        self._append_receipt(
+        self.record_receipt(
             {
                 "id": proposal["id"],
                 "kind": "proposal",
@@ -121,6 +121,9 @@ class ControlBridgeStore:
             }
         )
         return proposal
+
+    def record_receipt(self, receipt: dict[str, Any]) -> None:
+        self._append_receipt(receipt)
 
     def receipts(self, *, limit: int = 50) -> list[dict[str, Any]]:
         safe_limit = min(max(int(limit), 1), 200)

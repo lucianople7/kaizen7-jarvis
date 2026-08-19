@@ -91,6 +91,26 @@ Show the local recommendation-only bridge status and receipt count. This never e
 - **Desktop UI section:** `agents`
 - **Voice example (EN):** "show the control bridge status"
 
+## `kaizen7-bots-list` — List KAIZEN7 bots
+
+List the recommendation-only bot roster derived from assistant modes. This does not execute bot work.
+
+- **Endpoint:** `GET /api/kaizen7/bots`
+- **Arguments:** none
+- **Requires confirmation:** no
+- **Desktop UI section:** `agents`
+- **Voice example (EN):** "show the kaizen seven bots"
+
+## `kaizen7-bots-propose` — Propose a KAIZEN7 bot
+
+Record a recommendation-only proposal for a new bot profile. It does not create, run, message, or schedule anything.
+
+- **Endpoint:** `POST /api/kaizen7/bots/propose`
+- **Arguments:** `name` (string; required); `title` (string; optional); `description` (string; optional)
+- **Requires confirmation:** no
+- **Desktop UI section:** `agents`
+- **Voice example (EN):** "propose a kaizen seven bot"
+
 ## `kaizen7-bridge-capabilities` — List Control Bridge capabilities
 
 List safe recommendation-only bridge capabilities. This never executes external actions.

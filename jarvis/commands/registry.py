@@ -315,6 +315,51 @@ def _build_registry() -> tuple[AppCommand, ...]:
             },
         ),
         AppCommand(
+            id="kaizen7-bots-list",
+            title="List KAIZEN7 bots",
+            description=(
+                "List the recommendation-only bot roster derived from assistant "
+                "modes. This does not execute bot work."
+            ),
+            method="GET",
+            path="/api/kaizen7/bots",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige die kaizen sieben bots",),  # i18n-allow: input vocab
+                "en": ("show the kaizen seven bots",),
+                "es": ("muestra los bots de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-bots-propose",
+            title="Propose a KAIZEN7 bot",
+            description=(
+                "Record a recommendation-only proposal for a new bot profile. "
+                "It does not create, run, message, or schedule anything."
+            ),
+            method="POST",
+            path="/api/kaizen7/bots/propose",
+            params={
+                "type": "object",
+                "properties": {
+                    "name": _str_param("Bot name.", min_length=1, max_length=80),
+                    "title": _str_param("Short bot title.", max_length=80),
+                    "description": _str_param(
+                        "Bot responsibility summary.", max_length=280
+                    ),
+                },
+                "required": ["name"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("schlage einen kaizen sieben bot vor",),  # i18n-allow: input vocab
+                "en": ("propose a kaizen seven bot",),
+                "es": ("propón un bot de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
             id="kaizen7-bridge-capabilities",
             title="List Control Bridge capabilities",
             description=(
