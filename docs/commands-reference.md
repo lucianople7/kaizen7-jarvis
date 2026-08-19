@@ -81,6 +81,46 @@ Switch the provider used for new missions (e.g. codex to openai). The next missi
 - **Desktop UI section:** `agents`
 - **Voice example (EN):** "switch the agent provider to openai"
 
+## `kaizen7-bridge-status` — Show Control Bridge status
+
+Show the local recommendation-only bridge status and receipt count. This never executes external actions.
+
+- **Endpoint:** `GET /api/kaizen7/bridge/status`
+- **Arguments:** none
+- **Requires confirmation:** no
+- **Desktop UI section:** `agents`
+- **Voice example (EN):** "show the control bridge status"
+
+## `kaizen7-bridge-capabilities` — List Control Bridge capabilities
+
+List safe recommendation-only bridge capabilities. This never executes external actions.
+
+- **Endpoint:** `GET /api/kaizen7/bridge/capabilities`
+- **Arguments:** none
+- **Requires confirmation:** no
+- **Desktop UI section:** `agents`
+- **Voice example (EN):** "list control bridge capabilities"
+
+## `kaizen7-bridge-propose` — Record a Control Bridge proposal
+
+Record a recommendation-only proposal as a receipt. It does not publish, send, spend, change credentials, or execute.
+
+- **Endpoint:** `POST /api/kaizen7/bridge/propose`
+- **Arguments:** `message` (string; required)
+- **Requires confirmation:** no
+- **Desktop UI section:** `agents`
+- **Voice example (EN):** "record a control bridge proposal"
+
+## `kaizen7-bridge-receipts` — List Control Bridge receipts
+
+List recent bridge receipts for proposals and activity.
+
+- **Endpoint:** `GET /api/kaizen7/bridge/receipts`
+- **Arguments:** none
+- **Requires confirmation:** no
+- **Desktop UI section:** `agents`
+- **Voice example (EN):** "show control bridge receipts"
+
 ## `providers-list` — List providers
 
 List all configured providers and which ones are active.

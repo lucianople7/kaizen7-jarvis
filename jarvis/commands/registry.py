@@ -298,6 +298,82 @@ def _build_registry() -> tuple[AppCommand, ...]:
             },
         ),
         AppCommand(
+            id="kaizen7-bridge-status",
+            title="Show Control Bridge status",
+            description=(
+                "Show the local recommendation-only bridge status and receipt "
+                "count. This never executes external actions."
+            ),
+            method="GET",
+            path="/api/kaizen7/bridge/status",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige den control bridge status",),  # i18n-allow: input vocab
+                "en": ("show the control bridge status",),
+                "es": ("muestra el estado del puente de control",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-bridge-capabilities",
+            title="List Control Bridge capabilities",
+            description=(
+                "List safe recommendation-only bridge capabilities. This never "
+                "executes external actions."
+            ),
+            method="GET",
+            path="/api/kaizen7/bridge/capabilities",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige die control bridge faehigkeiten",),  # i18n-allow: input vocab
+                "en": ("list control bridge capabilities",),
+                "es": ("lista las capacidades del puente de control",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-bridge-propose",
+            title="Record a Control Bridge proposal",
+            description=(
+                "Record a recommendation-only proposal as a receipt. It does "
+                "not publish, send, spend, change credentials, or execute."
+            ),
+            method="POST",
+            path="/api/kaizen7/bridge/propose",
+            params={
+                "type": "object",
+                "properties": {
+                    "message": _str_param(
+                        "Recommendation request to record.",
+                        min_length=1,
+                        max_length=4000,
+                    ),
+                },
+                "required": ["message"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("notiere einen control bridge vorschlag",),  # i18n-allow: input vocab
+                "en": ("record a control bridge proposal",),
+                "es": ("registra una propuesta del puente de control",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-bridge-receipts",
+            title="List Control Bridge receipts",
+            description="List recent bridge receipts for proposals and activity.",
+            method="GET",
+            path="/api/kaizen7/bridge/receipts",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige control bridge belege",),  # i18n-allow: input vocab
+                "en": ("show control bridge receipts",),
+                "es": ("muestra los recibos del puente de control",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
             id="providers-list",
             title="List providers",
             description="List all configured providers and which ones are active.",
