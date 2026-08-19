@@ -101,38 +101,93 @@ describe("ModesView", () => {
     vi.unstubAllGlobals();
   });
 
-  it("builds a tailored Jarvis mode from mission, tone, energy and guardrails", async () => {
+  it("blocks personal core generation without mission and focus", async () => {
     render(<ModesView />);
 
     await screen.findByText("Jarvis");
-    expect(screen.getByText("Jarvis a la carta")).toBeTruthy();
+    expect(screen.getByText("Jarvis Personal Core")).toBeTruthy();
 
-    fireEvent.change(screen.getByLabelText("Jarvis mission"), {
+    fireEvent.click(screen.getByRole("button", { name: /Build personal Jarvis/i }));
+
+    expect(pushToast).toHaveBeenCalledWith(
+      "warning",
+      "Jarvis needs a mission and active focus before it can become operational.",
+    );
+    expect((screen.getByLabelText("Mode name") as HTMLInputElement).value).toBe("");
+  });
+
+  it("rejects personal core priority caps outside one to five", async () => {
+    render(<ModesView />);
+
+    await screen.findByText("Jarvis");
+
+    fireEvent.change(screen.getByLabelText("Assistant mission"), {
+      target: { value: "Keep Luciano focused on the highest leverage move" },
+    });
+    fireEvent.change(screen.getByLabelText("Active focus"), {
+      target: { value: "Ship the personal Jarvis product" },
+    });
+    fireEvent.change(screen.getByLabelText("Max active priorities"), {
+      target: { value: "8" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /Build personal Jarvis/i }));
+
+    expect(pushToast).toHaveBeenCalledWith(
+      "warning",
+      "Jarvis keeps one to five active priorities. Set a tighter cap.",
+    );
+    expect((screen.getByLabelText("Mode name") as HTMLInputElement).value).toBe("");
+  });
+
+  it("builds a personal core mode with mission, focus, priority cap and approval gates", async () => {
+    render(<ModesView />);
+
+    await screen.findByText("Jarvis");
+    expect(screen.getByText("Jarvis Personal Core")).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("Assistant mission"), {
       target: { value: "Keep Luciano focused on one business move at a time" },
+    });
+    fireEvent.change(screen.getByLabelText("Owner"), {
+      target: { value: "Luciano" },
+    });
+    fireEvent.change(screen.getByLabelText("Active focus"), {
+      target: { value: "Build a clean PersonalJarvis product" },
     });
     fireEvent.click(screen.getByLabelText("Jarvis tone"));
     fireEvent.click(screen.getByRole("option", { name: "Executive" }));
     fireEvent.click(screen.getByLabelText("Jarvis energy"));
     fireEvent.click(screen.getByRole("option", { name: "High focus" }));
-    fireEvent.change(screen.getByLabelText("Jarvis guardrails"), {
+    fireEvent.change(screen.getByLabelText("Approval boundaries"), {
       target: { value: "Never publish, pay or message without approval" },
     });
+    fireEvent.change(screen.getByLabelText("Max active priorities"), {
+      target: { value: "3" },
+    });
 
-    fireEvent.click(screen.getByRole("button", { name: /Build my Jarvis/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Build personal Jarvis/i }));
 
     const modeName = screen.getByLabelText("Mode name") as HTMLInputElement;
-    expect(modeName.value).toBe("Jarvis Focus Operator");
+    expect(modeName.value).toBe("Jarvis Personal Operator");
     expect(document.activeElement).toBe(modeName);
     expect(pushToast).toHaveBeenCalledWith(
       "info",
-      "Jarvis draft ready. Review it, then save the mode.",
+      "Jarvis Personal Core ready. Review it, then save the mode.",
     );
     expect((screen.getByLabelText("One-line description") as HTMLInputElement).value).toBe(
-      "Executive operating mode for one focused business move at a time.",
+      "Executive personal operating mode for Luciano with one active focus.",
     );
     const behavior = (screen.getByLabelText("How it behaves") as HTMLTextAreaElement).value;
     expect(behavior).toContain("Keep Luciano focused on one business move at a time");
+    expect(behavior).toContain("Owner: Luciano");
+    expect(behavior).toContain("Active focus: Build a clean PersonalJarvis product");
+    expect(behavior).toContain("Priority cap: keep at most 3 active priorities visible.");
     expect(behavior).toContain("Never publish, pay or message without approval");
+    expect(behavior).toContain("Always separate recommendation from execution.");
+    expect(behavior).toContain(
+      "Human approval is required before publishing, payments, messages, credentials, financial operations, external sends, destructive changes, or irreversible actions.",
+    );
 
     fireEvent.click(screen.getByRole("button", { name: /Save mode/i }));
 
@@ -140,9 +195,9 @@ describe("ModesView", () => {
       "/api/modes",
       expect.objectContaining({
         method: "POST",
-        body: expect.stringContaining("Jarvis Focus Operator"),
+        body: expect.stringContaining("Jarvis Personal Operator"),
       }),
     ));
-    expect(pushToast).toHaveBeenCalledWith("success", "Jarvis Focus Operator saved.");
+    expect(pushToast).toHaveBeenCalledWith("success", "Jarvis Personal Operator saved.");
   });
 });

@@ -65,13 +65,23 @@ const PROACTIVITY_LABELS: Record<Proactivity, string> = {
   forward: "Thinks a step ahead",
 };
 
-type JarvisTone = "executive" | "warm" | "direct";
+type JarvisTone = "executive" | "warm" | "direct" | "strict";
 type JarvisEnergy = "focused" | "calm" | "high";
+type PersonalCore = {
+  mission: string;
+  owner: string;
+  focus: string;
+  tone: JarvisTone;
+  energy: JarvisEnergy;
+  guardrails: string;
+  priorityLimit: number;
+};
 
 const JARVIS_TONE_OPTIONS = [
   { value: "executive", label: "Executive" },
   { value: "warm", label: "Warm" },
   { value: "direct", label: "Direct" },
+  { value: "strict", label: "Strict" },
 ] as const;
 
 const JARVIS_ENERGY_OPTIONS = [
@@ -82,8 +92,8 @@ const JARVIS_ENERGY_OPTIONS = [
 
 const JARVIS_TONE_COPY = {
   executive: {
-    name: "Jarvis Focus Operator",
-    description: "Executive operating mode for one focused business move at a time.",
+    name: "Jarvis Personal Operator",
+    description: "Executive personal operating mode",
     voice:
       "Operate like a concise chief of staff: clear priorities, sharp tradeoffs, no theatrical filler.",
   },
@@ -98,6 +108,12 @@ const JARVIS_TONE_COPY = {
     description: "Direct operating mode for blunt decisions and fast execution.",
     voice:
       "Be blunt, concise and evidence-led. Cut ambiguity and name the next concrete move.",
+  },
+  strict: {
+    name: "Jarvis Mission Governor",
+    description: "Strict operating mode for narrow priorities and hard execution gates.",
+    voice:
+      "Be strict about scope, proof and irreversible actions. Challenge drift before helping with it.",
   },
 } satisfies Record<JarvisTone, { name: string; description: string; voice: string }>;
 
@@ -141,29 +157,33 @@ const proactivityOptions = (values: readonly Proactivity[] = []) =>
     label: PROACTIVITY_LABELS[value],
   }));
 
-function buildJarvisDraft(recipe: {
-  mission: string;
-  tone: JarvisTone;
-  energy: JarvisEnergy;
-  guardrails: string;
-}) {
-  const tone = JARVIS_TONE_COPY[recipe.tone];
-  const energy = JARVIS_ENERGY_COPY[recipe.energy];
-  const mission = recipe.mission.trim() || "Keep Luciano focused on the next useful move.";
+const DEFAULT_APPROVAL_BOUNDARY =
+  "Human approval is required before publishing, payments, messages, credentials, financial operations, external sends, destructive changes, or irreversible actions.";
+
+function buildPersonalJarvisDraft(core: PersonalCore) {
+  const tone = JARVIS_TONE_COPY[core.tone];
+  const energy = JARVIS_ENERGY_COPY[core.energy];
+  const owner = core.owner.trim() || "Luciano";
+  const mission = core.mission.trim();
+  const focus = core.focus.trim();
   const guardrails =
-    recipe.guardrails.trim() ||
+    core.guardrails.trim() ||
     "Never publish, pay, message, change credentials, operate money, or make irreversible changes without explicit approval.";
 
   return {
     name: tone.name,
     emoji: "K7",
-    description: tone.description,
+    description: `${tone.description} for ${owner} with one active focus.`,
     character: [
       tone.voice,
       energy.voice,
+      `Owner: ${owner}`,
       `Mission: ${mission}`,
+      `Active focus: ${focus}`,
+      `Priority cap: keep at most ${core.priorityLimit} active priorities visible.`,
       `Guardrails: ${guardrails}`,
       "Always separate recommendation from execution.",
+      DEFAULT_APPROVAL_BOUNDARY,
       "Every answer should end with the smallest useful next action when action is needed.",
     ].join("\n\n"),
     verbosity: energy.verbosity,
@@ -183,11 +203,17 @@ export function ModesView() {
   const [saving, setSaving] = useState(false);
   const [written, setWritten] = useState("");
   const draftNameRef = useRef<HTMLInputElement>(null);
-  const [recipe, setRecipe] = useState({
+  const missionRef = useRef<HTMLTextAreaElement>(null);
+  const focusRef = useRef<HTMLInputElement>(null);
+  const priorityRef = useRef<HTMLInputElement>(null);
+  const [personalCore, setPersonalCore] = useState<PersonalCore>({
     mission: "",
+    owner: "Luciano",
+    focus: "",
     tone: "executive" as JarvisTone,
     energy: "focused" as JarvisEnergy,
     guardrails: "",
+    priorityLimit: 3,
   });
 
   const refresh = useCallback(async () => {
@@ -260,10 +286,24 @@ export function ModesView() {
     }
   };
 
-  const buildCustomJarvis = () => {
-    setDraft(buildJarvisDraft(recipe));
+  const buildPersonalCore = () => {
+    if (!personalCore.mission.trim() || !personalCore.focus.trim()) {
+      pushToast(
+        "warning",
+        "Jarvis needs a mission and active focus before it can become operational.",
+      );
+      if (!personalCore.mission.trim()) missionRef.current?.focus();
+      else focusRef.current?.focus();
+      return;
+    }
+    if (personalCore.priorityLimit < 1 || personalCore.priorityLimit > 5) {
+      pushToast("warning", "Jarvis keeps one to five active priorities. Set a tighter cap.");
+      priorityRef.current?.focus();
+      return;
+    }
+    setDraft(buildPersonalJarvisDraft(personalCore));
     draftNameRef.current?.focus();
-    pushToast("info", "Jarvis draft ready. Review it, then save the mode.");
+    pushToast("info", "Jarvis Personal Core ready. Review it, then save the mode.");
   };
 
   const startInterview = async () => {
@@ -385,41 +425,71 @@ export function ModesView() {
             <article className="flex flex-col gap-4 rounded-xl border border-primary/30 bg-primary/5 p-4">
               <div className="flex flex-col gap-1">
                 <h4 className="font-display text-sm font-semibold tracking-tight">
-                  Jarvis a la carta
+                  Jarvis Personal Core
                 </h4>
                 <p className="text-sm text-muted-foreground">
-                  Build a ready-to-save Jarvis from mission, tone, energy and hard boundaries.
+                  Build a ready-to-save personal operating mode with focus, priorities and approval gates.
                 </p>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
-                  Jarvis mission
+                  Assistant mission
                   <textarea
-                    aria-label="Jarvis mission"
-                    value={recipe.mission}
-                    onChange={(e) => setRecipe({ ...recipe, mission: e.target.value })}
+                    ref={missionRef}
+                    aria-label="Assistant mission"
+                    value={personalCore.mission}
+                    onChange={(e) =>
+                      setPersonalCore({ ...personalCore, mission: e.target.value })
+                    }
                     rows={3}
                     placeholder="Keep Luciano focused on one business move at a time"
                     className="resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
                   />
                 </label>
                 <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
-                  Jarvis guardrails
+                  Approval boundaries
                   <textarea
-                    aria-label="Jarvis guardrails"
-                    value={recipe.guardrails}
-                    onChange={(e) => setRecipe({ ...recipe, guardrails: e.target.value })}
+                    aria-label="Approval boundaries"
+                    value={personalCore.guardrails}
+                    onChange={(e) =>
+                      setPersonalCore({ ...personalCore, guardrails: e.target.value })
+                    }
                     rows={3}
                     placeholder="Never publish, pay or message without approval"
                     className="resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
                   />
                 </label>
+                <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
+                  Owner
+                  <input
+                    aria-label="Owner"
+                    value={personalCore.owner}
+                    onChange={(e) =>
+                      setPersonalCore({ ...personalCore, owner: e.target.value })
+                    }
+                    placeholder="Luciano"
+                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
+                  Active focus
+                  <input
+                    ref={focusRef}
+                    aria-label="Active focus"
+                    value={personalCore.focus}
+                    onChange={(e) =>
+                      setPersonalCore({ ...personalCore, focus: e.target.value })
+                    }
+                    placeholder="Build a clean PersonalJarvis product"
+                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                  />
+                </label>
                 <div className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
                   Jarvis tone
                   <BrandedSelect
-                    value={recipe.tone}
+                    value={personalCore.tone}
                     onValueChange={(value) =>
-                      setRecipe({ ...recipe, tone: value as JarvisTone })
+                      setPersonalCore({ ...personalCore, tone: value as JarvisTone })
                     }
                     ariaLabel="Jarvis tone"
                     options={JARVIS_TONE_OPTIONS}
@@ -429,22 +499,40 @@ export function ModesView() {
                 <div className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
                   Jarvis energy
                   <BrandedSelect
-                    value={recipe.energy}
+                    value={personalCore.energy}
                     onValueChange={(value) =>
-                      setRecipe({ ...recipe, energy: value as JarvisEnergy })
+                      setPersonalCore({ ...personalCore, energy: value as JarvisEnergy })
                     }
                     ariaLabel="Jarvis energy"
                     options={JARVIS_ENERGY_OPTIONS}
                     className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                   />
                 </div>
+                <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
+                  Max active priorities
+                  <input
+                    ref={priorityRef}
+                    aria-label="Max active priorities"
+                    type="number"
+                    min={1}
+                    max={5}
+                    value={personalCore.priorityLimit}
+                    onChange={(e) =>
+                      setPersonalCore({
+                        ...personalCore,
+                        priorityLimit: Number(e.target.value),
+                      })
+                    }
+                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                  />
+                </label>
               </div>
               <button
                 type="button"
-                onClick={buildCustomJarvis}
+                onClick={buildPersonalCore}
                 className="self-start rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
               >
-                Build my Jarvis
+                Build personal Jarvis
               </button>
             </article>
 
