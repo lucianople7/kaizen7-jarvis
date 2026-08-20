@@ -138,6 +138,15 @@ interface HermesCapabilitiesPayload {
   approval_required_for: string[];
 }
 
+interface CodexStatus {
+  installed: boolean;
+  version: string;
+  execution_enabled: boolean;
+  requires_git_repo: boolean;
+  requires_pty: boolean;
+  error: string;
+}
+
 const DEFAULT_WORKSPACE: BusinessWorkspace = {
   mission:
     "Turn verified attention into THE FOCUX: signal → dossier → founding list → offer test. Own product later. No premature checkout.",
@@ -666,6 +675,7 @@ export function BusinessView() {
   const [hermesCapabilities, setHermesCapabilities] = useState<HermesCapability[]>([]);
   const [hermesExecutionEnabled, setHermesExecutionEnabled] = useState(false);
   const [hermesError, setHermesError] = useState("");
+  const [codexStatus, setCodexStatus] = useState<CodexStatus | null>(null);
   const [handoffProfile, setHandoffProfile] = useState("kaizen7");
   const [handoffMessage, setHandoffMessage] = useState(
     "Focus today on the highest leverage action.",
@@ -693,10 +703,16 @@ export function BusinessView() {
 
     const loadHermes = async () => {
       try {
-        const [statusResponse, profilesResponse, capabilitiesResponse] = await Promise.all([
+        const [
+          statusResponse,
+          profilesResponse,
+          capabilitiesResponse,
+          codexStatusResponse,
+        ] = await Promise.all([
           fetch("/api/kaizen7/hermes/status"),
           fetch("/api/kaizen7/hermes/profiles"),
           fetch("/api/kaizen7/hermes/capabilities"),
+          fetch("/api/kaizen7/codex/status"),
         ]);
         if (!statusResponse.ok || !profilesResponse.ok || !capabilitiesResponse.ok) {
           throw new Error("Hermes API unavailable");
@@ -705,6 +721,9 @@ export function BusinessView() {
         const profilesPayload = (await profilesResponse.json()) as HermesProfilesPayload;
         const capabilitiesPayload =
           (await capabilitiesResponse.json()) as HermesCapabilitiesPayload;
+        const codexPayload = codexStatusResponse.ok
+          ? ((await codexStatusResponse.json()) as CodexStatus)
+          : null;
         if (cancelled) return;
         const profiles = Array.isArray(profilesPayload.profiles)
           ? profilesPayload.profiles
@@ -717,6 +736,7 @@ export function BusinessView() {
             : [],
         );
         setHermesExecutionEnabled(Boolean(capabilitiesPayload.execution_enabled));
+        setCodexStatus(codexPayload);
         setHermesError(status.error || profilesPayload.error || "");
         setHandoffProfile((current) => {
           if (profiles.some((profile) => profile.name === current)) return current;
@@ -1451,6 +1471,7 @@ export function BusinessView() {
               profiles={hermesProfiles}
               capabilities={hermesCapabilities}
               executionEnabled={hermesExecutionEnabled}
+              codexStatus={codexStatus}
               error={hermesError}
               handoffProfile={handoffProfile}
               handoffMessage={handoffMessage}
@@ -1689,6 +1710,7 @@ function HermesRuntimePanel({
   profiles,
   capabilities,
   executionEnabled,
+  codexStatus,
   error,
   handoffProfile,
   handoffMessage,
@@ -1701,6 +1723,7 @@ function HermesRuntimePanel({
   profiles: HermesProfile[];
   capabilities: HermesCapability[];
   executionEnabled: boolean;
+  codexStatus: CodexStatus | null;
   error: string;
   handoffProfile: string;
   handoffMessage: string;
@@ -1837,6 +1860,22 @@ function HermesRuntimePanel({
           <Badge variant={executionEnabled ? "destructive" : "secondary"}>
             {executionEnabled ? "Execution enabled" : "Proposal only"}
           </Badge>
+        </div>
+        <div className="rounded-md border border-border/70 bg-background/50 px-3 py-2">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="text-sm font-medium">Codex CLI</span>
+            <Badge variant={codexStatus?.installed ? "default" : "outline"}>
+              {codexStatus?.installed ? "Ready" : "Check"}
+            </Badge>
+          </div>
+          <div className="font-medium">
+            {codexStatus?.version || codexStatus?.error || "Waiting for Codex"}
+          </div>
+          <div className="mt-1 text-xs text-muted-foreground">
+            {codexStatus?.requires_pty && codexStatus?.requires_git_repo
+              ? "PTY + Git repo"
+              : "Proposal-only delegation"}
+          </div>
         </div>
         <div className="rounded-md border border-border/70 bg-background/50 px-3 py-2">
           <div className="mb-2 flex items-center justify-between gap-2">

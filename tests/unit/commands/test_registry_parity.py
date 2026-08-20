@@ -120,6 +120,18 @@ def test_worker_commands_are_explicitly_non_dangerous_and_non_configuring() -> N
         )
 
 
+def test_kaizen7_codex_commands_are_discoverable() -> None:
+    commands = {cmd.id: cmd for cmd in get_registry()}
+    for command_id in (
+        "kaizen7-codex-status",
+        "kaizen7-codex-capabilities",
+        "kaizen7-codex-delegate-propose",
+    ):
+        assert command_id in commands
+        assert commands[command_id].ui_section == "agents"
+        assert commands[command_id].worker_allowed is True
+
+
 def test_reply_languages_match_brain_source_of_truth() -> None:
     from jarvis.brain.manager import SUPPORTED_REPLY_LANGUAGES
 

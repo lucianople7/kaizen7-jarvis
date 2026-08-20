@@ -395,6 +395,20 @@ describe("BusinessView", () => {
               }),
           });
         }
+        if (url === "/api/kaizen7/codex/status") {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                installed: true,
+                version: "codex-cli 0.146.0",
+                execution_enabled: false,
+                requires_git_repo: true,
+                requires_pty: true,
+                error: "",
+              }),
+          });
+        }
         return Promise.reject(new Error(`unexpected url ${url}`));
       }),
     );
@@ -415,6 +429,9 @@ describe("BusinessView", () => {
     expect(screen.getByText("Profile chat")).toBeTruthy();
     expect(screen.getByText("Cron list")).toBeTruthy();
     expect(screen.getByText("Proposal only")).toBeTruthy();
+    expect(screen.getByText("Codex CLI")).toBeTruthy();
+    expect(screen.getByText("codex-cli 0.146.0")).toBeTruthy();
+    expect(screen.getByText("PTY + Git repo")).toBeTruthy();
   });
 
   it("lets a user prepare a simple Jarvis handoff for Hermes, Codex, Buzz or Work Assistant", async () => {

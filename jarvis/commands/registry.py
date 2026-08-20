@@ -468,6 +468,79 @@ def _build_registry() -> tuple[AppCommand, ...]:
             },
         ),
         AppCommand(
+            id="kaizen7-codex-status",
+            title="Show Codex CLI status",
+            description=(
+                "Inspect the local OpenAI Codex CLI installation. This is "
+                "read-only and never starts an agent."
+            ),
+            method="GET",
+            path="/api/kaizen7/codex/status",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige den codex cli status",),  # i18n-allow: input vocab
+                "en": ("show codex cli status",),
+                "es": ("muestra el estado de codex cli",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-codex-capabilities",
+            title="List Codex CLI capabilities",
+            description=(
+                "List the Codex CLI delegation patterns known to KAIZEN7. "
+                "This does not run Codex."
+            ),
+            method="GET",
+            path="/api/kaizen7/codex/capabilities",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige die codex cli faehigkeiten",),  # i18n-allow: input vocab
+                "en": ("list codex cli capabilities",),
+                "es": ("lista las capacidades de codex cli",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-codex-delegate-propose",
+            title="Propose Codex CLI delegation",
+            description=(
+                "Record a proposed Codex CLI task with workdir, prompt, PTY "
+                "and sandbox requirements. It does not execute Codex."
+            ),
+            method="POST",
+            path="/api/kaizen7/codex/delegate/propose",
+            params={
+                "type": "object",
+                "properties": {
+                    "workdir": _str_param(
+                        "Git repository where Codex should run.",
+                        min_length=1,
+                        max_length=500,
+                    ),
+                    "prompt": _str_param(
+                        "Coding task prompt to delegate.",
+                        min_length=1,
+                        max_length=20000,
+                    ),
+                    "sandbox": {
+                        "type": "string",
+                        "enum": ["workspace-write", "danger-full-access"],
+                        "default": "workspace-write",
+                        "description": "Codex sandbox mode to request after approval.",
+                    },
+                },
+                "required": ["workdir", "prompt"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("schlage eine codex cli delegierung vor",),  # i18n-allow: input vocab
+                "en": ("propose codex cli delegation",),
+                "es": ("propón delegar a codex cli",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
             id="kaizen7-bridge-capabilities",
             title="List Control Bridge capabilities",
             description=(
