@@ -1,6 +1,7 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import {
   BadgeCheck,
+  Bot,
   BriefcaseBusiness,
   CheckCircle2,
   CircleAlert,
@@ -11,6 +12,7 @@ import {
   Plus,
   RotateCcw,
   Save,
+  Send,
   Smartphone,
   Target,
   TrendingUp,
@@ -31,6 +33,7 @@ const MAX_ACTIVE_PRIORITIES = 3;
 type DecisionRisk = "low" | "approval";
 type CopyStatus = "idle" | "copied" | "error";
 type BackupStatus = "idle" | "restored" | "invalid";
+type HandoffStatus = "idle" | "saving" | "saved" | "error";
 
 interface BusinessDecision {
   id: string;
@@ -97,6 +100,41 @@ interface ReadinessCheck {
   label: string;
   passed: boolean;
   detail: string;
+}
+
+interface HermesStatus {
+  installed: boolean;
+  version: string;
+  profile_count: number;
+  error: string;
+}
+
+interface HermesProfile {
+  name: string;
+  model?: string;
+  gateway?: string;
+  alias?: string;
+  handle?: string;
+}
+
+interface HermesProfilesPayload {
+  installed: boolean;
+  count: number;
+  profiles: HermesProfile[];
+  error?: string;
+}
+
+interface HermesCapability {
+  id: string;
+  title: string;
+  command: string;
+  requires_approval: boolean;
+}
+
+interface HermesCapabilitiesPayload {
+  capabilities: HermesCapability[];
+  execution_enabled: boolean;
+  approval_required_for: string[];
 }
 
 const DEFAULT_WORKSPACE: BusinessWorkspace = {
@@ -567,6 +605,16 @@ export function BusinessView() {
   const [actionDraft, setActionDraft] = useState("");
   const [actionRisk, setActionRisk] = useState<DecisionRisk>("low");
   const [diagnosticTick, setDiagnosticTick] = useState(0);
+  const [hermesStatus, setHermesStatus] = useState<HermesStatus | null>(null);
+  const [hermesProfiles, setHermesProfiles] = useState<HermesProfile[]>([]);
+  const [hermesCapabilities, setHermesCapabilities] = useState<HermesCapability[]>([]);
+  const [hermesExecutionEnabled, setHermesExecutionEnabled] = useState(false);
+  const [hermesError, setHermesError] = useState("");
+  const [handoffProfile, setHandoffProfile] = useState("kaizen7");
+  const [handoffMessage, setHandoffMessage] = useState(
+    "Focus today on the highest leverage action.",
+  );
+  const [handoffStatus, setHandoffStatus] = useState<HandoffStatus>("idle");
   const [decisionDraft, setDecisionDraft] = useState({
     title: "",
     evidence: "",
@@ -582,6 +630,53 @@ export function BusinessView() {
     }, 250);
     return () => window.clearTimeout(timer);
   }, [workspace]);
+
+  useEffect(() => {
+    if (typeof fetch !== "function") return;
+    let cancelled = false;
+
+    const loadHermes = async () => {
+      try {
+        const [statusResponse, profilesResponse, capabilitiesResponse] = await Promise.all([
+          fetch("/api/kaizen7/hermes/status"),
+          fetch("/api/kaizen7/hermes/profiles"),
+          fetch("/api/kaizen7/hermes/capabilities"),
+        ]);
+        if (!statusResponse.ok || !profilesResponse.ok || !capabilitiesResponse.ok) {
+          throw new Error("Hermes API unavailable");
+        }
+        const status = (await statusResponse.json()) as HermesStatus;
+        const profilesPayload = (await profilesResponse.json()) as HermesProfilesPayload;
+        const capabilitiesPayload =
+          (await capabilitiesResponse.json()) as HermesCapabilitiesPayload;
+        if (cancelled) return;
+        const profiles = Array.isArray(profilesPayload.profiles)
+          ? profilesPayload.profiles
+          : [];
+        setHermesStatus(status);
+        setHermesProfiles(profiles);
+        setHermesCapabilities(
+          Array.isArray(capabilitiesPayload.capabilities)
+            ? capabilitiesPayload.capabilities
+            : [],
+        );
+        setHermesExecutionEnabled(Boolean(capabilitiesPayload.execution_enabled));
+        setHermesError(status.error || profilesPayload.error || "");
+        setHandoffProfile((current) => {
+          if (profiles.some((profile) => profile.name === current)) return current;
+          return profiles[0]?.name ?? "kaizen7";
+        });
+      } catch {
+        if (!cancelled) setHermesError("Hermes API unavailable");
+      }
+    };
+
+    void loadHermes();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const activePriorities = useMemo(
     () => workspace.priorities.slice(0, MAX_ACTIVE_PRIORITIES),
@@ -874,6 +969,26 @@ export function BusinessView() {
       ],
     }));
     setDecisionDraft({ title: "", evidence: "", result: "", risk: "low" });
+  };
+
+  const proposeHermesHandoff = async () => {
+    const message = handoffMessage.trim();
+    if (!message || typeof fetch !== "function") return;
+    setHandoffStatus("saving");
+    try {
+      const response = await fetch("/api/kaizen7/hermes/chat/propose", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          profile: handoffProfile,
+          message,
+        }),
+      });
+      if (!response.ok) throw new Error("Handoff proposal failed");
+      setHandoffStatus("saved");
+    } catch {
+      setHandoffStatus("error");
+    }
   };
 
   return (
@@ -1275,6 +1390,23 @@ export function BusinessView() {
           </section>
 
           <aside className="space-y-4">
+            <HermesRuntimePanel
+              status={hermesStatus}
+              profiles={hermesProfiles}
+              capabilities={hermesCapabilities}
+              executionEnabled={hermesExecutionEnabled}
+              error={hermesError}
+              handoffProfile={handoffProfile}
+              handoffMessage={handoffMessage}
+              handoffStatus={handoffStatus}
+              onProfileChange={setHandoffProfile}
+              onMessageChange={(value) => {
+                setHandoffMessage(value);
+                setHandoffStatus("idle");
+              }}
+              onProposeHandoff={proposeHermesHandoff}
+            />
+
             <article className="card-outline border-primary/30 bg-primary/5 p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-sm font-semibold">
@@ -1493,6 +1625,134 @@ export function BusinessView() {
         </div>
       </ScrollArea>
     </div>
+  );
+}
+
+function HermesRuntimePanel({
+  status,
+  profiles,
+  capabilities,
+  executionEnabled,
+  error,
+  handoffProfile,
+  handoffMessage,
+  handoffStatus,
+  onProfileChange,
+  onMessageChange,
+  onProposeHandoff,
+}: {
+  status: HermesStatus | null;
+  profiles: HermesProfile[];
+  capabilities: HermesCapability[];
+  executionEnabled: boolean;
+  error: string;
+  handoffProfile: string;
+  handoffMessage: string;
+  handoffStatus: HandoffStatus;
+  onProfileChange: (value: string) => void;
+  onMessageChange: (value: string) => void;
+  onProposeHandoff: () => void;
+}) {
+  const profileOptions = profiles.length
+    ? profiles.map((profile) => ({ value: profile.name, label: profile.name }))
+    : [{ value: "kaizen7", label: "kaizen7" }];
+  const visibleCapabilities = capabilities.slice(0, 4);
+
+  return (
+    <article className="card-outline border-primary/40 bg-primary/5 p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-sm font-semibold">
+          <Bot className="h-4 w-4 text-primary" />
+          Hermes runtime
+        </div>
+        <Badge variant={status?.installed ? "default" : "outline"}>
+          {status?.installed ? "Connected" : "Checking"}
+        </Badge>
+      </div>
+
+      <div className="grid gap-2 text-sm">
+        <div className="rounded-md border border-border/70 bg-background/50 px-3 py-2">
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Runtime
+          </div>
+          <div className="mt-1 font-medium">
+            {status?.version || (error ? "Hermes unavailable" : "Waiting for Hermes")}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 rounded-md border border-border/70 bg-background/50 px-3 py-2">
+          <span className="min-w-0 flex-1">Safety mode</span>
+          <Badge variant={executionEnabled ? "destructive" : "secondary"}>
+            {executionEnabled ? "Execution enabled" : "Proposal only"}
+          </Badge>
+        </div>
+        <div className="rounded-md border border-border/70 bg-background/50 px-3 py-2">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="text-sm font-medium">Profiles</span>
+            <Badge variant="outline">{profiles.length} profiles</Badge>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {profileOptions.map((profile) => (
+              <Badge key={profile.value} variant="secondary">
+                {profile.label}
+              </Badge>
+            ))}
+          </div>
+        </div>
+        {visibleCapabilities.length > 0 && (
+          <div className="rounded-md border border-border/70 bg-background/50 px-3 py-2">
+            <div className="mb-2 text-sm font-medium">Capabilities</div>
+            <div className="space-y-1.5">
+              {visibleCapabilities.map((capability) => (
+                <div key={capability.id} className="flex items-center gap-2">
+                  <span className="min-w-0 flex-1">{capability.title}</span>
+                  <Badge variant={capability.requires_approval ? "outline" : "secondary"}>
+                    {capability.requires_approval ? "Approval" : "Read-only"}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-3 space-y-2">
+        <BrandedSelect
+          value={handoffProfile}
+          onValueChange={onProfileChange}
+          ariaLabel="Hermes handoff profile"
+          options={profileOptions}
+          className="rounded-md border border-border bg-background/60 px-3 py-2 text-sm"
+        />
+        <label className="block">
+          <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Handoff
+          </span>
+          <textarea
+            value={handoffMessage}
+            rows={3}
+            onChange={(event) => onMessageChange(event.target.value)}
+            aria-label="Hermes handoff message"
+            className="w-full resize-none rounded-md border border-border bg-background/60 px-3 py-2 text-sm leading-relaxed outline-none transition-colors focus:border-primary/60"
+          />
+        </label>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={onProposeHandoff}
+            disabled={handoffStatus === "saving" || !handoffMessage.trim()}
+          >
+            <Send className="mr-1 h-4 w-4" />
+            Propose handoff
+          </Button>
+          {handoffStatus === "saved" && <Badge variant="default">Handoff recorded</Badge>}
+          {handoffStatus === "error" && (
+            <Badge variant="destructive">Handoff failed</Badge>
+          )}
+        </div>
+      </div>
+      {error && <p className="mt-2 text-xs text-muted-foreground">{error}</p>}
+    </article>
   );
 }
 

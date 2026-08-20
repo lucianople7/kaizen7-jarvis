@@ -25,9 +25,11 @@ describe("BusinessView", () => {
   beforeEach(() => {
     window.localStorage.clear();
     vi.useFakeTimers();
+    vi.stubGlobal("fetch", vi.fn(() => new Promise(() => undefined)));
   });
 
   afterEach(() => {
+    vi.unstubAllGlobals();
     vi.useRealTimers();
   });
 
@@ -336,6 +338,161 @@ describe("BusinessView", () => {
     expect(screen.getByText("Open action available")).toBeTruthy();
     expect(screen.getByText("Approval gate present")).toBeTruthy();
     expect(screen.getByText("Receipts available")).toBeTruthy();
+  });
+
+  it("shows the Hermes runtime cockpit with profiles and safe capabilities", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string) => {
+        if (url === "/api/kaizen7/hermes/status") {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                installed: true,
+                version: "Hermes Agent v0.20.4",
+                profile_count: 5,
+                error: "",
+              }),
+          });
+        }
+        if (url === "/api/kaizen7/hermes/profiles") {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                installed: true,
+                count: 5,
+                profiles: [
+                  { name: "kaizen7", model: "kimi-k2-0905-preview", gateway: "moonshot" },
+                  { name: "market", model: "kimi-k2-0905-preview", gateway: "moonshot" },
+                  { name: "sales", model: "kimi-k2-0905-preview", gateway: "moonshot" },
+                ],
+              }),
+          });
+        }
+        if (url === "/api/kaizen7/hermes/capabilities") {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                execution_enabled: false,
+                approval_required_for: ["payments", "publishing"],
+                capabilities: [
+                  {
+                    id: "profile-chat",
+                    title: "Profile chat",
+                    command: "hermes profile chat",
+                    requires_approval: true,
+                  },
+                  {
+                    id: "cron-list",
+                    title: "Cron list",
+                    command: "hermes cron list",
+                    requires_approval: false,
+                  },
+                ],
+              }),
+          });
+        }
+        return Promise.reject(new Error(`unexpected url ${url}`));
+      }),
+    );
+
+    render(<BusinessView />);
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText("Hermes runtime")).toBeTruthy();
+    expect(screen.getByText("Hermes Agent v0.20.4")).toBeTruthy();
+    expect(screen.getByText("3 profiles")).toBeTruthy();
+    expect(screen.getAllByText("kaizen7").length).toBeGreaterThan(0);
+    expect(screen.getByText("market")).toBeTruthy();
+    expect(screen.getByText("sales")).toBeTruthy();
+    expect(screen.getByText("Profile chat")).toBeTruthy();
+    expect(screen.getByText("Cron list")).toBeTruthy();
+    expect(screen.getByText("Proposal only")).toBeTruthy();
+  });
+
+  it("records a Hermes handoff proposal without executing it from the browser", async () => {
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      if (url === "/api/kaizen7/hermes/status") {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              installed: true,
+              version: "Hermes Agent v0.20.4",
+              profile_count: 1,
+              error: "",
+            }),
+        });
+      }
+      if (url === "/api/kaizen7/hermes/profiles") {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              installed: true,
+              count: 1,
+              profiles: [{ name: "kaizen7", model: "kimi-k2", gateway: "moonshot" }],
+            }),
+        });
+      }
+      if (url === "/api/kaizen7/hermes/capabilities") {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              execution_enabled: false,
+              approval_required_for: [],
+              capabilities: [],
+            }),
+        });
+      }
+      if (url === "/api/kaizen7/hermes/chat/propose") {
+        expect(init?.method).toBe("POST");
+        expect(JSON.parse(String(init?.body))).toMatchObject({
+          profile: "kaizen7",
+          message: "Focus today on the highest leverage action.",
+        });
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              accepted: true,
+              receipt: { id: "receipt-1" },
+            }),
+        });
+      }
+      return Promise.reject(new Error(`unexpected url ${url}`));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<BusinessView />);
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    fireEvent.change(screen.getByLabelText("Hermes handoff message"), {
+      target: { value: "Focus today on the highest leverage action." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Propose handoff/i }));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/kaizen7/hermes/chat/propose",
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(screen.getByText("Handoff recorded")).toBeTruthy();
   });
 
   it("copies a debug report for support and troubleshooting", async () => {
