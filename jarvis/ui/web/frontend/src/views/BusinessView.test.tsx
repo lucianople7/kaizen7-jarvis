@@ -417,7 +417,7 @@ describe("BusinessView", () => {
     expect(screen.getByText("Proposal only")).toBeTruthy();
   });
 
-  it("lets a user prepare a simple Jarvis handoff for Hermes, Codex or Work Assistant", async () => {
+  it("lets a user prepare a simple Jarvis handoff for Hermes, Codex, Buzz or Work Assistant", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn((url: string) => {
@@ -469,6 +469,7 @@ describe("BusinessView", () => {
     expect(screen.getByText("Jarvis command center")).toBeTruthy();
     expect(screen.getByText("Hermes")).toBeTruthy();
     expect(screen.getByText("Codex")).toBeTruthy();
+    expect(screen.getByText("Buzz")).toBeTruthy();
     expect(screen.getByText("Work Assistant")).toBeTruthy();
 
     fireEvent.change(screen.getByLabelText("What should Jarvis help with?"), {
@@ -482,6 +483,16 @@ describe("BusinessView", () => {
       (screen.getByLabelText("Hermes handoff message") as HTMLTextAreaElement).value,
     ).toBe(
       "Route: Codex. Build, debug and verify code changes. Request: Debug the install and make the product easier to use.",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Use Buzz/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Prepare safe handoff/i }));
+
+    expect(screen.getByText("Selected: Buzz")).toBeTruthy();
+    expect(
+      (screen.getByLabelText("Hermes handoff message") as HTMLTextAreaElement).value,
+    ).toBe(
+      "Route: Buzz. Join the shared human and agent workspace through the native Hermes Buzz gateway while preserving approvals. Request: Debug the install and make the product easier to use.",
     );
   });
 

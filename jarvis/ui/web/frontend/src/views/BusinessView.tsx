@@ -34,7 +34,7 @@ type DecisionRisk = "low" | "approval";
 type CopyStatus = "idle" | "copied" | "error";
 type BackupStatus = "idle" | "restored" | "invalid";
 type HandoffStatus = "idle" | "saving" | "saved" | "error";
-type JarvisRoute = "hermes" | "codex" | "work";
+type JarvisRoute = "hermes" | "codex" | "buzz" | "work";
 
 interface BusinessDecision {
   id: string;
@@ -266,6 +266,13 @@ const JARVIS_ROUTES: Array<{
     label: "Codex",
     summary: "Build, debug and verify code changes in the repo.",
     handoff: "Build, debug and verify code changes.",
+  },
+  {
+    id: "buzz",
+    label: "Buzz",
+    summary: "Put humans and agents in shared signed channels.",
+    handoff:
+      "Join the shared human and agent workspace through the native Hermes Buzz gateway while preserving approvals.",
   },
   {
     id: "work",
@@ -1772,7 +1779,7 @@ function HermesRuntimePanel({
           <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
             Quick starts
           </div>
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-4">
             {JARVIS_QUICK_STARTS.map((quickStart) => (
               <Button
                 key={quickStart.label}
