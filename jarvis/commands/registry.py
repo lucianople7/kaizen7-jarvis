@@ -360,6 +360,40 @@ def _build_registry() -> tuple[AppCommand, ...]:
             },
         ),
         AppCommand(
+            id="kaizen7-hermes-status",
+            title="Show Hermes runtime status",
+            description=(
+                "Inspect the local Hermes CLI installation and profile count. "
+                "This is read-only and never starts a profile."
+            ),
+            method="GET",
+            path="/api/kaizen7/hermes/status",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige den hermes runtime status",),  # i18n-allow: input vocab
+                "en": ("show hermes runtime status",),
+                "es": ("muestra el estado de hermes",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-hermes-profiles",
+            title="List Hermes profiles",
+            description=(
+                "List local Hermes profiles available as execution surfaces. "
+                "This is read-only and never runs a chat."
+            ),
+            method="GET",
+            path="/api/kaizen7/hermes/profiles",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige die hermes profile",),  # i18n-allow: input vocab
+                "en": ("list hermes profiles",),
+                "es": ("lista los perfiles de hermes",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
             id="kaizen7-bridge-capabilities",
             title="List Control Bridge capabilities",
             description=(

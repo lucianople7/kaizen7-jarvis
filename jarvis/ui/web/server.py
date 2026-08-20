@@ -359,6 +359,7 @@ class WebServer:
         from .frontier_routes import router as frontier_router
         from .kaizen7_bots_routes import router as kaizen7_bots_router
         from .kaizen7_bridge_routes import router as kaizen7_bridge_router
+        from .kaizen7_hermes_routes import router as kaizen7_hermes_router
         from .marketplace_routes import router as marketplace_router
         from .mcp_routes import router as mcp_router
         from .missions_auth import router as missions_auth_router
@@ -449,6 +450,7 @@ class WebServer:
         app.include_router(commands_router)
         app.include_router(kaizen7_bots_router)
         app.include_router(kaizen7_bridge_router)
+        app.include_router(kaizen7_hermes_router)
         app.include_router(friends_router)
         app.include_router(marketplace_router)
         app.state.friend_registry = None

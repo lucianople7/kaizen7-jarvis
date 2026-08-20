@@ -111,6 +111,26 @@ Record a recommendation-only proposal for a new bot profile. It does not create,
 - **Desktop UI section:** `agents`
 - **Voice example (EN):** "propose a kaizen seven bot"
 
+## `kaizen7-hermes-status` — Show Hermes runtime status
+
+Inspect the local Hermes CLI installation and profile count. This is read-only and never starts a profile.
+
+- **Endpoint:** `GET /api/kaizen7/hermes/status`
+- **Arguments:** none
+- **Requires confirmation:** no
+- **Desktop UI section:** `agents`
+- **Voice example (EN):** "show hermes runtime status"
+
+## `kaizen7-hermes-profiles` — List Hermes profiles
+
+List local Hermes profiles available as execution surfaces. This is read-only and never runs a chat.
+
+- **Endpoint:** `GET /api/kaizen7/hermes/profiles`
+- **Arguments:** none
+- **Requires confirmation:** no
+- **Desktop UI section:** `agents`
+- **Voice example (EN):** "list hermes profiles"
+
 ## `kaizen7-bridge-capabilities` — List Control Bridge capabilities
 
 List safe recommendation-only bridge capabilities. This never executes external actions.
