@@ -275,6 +275,28 @@ const JARVIS_ROUTES: Array<{
   },
 ];
 
+const JARVIS_QUICK_STARTS: Array<{
+  label: string;
+  route: JarvisRoute;
+  request: string;
+}> = [
+  {
+    label: "Debug app",
+    route: "codex",
+    request: "Debug the app, find the blocker, fix it, run tests and report proof.",
+  },
+  {
+    label: "Plan my day",
+    route: "hermes",
+    request: "Choose today's mission, limit priorities and define the next safe action.",
+  },
+  {
+    label: "Research market",
+    route: "work",
+    request: "Research the market, cite sources and extract useful business moves.",
+  },
+];
+
 function readWorkspace(): BusinessWorkspace {
   if (typeof window === "undefined") return DEFAULT_WORKSPACE;
   try {
@@ -1691,12 +1713,30 @@ function HermesRuntimePanel({
   const selectedRoute =
     JARVIS_ROUTES.find((route) => route.id === jarvisRoute) ?? JARVIS_ROUTES[0];
 
-  const prepareSafeHandoff = () => {
+  const buildSafeHandoff = (route: typeof selectedRoute, request: string) =>
+    `Route: ${route.label}. ${route.handoff} Request: ${request}`;
+
+  const prepareSafeHandoff = (route = selectedRoute, request = jarvisRequest) => {
+    const cleanRequest = request.trim();
+    if (!cleanRequest) return;
+    onMessageChange(buildSafeHandoff(route, cleanRequest));
+  };
+
+  const useQuickStart = (quickStart: (typeof JARVIS_QUICK_STARTS)[number]) => {
+    const route =
+      JARVIS_ROUTES.find((candidate) => candidate.id === quickStart.route) ??
+      JARVIS_ROUTES[0];
+    setJarvisRoute(route.id);
+    setJarvisRequest(quickStart.request);
+    prepareSafeHandoff(route, quickStart.request);
+  };
+
+  const canPrepareHandoff = jarvisRequest.trim().length > 0;
+
+  const prepareCurrentHandoff = () => {
     const request = jarvisRequest.trim();
     if (!request) return;
-    onMessageChange(
-      `Route: ${selectedRoute.label}. ${selectedRoute.handoff} Request: ${request}`,
-    );
+    prepareSafeHandoff(selectedRoute, request);
   };
 
   return (
@@ -1728,6 +1768,25 @@ function HermesRuntimePanel({
             className="w-full resize-none rounded-md border border-border bg-background/60 px-3 py-2 text-sm leading-relaxed outline-none transition-colors focus:border-primary/60"
           />
         </label>
+        <div className="mt-3">
+          <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Quick starts
+          </div>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {JARVIS_QUICK_STARTS.map((quickStart) => (
+              <Button
+                key={quickStart.label}
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => useQuickStart(quickStart)}
+                className="justify-start"
+              >
+                {quickStart.label}
+              </Button>
+            ))}
+          </div>
+        </div>
         <div className="mt-3 grid gap-2">
           {JARVIS_ROUTES.map((route) => (
             <button
@@ -1746,7 +1805,12 @@ function HermesRuntimePanel({
             </button>
           ))}
         </div>
-        <Button size="sm" className="mt-3" onClick={prepareSafeHandoff}>
+        <Button
+          size="sm"
+          className="mt-3"
+          onClick={prepareCurrentHandoff}
+          disabled={!canPrepareHandoff}
+        >
           <Send className="mr-1 h-4 w-4" />
           Prepare safe handoff
         </Button>

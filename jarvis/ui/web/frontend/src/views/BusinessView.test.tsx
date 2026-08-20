@@ -485,6 +485,74 @@ describe("BusinessView", () => {
     );
   });
 
+  it("offers one-click Jarvis quick starts for common user jobs", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string) => {
+        if (url === "/api/kaizen7/hermes/status") {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                installed: true,
+                version: "Hermes Agent v0.20.4",
+                profile_count: 1,
+                error: "",
+              }),
+          });
+        }
+        if (url === "/api/kaizen7/hermes/profiles") {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                installed: true,
+                count: 1,
+                profiles: [{ name: "kaizen7", model: "kimi-k2", gateway: "moonshot" }],
+              }),
+          });
+        }
+        if (url === "/api/kaizen7/hermes/capabilities") {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                execution_enabled: false,
+                approval_required_for: [],
+                capabilities: [],
+              }),
+          });
+        }
+        return Promise.reject(new Error(`unexpected url ${url}`));
+      }),
+    );
+
+    render(<BusinessView />);
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText("Quick starts")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Debug app/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Plan my day/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Research market/i })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: /Debug app/i }));
+
+    expect(screen.getByText("Selected: Codex")).toBeTruthy();
+    expect(
+      (screen.getByLabelText("What should Jarvis help with?") as HTMLTextAreaElement)
+        .value,
+    ).toBe("Debug the app, find the blocker, fix it, run tests and report proof.");
+    expect(
+      (screen.getByLabelText("Hermes handoff message") as HTMLTextAreaElement).value,
+    ).toBe(
+      "Route: Codex. Build, debug and verify code changes. Request: Debug the app, find the blocker, fix it, run tests and report proof.",
+    );
+  });
+
   it("records a Hermes handoff proposal without executing it from the browser", async () => {
     const fetchMock = vi.fn((url: string, init?: RequestInit) => {
       if (url === "/api/kaizen7/hermes/status") {
