@@ -417,6 +417,74 @@ describe("BusinessView", () => {
     expect(screen.getByText("Proposal only")).toBeTruthy();
   });
 
+  it("lets a user prepare a simple Jarvis handoff for Hermes, Codex or Work Assistant", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string) => {
+        if (url === "/api/kaizen7/hermes/status") {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                installed: true,
+                version: "Hermes Agent v0.20.4",
+                profile_count: 1,
+                error: "",
+              }),
+          });
+        }
+        if (url === "/api/kaizen7/hermes/profiles") {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                installed: true,
+                count: 1,
+                profiles: [{ name: "kaizen7", model: "kimi-k2", gateway: "moonshot" }],
+              }),
+          });
+        }
+        if (url === "/api/kaizen7/hermes/capabilities") {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                execution_enabled: false,
+                approval_required_for: [],
+                capabilities: [],
+              }),
+          });
+        }
+        return Promise.reject(new Error(`unexpected url ${url}`));
+      }),
+    );
+
+    render(<BusinessView />);
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText("Jarvis command center")).toBeTruthy();
+    expect(screen.getByText("Hermes")).toBeTruthy();
+    expect(screen.getByText("Codex")).toBeTruthy();
+    expect(screen.getByText("Work Assistant")).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("What should Jarvis help with?"), {
+      target: { value: "Debug the install and make the product easier to use." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Use Codex/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Prepare safe handoff/i }));
+
+    expect(screen.getByText("Selected: Codex")).toBeTruthy();
+    expect(
+      (screen.getByLabelText("Hermes handoff message") as HTMLTextAreaElement).value,
+    ).toBe(
+      "Route: Codex. Build, debug and verify code changes. Request: Debug the install and make the product easier to use.",
+    );
+  });
+
   it("records a Hermes handoff proposal without executing it from the browser", async () => {
     const fetchMock = vi.fn((url: string, init?: RequestInit) => {
       if (url === "/api/kaizen7/hermes/status") {

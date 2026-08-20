@@ -34,6 +34,7 @@ type DecisionRisk = "low" | "approval";
 type CopyStatus = "idle" | "copied" | "error";
 type BackupStatus = "idle" | "restored" | "invalid";
 type HandoffStatus = "idle" | "saving" | "saved" | "error";
+type JarvisRoute = "hermes" | "codex" | "work";
 
 interface BusinessDecision {
   id: string;
@@ -246,6 +247,32 @@ const ACTION_RISK_OPTIONS = [
 const DECISION_RISK_OPTIONS = [
   { value: "low", label: "Recommendation only" },
   { value: "approval", label: "Needs human approval" },
+];
+
+const JARVIS_ROUTES: Array<{
+  id: JarvisRoute;
+  label: string;
+  summary: string;
+  handoff: string;
+}> = [
+  {
+    id: "hermes",
+    label: "Hermes",
+    summary: "Coordinate agents, profiles and daily operating loops.",
+    handoff: "Coordinate the right agents and return the next safe action.",
+  },
+  {
+    id: "codex",
+    label: "Codex",
+    summary: "Build, debug and verify code changes in the repo.",
+    handoff: "Build, debug and verify code changes.",
+  },
+  {
+    id: "work",
+    label: "Work Assistant",
+    summary: "Research, docs, review and business support.",
+    handoff: "Research, organize and review the work before execution.",
+  },
 ];
 
 function readWorkspace(): BusinessWorkspace {
@@ -1653,10 +1680,24 @@ function HermesRuntimePanel({
   onMessageChange: (value: string) => void;
   onProposeHandoff: () => void;
 }) {
+  const [jarvisRoute, setJarvisRoute] = useState<JarvisRoute>("hermes");
+  const [jarvisRequest, setJarvisRequest] = useState(
+    "Plan the next focused business move.",
+  );
   const profileOptions = profiles.length
     ? profiles.map((profile) => ({ value: profile.name, label: profile.name }))
     : [{ value: "kaizen7", label: "kaizen7" }];
   const visibleCapabilities = capabilities.slice(0, 4);
+  const selectedRoute =
+    JARVIS_ROUTES.find((route) => route.id === jarvisRoute) ?? JARVIS_ROUTES[0];
+
+  const prepareSafeHandoff = () => {
+    const request = jarvisRequest.trim();
+    if (!request) return;
+    onMessageChange(
+      `Route: ${selectedRoute.label}. ${selectedRoute.handoff} Request: ${request}`,
+    );
+  };
 
   return (
     <article className="card-outline border-primary/40 bg-primary/5 p-4">
@@ -1668,6 +1709,47 @@ function HermesRuntimePanel({
         <Badge variant={status?.installed ? "default" : "outline"}>
           {status?.installed ? "Connected" : "Checking"}
         </Badge>
+      </div>
+
+      <div className="mb-3 rounded-md border border-primary/30 bg-background/60 p-3">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <div className="text-sm font-semibold">Jarvis command center</div>
+          <Badge variant="outline">Selected: {selectedRoute.label}</Badge>
+        </div>
+        <label className="block">
+          <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            What should Jarvis help with?
+          </span>
+          <textarea
+            value={jarvisRequest}
+            rows={3}
+            onChange={(event) => setJarvisRequest(event.target.value)}
+            aria-label="What should Jarvis help with?"
+            className="w-full resize-none rounded-md border border-border bg-background/60 px-3 py-2 text-sm leading-relaxed outline-none transition-colors focus:border-primary/60"
+          />
+        </label>
+        <div className="mt-3 grid gap-2">
+          {JARVIS_ROUTES.map((route) => (
+            <button
+              key={route.id}
+              type="button"
+              onClick={() => setJarvisRoute(route.id)}
+              aria-label={`Use ${route.label}`}
+              className={`rounded-md border px-3 py-2 text-left text-sm transition-colors ${
+                route.id === jarvisRoute
+                  ? "border-primary/60 bg-primary/10"
+                  : "border-border/70 bg-background/40 hover:border-primary/40"
+              }`}
+            >
+              <div className="font-semibold">{route.label}</div>
+              <div className="mt-1 text-xs text-muted-foreground">{route.summary}</div>
+            </button>
+          ))}
+        </div>
+        <Button size="sm" className="mt-3" onClick={prepareSafeHandoff}>
+          <Send className="mr-1 h-4 w-4" />
+          Prepare safe handoff
+        </Button>
       </div>
 
       <div className="grid gap-2 text-sm">
