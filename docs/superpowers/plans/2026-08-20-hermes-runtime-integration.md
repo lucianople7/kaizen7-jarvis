@@ -33,9 +33,16 @@ Implemented read-only bridge:
 
 - `/api/kaizen7/hermes/status`
 - `/api/kaizen7/hermes/profiles`
+- `/api/kaizen7/hermes/capabilities`
+- `/api/kaizen7/hermes/cron`
+- `/api/kaizen7/hermes/peers`
+- `/api/kaizen7/hermes/chat/propose`
 
-The bridge inspects the local Hermes CLI and profile roster. It never starts a
-chat, runs a profile, sends messages, schedules cron jobs, or edits credentials.
+The bridge inspects the local Hermes CLI, profile roster, cron surface, peer
+surface, and profile-chat command shape. Chat handoff is proposal-only at this
+layer: it records the exact safe command pattern and message intent without
+starting a profile, sending messages, scheduling jobs, editing peers, or
+touching credentials.
 
 ## Remaining Manual Step
 

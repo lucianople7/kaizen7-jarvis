@@ -131,6 +131,46 @@ List local Hermes profiles available as execution surfaces. This is read-only an
 - **Desktop UI section:** `agents`
 - **Voice example (EN):** "list hermes profiles"
 
+## `kaizen7-hermes-capabilities` — List Hermes runtime capabilities
+
+List Hermes profile, chat, cron, and peer capabilities exposed to KAIZEN7. This does not execute profile chat.
+
+- **Endpoint:** `GET /api/kaizen7/hermes/capabilities`
+- **Arguments:** none
+- **Requires confirmation:** no
+- **Desktop UI section:** `agents`
+- **Voice example (EN):** "list hermes capabilities"
+
+## `kaizen7-hermes-chat-propose` — Propose Hermes profile chat
+
+Record a proposed handoff to a Hermes profile using query-file transport. It does not execute the chat.
+
+- **Endpoint:** `POST /api/kaizen7/hermes/chat/propose`
+- **Arguments:** `profile` (string; required); `message` (string; required)
+- **Requires confirmation:** no
+- **Desktop UI section:** `agents`
+- **Voice example (EN):** "propose a hermes chat"
+
+## `kaizen7-hermes-cron-list` — List Hermes cron routines
+
+List Hermes cron routines through the local runtime.
+
+- **Endpoint:** `GET /api/kaizen7/hermes/cron`
+- **Arguments:** none
+- **Requires confirmation:** no
+- **Desktop UI section:** `agents`
+- **Voice example (EN):** "list hermes routines"
+
+## `kaizen7-hermes-peer-list` — List Hermes peers
+
+List registered Hermes peers through the local runtime.
+
+- **Endpoint:** `GET /api/kaizen7/hermes/peers`
+- **Arguments:** none
+- **Requires confirmation:** no
+- **Desktop UI section:** `agents`
+- **Voice example (EN):** "list hermes peers"
+
 ## `kaizen7-bridge-capabilities` — List Control Bridge capabilities
 
 List safe recommendation-only bridge capabilities. This never executes external actions.

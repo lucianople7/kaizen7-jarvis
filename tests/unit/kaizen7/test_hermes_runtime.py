@@ -43,6 +43,55 @@ def test_profiles_are_safe_read_only_payloads() -> None:
     ]
 
 
+def test_capabilities_cover_profile_chat_cron_and_peer() -> None:
+    runtime = HermesRuntime(cli="hermes", runner=_happy_runner)
+
+    payload = runtime.capabilities()
+
+    assert payload["execution_enabled"] is False
+    assert {cap["id"] for cap in payload["capabilities"]} >= {
+        "profile-list",
+        "profile-chat",
+        "cron-list",
+        "peer-list",
+        "peer-dm",
+    }
+    chat = next(cap for cap in payload["capabilities"] if cap["id"] == "profile-chat")
+    assert chat["requires_approval"] is True
+    assert chat["command"] == "hermes -p <profile> chat --query-file <file> -Q"
+
+
+def test_chat_plan_builds_query_file_command_without_running() -> None:
+    runtime = HermesRuntime(cli="hermes", runner=_happy_runner)
+
+    result = runtime.chat_plan(profile="kaizen7", message="Focus today")
+
+    assert result["executed"] is False
+    assert result["requires_approval"] is True
+    assert result["profile"] == "kaizen7"
+    assert result["message"] == "Focus today"
+    assert result["command"] == [
+        "hermes",
+        "-p",
+        "kaizen7",
+        "chat",
+        "--query-file",
+        "<file>",
+        "-Q",
+        "--source",
+        "kaizen7",
+    ]
+
+
+def test_cron_and_peer_lists_are_read_only() -> None:
+    runtime = HermesRuntime(cli="hermes", runner=_lists_runner)
+
+    assert runtime.cron_list()["executed"] is True
+    assert runtime.peer_list()["executed"] is True
+    assert runtime.cron_list()["stdout"] == "no jobs"
+    assert runtime.peer_list()["stdout"] == "no peers"
+
+
 def test_profile_parser_skips_table_separators_from_real_cli_output() -> None:
     runtime = HermesRuntime(cli="hermes", runner=_realistic_runner)
 
@@ -89,6 +138,16 @@ def _happy_runner(args, **_kwargs):
             "",
         )
     raise AssertionError(args)
+
+
+def _lists_runner(args, **_kwargs):
+    if args[-1] == "--version":
+        return subprocess.CompletedProcess(args, 0, "Hermes Agent v0.20.4\n", "")
+    if args[-2:] == ["cron", "list"]:
+        return subprocess.CompletedProcess(args, 0, "no jobs\n", "")
+    if args[-2:] == ["peer", "list"]:
+        return subprocess.CompletedProcess(args, 0, "no peers\n", "")
+    return _happy_runner(args, **_kwargs)
 
 
 def _realistic_runner(args, **_kwargs):

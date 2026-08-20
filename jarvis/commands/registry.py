@@ -394,6 +394,80 @@ def _build_registry() -> tuple[AppCommand, ...]:
             },
         ),
         AppCommand(
+            id="kaizen7-hermes-capabilities",
+            title="List Hermes runtime capabilities",
+            description=(
+                "List Hermes profile, chat, cron, and peer capabilities exposed "
+                "to KAIZEN7. This does not execute profile chat."
+            ),
+            method="GET",
+            path="/api/kaizen7/hermes/capabilities",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige die hermes faehigkeiten",),  # i18n-allow: input vocab
+                "en": ("list hermes capabilities",),
+                "es": ("lista las capacidades de hermes",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-hermes-chat-propose",
+            title="Propose Hermes profile chat",
+            description=(
+                "Record a proposed handoff to a Hermes profile using query-file "
+                "transport. It does not execute the chat."
+            ),
+            method="POST",
+            path="/api/kaizen7/hermes/chat/propose",
+            params={
+                "type": "object",
+                "properties": {
+                    "profile": _str_param(
+                        "Hermes profile name.", min_length=1, max_length=80
+                    ),
+                    "message": _str_param(
+                        "Message to hand off.", min_length=1, max_length=20000
+                    ),
+                },
+                "required": ["profile", "message"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("schlage einen hermes chat vor",),  # i18n-allow: input vocab
+                "en": ("propose a hermes chat",),
+                "es": ("propón un chat con hermes",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-hermes-cron-list",
+            title="List Hermes cron routines",
+            description="List Hermes cron routines through the local runtime.",
+            method="GET",
+            path="/api/kaizen7/hermes/cron",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige hermes routinen",),  # i18n-allow: input vocab
+                "en": ("list hermes routines",),
+                "es": ("lista las rutinas de hermes",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-hermes-peer-list",
+            title="List Hermes peers",
+            description="List registered Hermes peers through the local runtime.",
+            method="GET",
+            path="/api/kaizen7/hermes/peers",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige hermes peers",),  # i18n-allow: input vocab
+                "en": ("list hermes peers",),
+                "es": ("lista los peers de hermes",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
             id="kaizen7-bridge-capabilities",
             title="List Control Bridge capabilities",
             description=(

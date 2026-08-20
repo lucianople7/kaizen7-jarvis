@@ -61,6 +61,116 @@ class HermesRuntime:
             "error": status["error"],
         }
 
+    def capabilities(self) -> dict[str, Any]:
+        return {
+            "execution_enabled": False,
+            "approval_required_for": [
+                "profile-chat",
+                "profile-create",
+                "cron-create",
+                "cron-run",
+                "peer-add",
+                "peer-dm",
+            ],
+            "capabilities": [
+                {
+                    "id": "profile-list",
+                    "title": "List Hermes profiles",
+                    "command": "hermes profile list",
+                    "requires_approval": False,
+                },
+                {
+                    "id": "profile-chat",
+                    "title": "Send a message to a Hermes profile",
+                    "command": "hermes -p <profile> chat --query-file <file> -Q",
+                    "requires_approval": True,
+                },
+                {
+                    "id": "profile-create",
+                    "title": "Create a Hermes profile",
+                    "command": "hermes profile create <name> --description <description>",
+                    "requires_approval": True,
+                },
+                {
+                    "id": "cron-list",
+                    "title": "List Hermes cron routines",
+                    "command": "hermes cron list",
+                    "requires_approval": False,
+                },
+                {
+                    "id": "cron-create",
+                    "title": "Create a Hermes cron routine",
+                    "command": "hermes cron create ...",
+                    "requires_approval": True,
+                },
+                {
+                    "id": "peer-list",
+                    "title": "List Hermes peers",
+                    "command": "hermes peer list",
+                    "requires_approval": False,
+                },
+                {
+                    "id": "peer-dm",
+                    "title": "Message a Hermes peer/profile",
+                    "command": "hermes peer dm <peer>/<profile> <file>",
+                    "requires_approval": True,
+                },
+            ],
+        }
+
+    def chat_plan(self, *, profile: str, message: str) -> dict[str, Any]:
+        safe_profile = _safe_profile(profile)
+        clean_message = " ".join(message.strip().split())
+        if not clean_message:
+            raise ValueError("Message cannot be blank.")
+        return {
+            "executed": False,
+            "requires_approval": True,
+            "profile": safe_profile,
+            "message": clean_message,
+            "command": [
+                str(self.cli or "hermes"),
+                "-p",
+                safe_profile,
+                "chat",
+                "--query-file",
+                "<file>",
+                "-Q",
+                "--source",
+                "kaizen7",
+            ],
+        }
+
+    def cron_list(self) -> dict[str, Any]:
+        return self._run_read_only(["cron", "list"])
+
+    def peer_list(self) -> dict[str, Any]:
+        return self._run_read_only(["peer", "list"])
+
+    def _run_read_only(self, args: list[str]) -> dict[str, Any]:
+        try:
+            result = self.runner(
+                [str(self.cli or "hermes"), *args],
+                capture_output=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=60,
+                check=False,
+            )
+        except FileNotFoundError:
+            return {
+                "executed": False,
+                "stdout": "",
+                "stderr": "",
+                "error": "Hermes CLI not found.",
+            }
+        return {
+            "executed": result.returncode == 0,
+            "stdout": result.stdout.strip(),
+            "stderr": result.stderr.strip(),
+            "error": "" if result.returncode == 0 else result.stderr.strip(),
+        }
+
     def _version(self) -> dict[str, str]:
         try:
             result = self.runner(
@@ -104,6 +214,13 @@ def _resolve_cli() -> str:
     if local.exists():
         return str(local)
     return "hermes"
+
+
+def _safe_profile(profile: str) -> str:
+    candidate = profile.strip().lower()
+    if not _PROFILE_NAME_RE.match(candidate):
+        raise ValueError("Invalid Hermes profile name.")
+    return candidate
 
 
 def _parse_profile_table(output: str) -> list[dict[str, str]]:
