@@ -395,6 +395,24 @@ describe("BusinessView", () => {
               }),
           });
         }
+        if (url === "/api/kaizen7/hermes/bot-mode") {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                name: "Personal Jarvis + Hermes Bot",
+                execution_enabled: false,
+                personal_jarvis: { role: "local_interface" },
+                hermes: { role: "agent_runtime" },
+                bot_mode: { role: "persistent_specialist_bots" },
+                recommended_bots: [
+                  { profile: "kaizen7", title: "Mission control", installed: true },
+                  { profile: "market", title: "Market scout", installed: true },
+                ],
+                human_approval_required_for: ["payments", "publishing"],
+              }),
+          });
+        }
         if (url === "/api/kaizen7/codex/status") {
           return Promise.resolve({
             ok: true,
@@ -424,7 +442,7 @@ describe("BusinessView", () => {
     expect(screen.getByText("Hermes Agent v0.20.4")).toBeTruthy();
     expect(screen.getByText("3 profiles")).toBeTruthy();
     expect(screen.getAllByText("kaizen7").length).toBeGreaterThan(0);
-    expect(screen.getByText("market")).toBeTruthy();
+    expect(screen.getAllByText("market").length).toBeGreaterThan(0);
     expect(screen.getByText("sales")).toBeTruthy();
     expect(screen.getByText("Profile chat")).toBeTruthy();
     expect(screen.getByText("Cron list")).toBeTruthy();
@@ -432,6 +450,10 @@ describe("BusinessView", () => {
     expect(screen.getByText("Codex CLI")).toBeTruthy();
     expect(screen.getByText("codex-cli 0.146.0")).toBeTruthy();
     expect(screen.getByText("PTY + Git repo")).toBeTruthy();
+    expect(screen.getByText("Personal Jarvis + Hermes Bot")).toBeTruthy();
+    expect(screen.getByText("Local interface")).toBeTruthy();
+    expect(screen.getByText("Persistent bot runtime")).toBeTruthy();
+    expect(screen.getAllByText("Human approval").length).toBeGreaterThan(0);
   });
 
   it("lets a user prepare a simple Jarvis handoff for Hermes, Codex, Buzz or Work Assistant", async () => {

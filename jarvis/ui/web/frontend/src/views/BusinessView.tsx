@@ -138,6 +138,22 @@ interface HermesCapabilitiesPayload {
   approval_required_for: string[];
 }
 
+interface HermesBotModeBot {
+  profile: string;
+  title: string;
+  installed?: boolean;
+}
+
+interface HermesBotModePayload {
+  name: string;
+  execution_enabled: boolean;
+  personal_jarvis: { role: string };
+  hermes: { role: string; installed?: boolean; version?: string };
+  bot_mode: { role: string };
+  recommended_bots: HermesBotModeBot[];
+  human_approval_required_for: string[];
+}
+
 interface CodexStatus {
   installed: boolean;
   version: string;
@@ -674,6 +690,7 @@ export function BusinessView() {
   const [hermesProfiles, setHermesProfiles] = useState<HermesProfile[]>([]);
   const [hermesCapabilities, setHermesCapabilities] = useState<HermesCapability[]>([]);
   const [hermesExecutionEnabled, setHermesExecutionEnabled] = useState(false);
+  const [hermesBotMode, setHermesBotMode] = useState<HermesBotModePayload | null>(null);
   const [hermesError, setHermesError] = useState("");
   const [codexStatus, setCodexStatus] = useState<CodexStatus | null>(null);
   const [handoffProfile, setHandoffProfile] = useState("kaizen7");
@@ -708,11 +725,13 @@ export function BusinessView() {
           profilesResponse,
           capabilitiesResponse,
           codexStatusResponse,
+          botModeResponse,
         ] = await Promise.all([
           fetch("/api/kaizen7/hermes/status"),
           fetch("/api/kaizen7/hermes/profiles"),
           fetch("/api/kaizen7/hermes/capabilities"),
-          fetch("/api/kaizen7/codex/status"),
+          fetch("/api/kaizen7/codex/status").catch(() => null),
+          fetch("/api/kaizen7/hermes/bot-mode").catch(() => null),
         ]);
         if (!statusResponse.ok || !profilesResponse.ok || !capabilitiesResponse.ok) {
           throw new Error("Hermes API unavailable");
@@ -721,9 +740,13 @@ export function BusinessView() {
         const profilesPayload = (await profilesResponse.json()) as HermesProfilesPayload;
         const capabilitiesPayload =
           (await capabilitiesResponse.json()) as HermesCapabilitiesPayload;
-        const codexPayload = codexStatusResponse.ok
+        const codexPayload = codexStatusResponse && codexStatusResponse.ok
           ? ((await codexStatusResponse.json()) as CodexStatus)
           : null;
+        const botModePayload =
+          botModeResponse && botModeResponse.ok
+            ? ((await botModeResponse.json()) as HermesBotModePayload)
+            : null;
         if (cancelled) return;
         const profiles = Array.isArray(profilesPayload.profiles)
           ? profilesPayload.profiles
@@ -737,6 +760,7 @@ export function BusinessView() {
         );
         setHermesExecutionEnabled(Boolean(capabilitiesPayload.execution_enabled));
         setCodexStatus(codexPayload);
+        setHermesBotMode(botModePayload);
         setHermesError(status.error || profilesPayload.error || "");
         setHandoffProfile((current) => {
           if (profiles.some((profile) => profile.name === current)) return current;
@@ -1471,6 +1495,7 @@ export function BusinessView() {
               profiles={hermesProfiles}
               capabilities={hermesCapabilities}
               executionEnabled={hermesExecutionEnabled}
+              botMode={hermesBotMode}
               codexStatus={codexStatus}
               error={hermesError}
               handoffProfile={handoffProfile}
@@ -1710,6 +1735,7 @@ function HermesRuntimePanel({
   profiles,
   capabilities,
   executionEnabled,
+  botMode,
   codexStatus,
   error,
   handoffProfile,
@@ -1723,6 +1749,7 @@ function HermesRuntimePanel({
   profiles: HermesProfile[];
   capabilities: HermesCapability[];
   executionEnabled: boolean;
+  botMode: HermesBotModePayload | null;
   codexStatus: CodexStatus | null;
   error: string;
   handoffProfile: string;
@@ -1877,6 +1904,27 @@ function HermesRuntimePanel({
               : "Proposal-only delegation"}
           </div>
         </div>
+        {botMode && (
+          <div className="rounded-md border border-primary/30 bg-background/60 px-3 py-3">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <span className="text-sm font-medium">{botMode.name}</span>
+              <Badge variant="secondary">Unified</Badge>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-3">
+              <RuntimeRole label="Local interface" value={botMode.personal_jarvis.role} />
+              <RuntimeRole label="Agent runtime" value={botMode.hermes.role} />
+              <RuntimeRole label="Persistent bot runtime" value={botMode.bot_mode.role} />
+            </div>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {botMode.recommended_bots.slice(0, 5).map((bot) => (
+                <Badge key={bot.profile} variant={bot.installed ? "default" : "outline"}>
+                  {bot.profile}
+                </Badge>
+              ))}
+              <Badge variant="outline">Human approval</Badge>
+            </div>
+          </div>
+        )}
         <div className="rounded-md border border-border/70 bg-background/50 px-3 py-2">
           <div className="mb-2 flex items-center justify-between gap-2">
             <span className="text-sm font-medium">Profiles</span>
@@ -1945,6 +1993,17 @@ function HermesRuntimePanel({
       </div>
       {error && <p className="mt-2 text-xs text-muted-foreground">{error}</p>}
     </article>
+  );
+}
+
+function RuntimeRole({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-border/60 bg-background/50 px-2 py-2">
+      <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {label}
+      </div>
+      <div className="mt-1 text-xs text-muted-foreground">{value.replaceAll("_", " ")}</div>
+    </div>
   );
 }
 

@@ -32,6 +32,11 @@ async def hermes_capabilities() -> dict[str, Any]:
     return HermesRuntime.from_environment().capabilities()
 
 
+@router.get("/bot-mode")
+async def hermes_bot_mode() -> dict[str, Any]:
+    return HermesRuntime.from_environment().bot_mode_contract()
+
+
 @router.post("/chat/propose")
 async def hermes_chat_propose(
     request: Request, payload: HermesChatProposalRequest

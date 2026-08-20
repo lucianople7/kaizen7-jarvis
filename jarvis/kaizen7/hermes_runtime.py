@@ -118,6 +118,87 @@ class HermesRuntime:
             ],
         }
 
+    def bot_mode_contract(self) -> dict[str, Any]:
+        status = self.status()
+        installed_profiles = {
+            str(profile.get("name", "")): profile for profile in status.get("profiles", [])
+        }
+        recommended_bots = [
+            {
+                "profile": "kaizen7",
+                "title": "Mission control",
+                "focus": "Keep Luciano focused on one active mission and limited priorities.",
+            },
+            {
+                "profile": "market",
+                "title": "Market scout",
+                "focus": "Research open-market signals and summarize sources before action.",
+            },
+            {
+                "profile": "sales",
+                "title": "Sales operator",
+                "focus": "Prepare offers, follow-up drafts and lead paths for human approval.",
+            },
+            {
+                "profile": "content",
+                "title": "Content operator",
+                "focus": "Turn verified signals into reusable content briefs and drafts.",
+            },
+            {
+                "profile": "ops",
+                "title": "Operations operator",
+                "focus": "Plan weekly loops, daily actions, receipts and metric reviews.",
+            },
+        ]
+        for bot in recommended_bots:
+            bot["installed"] = bot["profile"] in installed_profiles
+        return {
+            "name": "Personal Jarvis + Hermes Bot",
+            "execution_enabled": False,
+            "personal_jarvis": {
+                "role": "local_interface",
+                "owns": [
+                    "desktop-control surface",
+                    "voice and web UX",
+                    "human approval prompts",
+                    "local receipts",
+                ],
+            },
+            "hermes": {
+                "role": "agent_runtime",
+                "installed": status["installed"],
+                "version": status["version"],
+                "owns": [
+                    "profiles",
+                    "memory",
+                    "skills",
+                    "gateway integrations",
+                    "cron-capable routines",
+                ],
+            },
+            "bot_mode": {
+                "role": "persistent_specialist_bots",
+                "owns": [
+                    "durable profile identity",
+                    "platform delivery through Hermes gateways",
+                    "scheduled or channel-driven operation after approval",
+                ],
+            },
+            "recommended_bots": recommended_bots,
+            "human_approval_required_for": [
+                "payments",
+                "publishing",
+                "outbound_messages",
+                "credentials",
+                "financial_operations",
+                "irreversible_changes",
+            ],
+            "safety_contract": (
+                "The browser proposes and records work. Hermes Bot Mode execution "
+                "must be started from an approved local Hermes profile or gateway."
+            ),
+        }
+
     def chat_plan(self, *, profile: str, message: str) -> dict[str, Any]:
         safe_profile = _safe_profile(profile)
         clean_message = " ".join(message.strip().split())

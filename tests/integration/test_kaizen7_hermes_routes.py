@@ -62,6 +62,26 @@ def test_hermes_capabilities_route_is_mounted(tmp_path, monkeypatch) -> None:
     }
 
 
+def test_hermes_bot_mode_contract_unites_personal_jarvis_and_hermes(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.setenv("KAIZEN7_HERMES_CLI", "missing-hermes")
+
+    with _client(tmp_path) as client:
+        resp = client.get("/api/kaizen7/hermes/bot-mode")
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["name"] == "Personal Jarvis + Hermes Bot"
+    assert body["execution_enabled"] is False
+    assert body["personal_jarvis"]["role"] == "local_interface"
+    assert body["hermes"]["role"] == "agent_runtime"
+    assert body["bot_mode"]["role"] == "persistent_specialist_bots"
+    assert "kaizen7" in {bot["profile"] for bot in body["recommended_bots"]}
+    assert "payments" in body["human_approval_required_for"]
+    assert "publishing" in body["human_approval_required_for"]
+
+
 def test_hermes_chat_proposal_route_records_receipt(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("KAIZEN7_HERMES_CLI", "missing-hermes")
 
