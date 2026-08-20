@@ -131,4 +131,13 @@ class CodexRuntime:
 
 
 def _resolve_cli() -> str:
-    return os.environ.get("KAIZEN7_CODEX_CLI") or os.environ.get("CODEX_CLI") or "codex"
+    env_cli = os.environ.get("KAIZEN7_CODEX_CLI") or os.environ.get("CODEX_CLI")
+    if env_cli:
+        return env_cli
+    for candidate in (
+        Path.home() / ".npm-global" / "codex.cmd",
+        Path(os.environ.get("APPDATA", "")) / "npm" / "codex.cmd",
+    ):
+        if candidate.exists():
+            return str(candidate)
+    return "codex"
