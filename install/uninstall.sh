@@ -2,12 +2,12 @@
 # Personal Jarvis — macOS / Linux uninstaller
 #
 # Usage (from any POSIX shell), on a machine where Jarvis is installed:
-#   bash ~/.personal-jarvis/install/uninstall.sh
-#   bash ~/.personal-jarvis/install/uninstall.sh --dry-run   # preview only
-#   bash ~/.personal-jarvis/install/uninstall.sh --yes       # no prompt
+#   bash ~/.kaizen7-jarvis/install/uninstall.sh
+#   bash ~/.kaizen7-jarvis/install/uninstall.sh --dry-run   # preview only
+#   bash ~/.kaizen7-jarvis/install/uninstall.sh --yes       # no prompt
 #
 # It removes four things a plain folder-delete would miss:
-#   1. the install folder (~/.personal-jarvis)
+#   1. the install folder (~/.kaizen7-jarvis)
 #   2. the macOS app bundle or Linux application-menu entry
 #   3. the login-autostart entry (~/.config/autostart or ~/Library/LaunchAgents)
 #   4. the API keys saved in the OS keychain (service "personal-jarvis")
@@ -20,7 +20,7 @@ set -euo pipefail
 
 # Standalone fallback projections of jarvis/core/branding.py. These remain
 # available even when a broken venv prevents importing the installed package.
-DEFAULT_INSTALL_DIR_NAME=".personal-jarvis"
+DEFAULT_INSTALL_DIR_NAME=".kaizen7-jarvis"
 MACOS_APP_DIR_NAME="Personal Jarvis.app"
 LINUX_DESKTOP_ENTRY_FILE_NAME="personal-jarvis.desktop"
 KEYRING_SERVICE_NAME="personal-jarvis"

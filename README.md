@@ -1,3 +1,69 @@
+<h1 align="center">KAIZEN7 Jarvis</h1>
+
+<p align="center">
+  Personal Jarvis fork prepared for Luciano's KAIZEN7 operating system:
+  local Jarvis control, KAIZEN7 business cockpit, Codex handoff proposals,
+  and Hermes Bot Mode inspection without hidden execution.
+</p>
+
+> This repository is a clean fork of
+> [PersonalJarvis/PersonalJarvis](https://github.com/PersonalJarvis/PersonalJarvis)
+> under the MIT license. Upstream copyright, license and trademark notices are
+> preserved. The KAIZEN7 additions live on top of the original runtime.
+
+## KAIZEN7 Ready Install
+
+The one-liners below install this repository, not the upstream PersonalJarvis
+repository, into a separate `~/.kaizen7-jarvis` folder.
+
+**Windows PowerShell**
+
+```powershell
+irm https://raw.githubusercontent.com/lucianople7/kaizen7-jarvis/main/install/install.ps1 | iex
+```
+
+**macOS / Linux**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/lucianople7/kaizen7-jarvis/main/install/install.sh | bash
+```
+
+**Manual developer install**
+
+```powershell
+git clone https://github.com/lucianople7/kaizen7-jarvis.git
+cd kaizen7-jarvis
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1  # Windows
+pip install -e .[full]
+python -m jarvis --doctor
+python -m jarvis.ui.web.launcher --headless --no-lock --port 47821
+```
+
+On macOS/Linux, replace the activation line with:
+
+```bash
+. .venv/bin/activate
+```
+
+Open `http://127.0.0.1:47821` and use the **Business** section for KAIZEN7,
+Hermes, Codex and receipt views.
+
+## KAIZEN7 Layer
+
+- Business cockpit in the web UI with goals, tasks, metrics, memory and activity receipts.
+- Read-only Hermes runtime/status/profile/capability inspection.
+- Hermes Bot Mode contract for persistent specialist bots.
+- Codex handoff proposal path.
+- Strict separation between proposing work and executing work.
+- Human approval required before payments, publishing, outbound messages,
+  credentials, financial operations and irreversible changes.
+
+Configure optional external tools through environment variables or the OS
+credential manager. Do not commit secrets. See `.env.example`.
+
+---
+
 <p align="center">
   <a href="https://github.com/PersonalJarvis/PersonalJarvis">
     <img src="https://github.com/PersonalJarvis/PersonalJarvis/raw/main/assets/brand/banner.png" alt="Personal Jarvis, a voice-driven meta-orchestrator" width="860" />

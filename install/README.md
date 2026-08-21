@@ -1,18 +1,18 @@
 # `install/` — Quick-install bootstrap
 
-This directory ships the one-liner installer for Personal Jarvis. Users
+This directory ships the one-liner installer for KAIZEN7 Jarvis. Users
 never read these files; they just paste the URL into their shell.
 
 ## End-user one-liner
 
 ```powershell
 # Windows (PowerShell)
-irm https://raw.githubusercontent.com/PersonalJarvis/PersonalJarvis/main/install/install.ps1 | iex
+irm https://raw.githubusercontent.com/lucianople7/kaizen7-jarvis/main/install/install.ps1 | iex
 ```
 
 ```bash
 # macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/PersonalJarvis/PersonalJarvis/main/install/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/lucianople7/kaizen7-jarvis/main/install/install.sh | bash
 ```
 
 When Python 3.11+ and Git are already present, the installer is fully
@@ -89,8 +89,8 @@ shell and PowerShell version. The safest pattern for ad-hoc testing is to
 clone manually and call `installer.py` directly:
 
 ```bash
-git clone https://github.com/PersonalJarvis/PersonalJarvis ~/.personal-jarvis
-cd ~/.personal-jarvis && python -m venv .venv
+git clone https://github.com/lucianople7/kaizen7-jarvis ~/.kaizen7-jarvis
+cd ~/.kaizen7-jarvis && python -m venv .venv
 . .venv/bin/activate           # Windows: .\.venv\Scripts\Activate.ps1
 pip install rich packaging
 python install/installer.py --dry-run
@@ -104,12 +104,12 @@ previews, `--yes` skips the confirmation:
 
 ```powershell
 # Windows (PowerShell)
-& "$env:USERPROFILE\.personal-jarvis\install\uninstall.ps1"
+& "$env:USERPROFILE\.kaizen7-jarvis\install\uninstall.ps1"
 ```
 
 ```bash
 # macOS / Linux
-bash ~/.personal-jarvis/install/uninstall.sh
+bash ~/.kaizen7-jarvis/install/uninstall.sh
 ```
 
 If that script is missing or refuses to start, the app uninstalls itself. This
@@ -119,12 +119,12 @@ on macOS at all:
 
 ```bash
 # macOS / Linux
-~/.personal-jarvis/.venv/bin/python -m jarvis --uninstall
+~/.kaizen7-jarvis/.venv/bin/python -m jarvis --uninstall
 ```
 
 ```powershell
 # Windows (PowerShell)
-& "$env:USERPROFILE\.personal-jarvis\.venv\Scripts\python.exe" -m jarvis --uninstall
+& "$env:USERPROFILE\.kaizen7-jarvis\.venv\Scripts\python.exe" -m jarvis --uninstall
 ```
 
 ## Environment overrides
@@ -133,7 +133,7 @@ on macOS at all:
 |---------------------------|--------|
 | `JARVIS_INSTALL_REPO`     | Clone from a fork instead of the upstream repo. |
 | `JARVIS_INSTALL_REF`      | Use a branch/tag/SHA other than `main`. |
-| `JARVIS_INSTALL_DIR`      | Install to a directory other than `~/.personal-jarvis`. |
+| `JARVIS_INSTALL_DIR`      | Install to a directory other than `~/.kaizen7-jarvis`. |
 | `JARVIS_INSTALL_PREREQS`  | `ask` (default), `auto` (explicit unattended consent), or `never`. |
 | `JARVIS_PYTHON`           | Use one explicit Python interpreter; the pin is authoritative. |
 | `JARVIS_INSTALL_NO_PIP`   | Skip the pip steps (re-run only prefetch / launch). |

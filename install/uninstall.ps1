@@ -1,12 +1,12 @@
 # Personal Jarvis - Windows uninstaller
 #
 # Usage (from PowerShell), on a machine where Jarvis is installed:
-#   & "$env:USERPROFILE\.personal-jarvis\install\uninstall.ps1"
-#   & "$env:USERPROFILE\.personal-jarvis\install\uninstall.ps1" --dry-run   # preview
-#   & "$env:USERPROFILE\.personal-jarvis\install\uninstall.ps1" --yes       # no prompt
+#   & "$env:USERPROFILE\.kaizen7-jarvis\install\uninstall.ps1"
+#   & "$env:USERPROFILE\.kaizen7-jarvis\install\uninstall.ps1" --dry-run   # preview
+#   & "$env:USERPROFILE\.kaizen7-jarvis\install\uninstall.ps1" --yes       # no prompt
 #
 # It removes four things a plain folder-delete would miss:
-#   1. the install folder (~\.personal-jarvis)
+#   1. the install folder (~\.kaizen7-jarvis)
 #   2. the Start-menu launcher and Installed Apps registration
 #   3. the login-autostart entry (a logon scheduled task / Startup shortcut)
 #   4. the API keys saved in the OS keychain (Windows Credential Manager, service
@@ -60,7 +60,7 @@ function Stop-JarvisProcesses([string]$Root) {
 
 # Standalone fallback projections of jarvis/core/branding.py. These remain
 # available even when a broken venv prevents importing the installed package.
-$DefaultInstallDirName = '.personal-jarvis'
+$DefaultInstallDirName = '.kaizen7-jarvis'
 $WindowsShortcutFileName = 'Personal Jarvis.lnk'
 $WindowsUninstallRegistrySubkey = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\PersonalJarvis'
 $WindowsAppUserModelId = 'PersonalJarvis.PersonalJarvis'
