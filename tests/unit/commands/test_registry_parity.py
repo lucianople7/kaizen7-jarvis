@@ -145,6 +145,18 @@ def test_kaizen7_provider_commands_are_discoverable() -> None:
         assert commands[command_id].dangerous is False
 
 
+def test_kaizen7_capability_commands_are_discoverable() -> None:
+    commands = {cmd.id: cmd for cmd in get_registry()}
+    for command_id in (
+        "kaizen7-capabilities-list",
+        "kaizen7-capability-plan",
+    ):
+        assert command_id in commands
+        assert commands[command_id].ui_section == "agents"
+        assert commands[command_id].worker_allowed is True
+        assert commands[command_id].dangerous is False
+
+
 def test_reply_languages_match_brain_source_of_truth() -> None:
     from jarvis.brain.manager import SUPPORTED_REPLY_LANGUAGES
 

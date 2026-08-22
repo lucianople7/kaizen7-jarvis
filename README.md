@@ -63,6 +63,10 @@ Hermes, Codex and receipt views.
 - Provider recommendation engine inspired by current open-source agent
   platforms: rank connectors by capability fit, privacy, cost, latency and
   constraints before any handoff is proposed.
+- Internal Capability Marketplace: reusable product abilities such as daily
+  focus, business research, content pipeline, code repair, mobile approval and
+  desktop control planning. Each capability declares provider, permissions,
+  privacy, cost and human approval policy.
 - Strict separation between proposing work and executing work.
 - Human approval required before payments, publishing, outbound messages,
   credentials, financial operations and irreversible changes.
@@ -78,6 +82,10 @@ Provider APIs:
   mission without calling it.
 - `POST /api/kaizen7/providers/{provider_id}/propose` records a proposed
   handoff for any registered agent/API without calling it.
+- `GET /api/kaizen7/capabilities` lists the internal capability marketplace.
+- `GET /api/kaizen7/capabilities/{capability_id}` inspects one capability.
+- `POST /api/kaizen7/capabilities/plan` creates a safe launch plan from
+  capabilities without executing providers.
 
 Configure optional external tools through environment variables or the OS
 credential manager. Do not commit secrets. See `.env.example`.

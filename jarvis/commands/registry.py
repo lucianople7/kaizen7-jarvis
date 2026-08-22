@@ -636,6 +636,62 @@ def _build_registry() -> tuple[AppCommand, ...]:
             },
         ),
         AppCommand(
+            id="kaizen7-capabilities-list",
+            title="List KAIZEN7 capabilities",
+            description=(
+                "List the internal KAIZEN7 capability marketplace: useful work "
+                "surfaces mapped to providers, permissions, cost, privacy and "
+                "approval policies."
+            ),
+            method="GET",
+            path="/api/kaizen7/capabilities",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige kaizen sieben faehigkeiten",),  # i18n-allow: input vocab
+                "en": ("list kaizen seven capabilities",),
+                "es": ("lista las capacidades de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-capability-plan",
+            title="Plan KAIZEN7 capabilities",
+            description=(
+                "Create a safe proposal-only launch plan from the capability "
+                "marketplace. It does not execute any provider."
+            ),
+            method="POST",
+            path="/api/kaizen7/capabilities/plan",
+            params={
+                "type": "object",
+                "properties": {
+                    "mission": _str_param(
+                        "Mission or product objective to plan.",
+                        min_length=1,
+                        max_length=4000,
+                    ),
+                    "needs": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Needs such as focus, research, content, code, approval, or diagnostics.",
+                    },
+                    "constraints": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Constraints such as local_only or no_paid_api.",
+                    },
+                },
+                "required": ["mission"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("plane kaizen sieben faehigkeiten",),  # i18n-allow: input vocab
+                "en": ("plan kaizen seven capabilities",),
+                "es": ("planifica capacidades de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
             id="kaizen7-bridge-capabilities",
             title="List Control Bridge capabilities",
             description=(

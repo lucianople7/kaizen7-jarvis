@@ -359,6 +359,7 @@ class WebServer:
         from .frontier_routes import router as frontier_router
         from .kaizen7_bots_routes import router as kaizen7_bots_router
         from .kaizen7_bridge_routes import router as kaizen7_bridge_router
+        from .kaizen7_capabilities_routes import router as kaizen7_capabilities_router
         from .kaizen7_codex_routes import router as kaizen7_codex_router
         from .kaizen7_hermes_routes import router as kaizen7_hermes_router
         from .kaizen7_providers_routes import router as kaizen7_providers_router
@@ -452,6 +453,7 @@ class WebServer:
         app.include_router(commands_router)
         app.include_router(kaizen7_bots_router)
         app.include_router(kaizen7_bridge_router)
+        app.include_router(kaizen7_capabilities_router)
         app.include_router(kaizen7_codex_router)
         app.include_router(kaizen7_hermes_router)
         app.include_router(kaizen7_providers_router)

@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import Any, Literal
 
 from jarvis.kaizen7.bridge import APPROVAL_REQUIRED_FOR, ControlBridgeStore
+from jarvis.kaizen7.capabilities import default_capability_registry
 from jarvis.kaizen7.codex_runtime import CodexRuntime
 from jarvis.kaizen7.hermes_runtime import HermesRuntime
 from jarvis.kaizen7.providers import default_provider_registry
@@ -107,6 +108,30 @@ def run_kaizen7_doctor(
                 "ok",
                 f"universal provider registry ready: {len(providers)} connectors",
                 "Hermes, Codex, generic API, generic CLI.",
+            )
+        )
+
+    capabilities = default_capability_registry().list()
+    unsafe_capabilities = [
+        item["id"] for item in capabilities if item.get("execution_enabled")
+    ]
+    if unsafe_capabilities:
+        findings.append(
+            Kaizen7DoctorFinding(
+                "capabilities",
+                "fail",
+                "capabilities expose execution by default: "
+                + ", ".join(unsafe_capabilities),
+                "Keep capabilities proposal-only until an approval adapter exists.",
+            )
+        )
+    else:
+        findings.append(
+            Kaizen7DoctorFinding(
+                "capabilities",
+                "ok",
+                f"capability marketplace ready: {len(capabilities)} safe capabilities",
+                "focus, research, content, code, mobile approval, desktop planning.",
             )
         )
 

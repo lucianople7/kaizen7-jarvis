@@ -54,6 +54,20 @@ def test_kaizen7_doctor_reports_universal_provider_registry(tmp_path: Path) -> N
     assert "Hermes, Codex, generic API, generic CLI" in rendered
 
 
+def test_kaizen7_doctor_reports_capability_marketplace(tmp_path: Path) -> None:
+    findings = run_kaizen7_doctor(
+        hermes=_FakeHermes(installed=False),
+        codex=_FakeCodex(installed=False),
+        bridge=ControlBridgeStore(root=tmp_path),
+    )
+
+    rendered = render_kaizen7_doctor(findings)
+
+    assert "capabilities:" in rendered
+    assert "capability marketplace ready: 6 safe capabilities" in rendered
+    assert "focus, research, content, code, mobile approval, desktop planning" in rendered
+
+
 def test_kaizen7_doctor_fails_when_bridge_approval_contract_is_broken(
     tmp_path: Path,
 ) -> None:
