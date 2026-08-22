@@ -37,6 +37,7 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1  # Windows
 pip install -e .[full]
 python -m jarvis --doctor
+python -m jarvis --kaizen7-doctor
 python -m jarvis.ui.web.launcher --headless --no-lock --port 47821
 ```
 
@@ -58,6 +59,9 @@ Hermes, Codex and receipt views.
 - Strict separation between proposing work and executing work.
 - Human approval required before payments, publishing, outbound messages,
   credentials, financial operations and irreversible changes.
+- `python -m jarvis --kaizen7-doctor` checks the KAIZEN7 bridge, Hermes CLI,
+  Codex CLI, Bot Mode profile coverage and approval gates without executing
+  external actions.
 
 Configure optional external tools through environment variables or the OS
 credential manager. Do not commit secrets. See `.env.example`.
