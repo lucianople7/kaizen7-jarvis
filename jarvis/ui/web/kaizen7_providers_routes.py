@@ -24,6 +24,19 @@ class ProviderProposalRequest(BaseModel):
         return value
 
 
+class ProviderRecommendationRequest(BaseModel):
+    mission: str = Field(min_length=1, max_length=4000)
+    needs: list[str] = Field(default_factory=list, max_length=20)
+    constraints: list[str] = Field(default_factory=list, max_length=20)
+
+    @field_validator("mission")
+    @classmethod
+    def _mission_not_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("mission cannot be blank")
+        return value
+
+
 def _bridge(request: Request) -> ControlBridgeStore:
     existing = getattr(request.app.state, "kaizen7_bridge", None)
     if isinstance(existing, ControlBridgeStore):
@@ -47,6 +60,22 @@ def _registry(request: Request) -> ProviderRegistry:
 async def provider_list(request: Request) -> dict[str, Any]:
     providers = _registry(request).list()
     return {"providers": providers, "count": len(providers)}
+
+
+@router.post("/recommend")
+async def provider_recommend(
+    request: Request,
+    payload: ProviderRecommendationRequest,
+) -> dict[str, Any]:
+    try:
+        recommendation = _registry(request).recommend(
+            payload.mission,
+            needs=payload.needs,
+            constraints=payload.constraints,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"recommendation": recommendation}
 
 
 @router.get("/{provider_id}")

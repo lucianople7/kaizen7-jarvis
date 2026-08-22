@@ -60,6 +60,9 @@ Hermes, Codex and receipt views.
   external HTTP API. New providers enter through the same contract:
   proposal-only, explicit auth method, cost note, capabilities list and receipt
   logging.
+- Provider recommendation engine inspired by current open-source agent
+  platforms: rank connectors by capability fit, privacy, cost, latency and
+  constraints before any handoff is proposed.
 - Strict separation between proposing work and executing work.
 - Human approval required before payments, publishing, outbound messages,
   credentials, financial operations and irreversible changes.
@@ -71,6 +74,8 @@ Provider APIs:
 
 - `GET /api/kaizen7/providers` lists registered safe connectors.
 - `GET /api/kaizen7/providers/{provider_id}` inspects one connector.
+- `POST /api/kaizen7/providers/recommend` ranks the best connector for a
+  mission without calling it.
 - `POST /api/kaizen7/providers/{provider_id}/propose` records a proposed
   handoff for any registered agent/API without calling it.
 

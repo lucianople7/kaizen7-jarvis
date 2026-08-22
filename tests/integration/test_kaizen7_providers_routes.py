@@ -59,3 +59,28 @@ def test_provider_proposal_rejects_blank_message(tmp_path) -> None:
         resp = client.post("/api/kaizen7/providers/api/propose", json={"message": " "})
 
     assert resp.status_code == 422
+
+
+def test_provider_recommendation_endpoint_selects_best_safe_connector(tmp_path) -> None:
+    with _client(tmp_path) as client:
+        resp = client.post(
+            "/api/kaizen7/providers/recommend",
+            json={
+                "mission": "Fix a repository and run tests",
+                "needs": ["code", "tests"],
+                "constraints": ["no_paid_api"],
+            },
+        )
+
+    assert resp.status_code == 200
+    recommendation = resp.json()["recommendation"]
+    assert recommendation["selected"]["id"] == "codex"
+    assert recommendation["execution_enabled"] is False
+    assert recommendation["requires_human_approval"] is True
+
+
+def test_provider_recommendation_endpoint_rejects_blank_mission(tmp_path) -> None:
+    with _client(tmp_path) as client:
+        resp = client.post("/api/kaizen7/providers/recommend", json={"mission": " "})
+
+    assert resp.status_code == 422

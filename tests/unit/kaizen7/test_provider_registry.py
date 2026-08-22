@@ -84,3 +84,42 @@ def test_unknown_provider_is_rejected(tmp_path) -> None:
 
     with pytest.raises(KeyError):
         registry.propose("missing", "Do something", bridge=bridge)
+
+
+def test_recommendation_prefers_codex_for_code_work() -> None:
+    registry = default_provider_registry()
+
+    recommendation = registry.recommend(
+        "Repair the repo and run tests",
+        needs=("code", "tests"),
+    )
+
+    assert recommendation["selected"]["id"] == "codex"
+    assert recommendation["selected"]["score"] > 0
+    assert "matches required capability: code" in recommendation["selected"]["reasons"]
+    assert recommendation["execution_enabled"] is False
+
+
+def test_recommendation_honors_local_only_constraint() -> None:
+    registry = default_provider_registry()
+
+    recommendation = registry.recommend(
+        "Analyze private files without cloud APIs",
+        needs=("diagnostics",),
+        constraints=("local_only", "no_paid_api"),
+    )
+
+    selected = recommendation["selected"]
+    assert selected["id"] == "cli"
+    assert selected["privacy"] == "local"
+    assert all(
+        candidate["id"] != "api" for candidate in recommendation["ranked"]
+    )
+    assert any(rejection["id"] == "api" for rejection in recommendation["rejected"])
+
+
+def test_recommendation_rejects_blank_mission() -> None:
+    registry = default_provider_registry()
+
+    with pytest.raises(ValueError, match="mission cannot be blank"):
+        registry.recommend("   ")

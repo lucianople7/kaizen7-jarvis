@@ -559,6 +559,45 @@ def _build_registry() -> tuple[AppCommand, ...]:
             },
         ),
         AppCommand(
+            id="kaizen7-provider-recommend",
+            title="Recommend a KAIZEN7 provider",
+            description=(
+                "Rank available agent/API providers for a mission using "
+                "capability, privacy, cost, and safety constraints. This does "
+                "not call any provider."
+            ),
+            method="POST",
+            path="/api/kaizen7/providers/recommend",
+            params={
+                "type": "object",
+                "properties": {
+                    "mission": _str_param(
+                        "Mission or work request to route.",
+                        min_length=1,
+                        max_length=4000,
+                    ),
+                    "needs": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Capabilities such as code, tests, research, chat, or diagnostics.",
+                    },
+                    "constraints": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Constraints such as local_only or no_paid_api.",
+                    },
+                },
+                "required": ["mission"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("empfiehl einen kaizen sieben provider",),  # i18n-allow: input vocab
+                "en": ("recommend a kaizen seven provider",),
+                "es": ("recomienda un proveedor de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
             id="kaizen7-provider-propose",
             title="Propose work for a KAIZEN7 provider",
             description=(
