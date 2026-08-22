@@ -541,6 +541,62 @@ def _build_registry() -> tuple[AppCommand, ...]:
             },
         ),
         AppCommand(
+            id="kaizen7-providers-list",
+            title="List KAIZEN7 providers",
+            description=(
+                "List pluggable KAIZEN7 agent/API providers. Every provider is "
+                "proposal-only until credentials, cost limits, and human "
+                "approval are configured."
+            ),
+            method="GET",
+            path="/api/kaizen7/providers",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige kaizen sieben provider",),  # i18n-allow: input vocab
+                "en": ("list kaizen seven providers",),
+                "es": ("lista los proveedores de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-provider-propose",
+            title="Propose work for a KAIZEN7 provider",
+            description=(
+                "Record a recommendation-only proposal for any registered "
+                "agent, CLI, or API provider. It does not call the provider."
+            ),
+            method="POST",
+            path="/api/kaizen7/providers/{provider_id}/propose",
+            path_params=("provider_id",),
+            params={
+                "type": "object",
+                "properties": {
+                    "provider_id": _str_param(
+                        "Provider id such as hermes, codex, api, or cli.",
+                        min_length=1,
+                        max_length=80,
+                    ),
+                    "message": _str_param(
+                        "Work request to propose.",
+                        min_length=1,
+                        max_length=4000,
+                    ),
+                    "context": {
+                        "type": "object",
+                        "description": "Optional capsule or business context.",
+                    },
+                },
+                "required": ["provider_id", "message"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("schlage arbeit fuer einen kaizen sieben provider vor",),  # i18n-allow: input vocab
+                "en": ("propose work for a kaizen seven provider",),
+                "es": ("propón trabajo para un proveedor de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
             id="kaizen7-bridge-capabilities",
             title="List Control Bridge capabilities",
             description=(

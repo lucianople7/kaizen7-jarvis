@@ -11,6 +11,7 @@ from typing import Any, Literal
 from jarvis.kaizen7.bridge import APPROVAL_REQUIRED_FOR, ControlBridgeStore
 from jarvis.kaizen7.codex_runtime import CodexRuntime
 from jarvis.kaizen7.hermes_runtime import HermesRuntime
+from jarvis.kaizen7.providers import default_provider_registry
 
 Status = Literal["ok", "warn", "fail", "info"]
 
@@ -85,6 +86,29 @@ def run_kaizen7_doctor(
             f"receipt store: {bridge_status.get('storage_path', '')}",
         )
     )
+
+    providers = default_provider_registry().list()
+    unsafe_providers = [
+        provider["id"] for provider in providers if provider.get("execution_enabled")
+    ]
+    if unsafe_providers:
+        findings.append(
+            Kaizen7DoctorFinding(
+                "providers",
+                "fail",
+                "providers expose execution by default: " + ", ".join(unsafe_providers),
+                "Keep every provider proposal-only until a human approval contract exists.",
+            )
+        )
+    else:
+        findings.append(
+            Kaizen7DoctorFinding(
+                "providers",
+                "ok",
+                f"universal provider registry ready: {len(providers)} connectors",
+                "Hermes, Codex, generic API, generic CLI.",
+            )
+        )
 
     hermes_status = hermes.status()
     if hermes_status.get("installed"):
@@ -191,4 +215,3 @@ def render_kaizen7_doctor(findings: list[Kaizen7DoctorFinding]) -> str:
         else "RESULT: OK - KAIZEN7 layer is safe to use."
     )
     return "\n".join(lines)
-

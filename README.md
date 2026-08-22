@@ -56,12 +56,23 @@ Hermes, Codex and receipt views.
 - Read-only Hermes runtime/status/profile/capability inspection.
 - Hermes Bot Mode contract for persistent specialist bots.
 - Codex handoff proposal path.
+- Universal provider registry for Hermes, Codex, local CLI agents, or any
+  external HTTP API. New providers enter through the same contract:
+  proposal-only, explicit auth method, cost note, capabilities list and receipt
+  logging.
 - Strict separation between proposing work and executing work.
 - Human approval required before payments, publishing, outbound messages,
   credentials, financial operations and irreversible changes.
 - `python -m jarvis --kaizen7-doctor` checks the KAIZEN7 bridge, Hermes CLI,
-  Codex CLI, Bot Mode profile coverage and approval gates without executing
-  external actions.
+  Codex CLI, Bot Mode profile coverage, universal providers and approval gates
+  without executing external actions.
+
+Provider APIs:
+
+- `GET /api/kaizen7/providers` lists registered safe connectors.
+- `GET /api/kaizen7/providers/{provider_id}` inspects one connector.
+- `POST /api/kaizen7/providers/{provider_id}/propose` records a proposed
+  handoff for any registered agent/API without calling it.
 
 Configure optional external tools through environment variables or the OS
 credential manager. Do not commit secrets. See `.env.example`.

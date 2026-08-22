@@ -40,6 +40,20 @@ def test_kaizen7_doctor_reports_ready_runtimes(tmp_path: Path) -> None:
     assert "recommended Bot Mode profiles installed: 1/5" in rendered
 
 
+def test_kaizen7_doctor_reports_universal_provider_registry(tmp_path: Path) -> None:
+    findings = run_kaizen7_doctor(
+        hermes=_FakeHermes(installed=False),
+        codex=_FakeCodex(installed=False),
+        bridge=ControlBridgeStore(root=tmp_path),
+    )
+
+    rendered = render_kaizen7_doctor(findings)
+
+    assert "providers:" in rendered
+    assert "universal provider registry ready: 4 connectors" in rendered
+    assert "Hermes, Codex, generic API, generic CLI" in rendered
+
+
 def test_kaizen7_doctor_fails_when_bridge_approval_contract_is_broken(
     tmp_path: Path,
 ) -> None:
@@ -113,4 +127,3 @@ class _UnsafeBridge(ControlBridgeStore):
         data["execution_enabled"] = True
         data["approval_required_for"] = ["payments"]
         return data
-
