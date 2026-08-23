@@ -636,6 +636,120 @@ def _build_registry() -> tuple[AppCommand, ...]:
             },
         ),
         AppCommand(
+            id="kaizen7-adapters-list",
+            title="List KAIZEN7 adapters",
+            description=(
+                "List agent-agnostic connection adapters for OpenAI-compatible "
+                "APIs, HTTP agents, local CLIs, MCP, webhooks and cloud agents. "
+                "Every adapter is proposal-only by default."
+            ),
+            method="GET",
+            path="/api/kaizen7/adapters",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige kaizen sieben adapter",),  # i18n-allow: input vocab
+                "en": ("list kaizen seven adapters",),
+                "es": ("lista los adaptadores de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-adapters-manifest",
+            title="Show KAIZEN7 adapter manifest",
+            description=(
+                "Show the stable adapter manifest for connecting any model, "
+                "agent API, CLI, MCP server, webhook or cloud agent without "
+                "storing secret values."
+            ),
+            method="GET",
+            path="/api/kaizen7/adapters/manifest",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige das kaizen sieben adapter manifest",),  # i18n-allow: input vocab
+                "en": ("show kaizen seven adapter manifest",),
+                "es": ("muestra el manifiesto de adaptadores de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-adapter-recommend",
+            title="Recommend a KAIZEN7 adapter",
+            description=(
+                "Rank safe connection adapters for a mission by requested "
+                "capabilities and constraints such as local_only or no_paid_api. "
+                "This does not call any adapter."
+            ),
+            method="POST",
+            path="/api/kaizen7/adapters/recommend",
+            params={
+                "type": "object",
+                "properties": {
+                    "mission": _str_param(
+                        "Mission or integration request to route.",
+                        min_length=1,
+                        max_length=4000,
+                    ),
+                    "needs": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Needs such as code, local, mcp, workflow, cloud, chat, or diagnostics.",
+                    },
+                    "constraints": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Constraints such as local_only or no_paid_api.",
+                    },
+                },
+                "required": ["mission"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("empfiehl einen kaizen sieben adapter",),  # i18n-allow: input vocab
+                "en": ("recommend a kaizen seven adapter",),
+                "es": ("recomienda un adaptador de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-adapter-propose",
+            title="Propose work for a KAIZEN7 adapter",
+            description=(
+                "Record a recommendation-only proposal for any registered "
+                "adapter. It does not call a model, CLI, API, webhook or cloud "
+                "agent."
+            ),
+            method="POST",
+            path="/api/kaizen7/adapters/{adapter_id}/propose",
+            path_params=("adapter_id",),
+            params={
+                "type": "object",
+                "properties": {
+                    "adapter_id": _str_param(
+                        "Adapter id such as openai-compatible, generic-cli-agent, mcp-server, webhook-agent, or cloud-agent.",
+                        min_length=1,
+                        max_length=80,
+                    ),
+                    "message": _str_param(
+                        "Work request to propose.",
+                        min_length=1,
+                        max_length=4000,
+                    ),
+                    "context": {
+                        "type": "object",
+                        "description": "Optional capsule, mission, or routing context.",
+                    },
+                },
+                "required": ["adapter_id", "message"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("schlage arbeit fuer einen kaizen sieben adapter vor",),  # i18n-allow: input vocab
+                "en": ("propose work for a kaizen seven adapter",),
+                "es": ("propÃ³n trabajo para un adaptador de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
             id="kaizen7-capabilities-list",
             title="List KAIZEN7 capabilities",
             description=(

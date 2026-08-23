@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from jarvis.kaizen7.adapters import default_adapter_registry
 from jarvis.kaizen7.bridge import APPROVAL_REQUIRED_FOR, ControlBridgeStore
 from jarvis.kaizen7.capabilities import default_capability_registry
 from jarvis.kaizen7.codex_runtime import CodexRuntime
@@ -88,6 +89,29 @@ def run_kaizen7_doctor(
             f"receipt store: {bridge_status.get('storage_path', '')}",
         )
     )
+
+    adapters = default_adapter_registry().list()
+    unsafe_adapters = [
+        adapter["id"] for adapter in adapters if adapter.get("execution_enabled")
+    ]
+    if unsafe_adapters:
+        findings.append(
+            Kaizen7DoctorFinding(
+                "adapters",
+                "fail",
+                "adapters expose execution by default: " + ", ".join(unsafe_adapters),
+                "Keep every adapter proposal-only until a human approval contract exists.",
+            )
+        )
+    else:
+        findings.append(
+            Kaizen7DoctorFinding(
+                "adapters",
+                "ok",
+                f"adapter registry ready: {len(adapters)} agnostic adapters",
+                "OpenAI-compatible, HTTP API, CLI, MCP, webhook, cloud agent.",
+            )
+        )
 
     providers = default_provider_registry().list()
     unsafe_providers = [

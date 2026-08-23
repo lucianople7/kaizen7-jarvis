@@ -54,6 +54,20 @@ def test_kaizen7_doctor_reports_universal_provider_registry(tmp_path: Path) -> N
     assert "Hermes, Codex, generic API, generic CLI" in rendered
 
 
+def test_kaizen7_doctor_reports_agnostic_adapter_registry(tmp_path: Path) -> None:
+    findings = run_kaizen7_doctor(
+        hermes=_FakeHermes(installed=False),
+        codex=_FakeCodex(installed=False),
+        bridge=ControlBridgeStore(root=tmp_path),
+    )
+
+    rendered = render_kaizen7_doctor(findings)
+
+    assert "adapters:" in rendered
+    assert "adapter registry ready: 6 agnostic adapters" in rendered
+    assert "OpenAI-compatible, HTTP API, CLI, MCP, webhook, cloud agent" in rendered
+
+
 def test_kaizen7_doctor_reports_capability_marketplace(tmp_path: Path) -> None:
     findings = run_kaizen7_doctor(
         hermes=_FakeHermes(installed=False),

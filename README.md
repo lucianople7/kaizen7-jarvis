@@ -61,6 +61,11 @@ Hermes, Codex and receipt views.
   external HTTP API. New providers enter through the same contract:
   proposal-only, explicit auth method, cost note, capabilities list and receipt
   logging.
+- Agent-agnostic Adapter Registry for any model or agent surface:
+  OpenAI-compatible APIs, generic HTTP APIs, local CLI agents, MCP servers,
+  webhook agents and managed cloud agents. This is the connection layer for
+  Cloud Code-style CLIs, future OpenCloud services, private APIs or local
+  models without binding KAIZEN7 to one vendor.
 - Provider recommendation engine inspired by current open-source agent
   platforms: rank connectors by capability fit, privacy, cost, latency and
   constraints before any handoff is proposed.
@@ -81,12 +86,18 @@ Hermes, Codex and receipt views.
 - Strict separation between proposing work and executing work.
 - Human approval required before payments, publishing, outbound messages,
   credentials, financial operations and irreversible changes.
-- `python -m jarvis --kaizen7-doctor` checks the KAIZEN7 bridge, Hermes CLI,
-  Codex CLI, Bot Mode profile coverage, universal providers and approval gates
-  without executing external actions.
+- `python -m jarvis --kaizen7-doctor` checks the KAIZEN7 bridge, adapter
+  registry, Hermes CLI, Codex CLI, Bot Mode profile coverage, universal
+  providers and approval gates without executing external actions.
 
 Provider APIs:
 
+- `GET /api/kaizen7/adapters` lists registered connection adapters.
+- `GET /api/kaizen7/adapters/manifest` returns the stable adapter manifest.
+- `POST /api/kaizen7/adapters/recommend` ranks the best adapter for a mission
+  without calling it.
+- `POST /api/kaizen7/adapters/{adapter_id}/propose` records a proposed adapter
+  handoff without calling any model, CLI, API, webhook or cloud agent.
 - `GET /api/kaizen7/providers` lists registered safe connectors.
 - `GET /api/kaizen7/providers/{provider_id}` inspects one connector.
 - `POST /api/kaizen7/providers/recommend` ranks the best connector for a
