@@ -15,6 +15,7 @@ from jarvis.kaizen7.capabilities import default_capability_registry
 from jarvis.kaizen7.codex_runtime import CodexRuntime
 from jarvis.kaizen7.hermes_runtime import HermesRuntime
 from jarvis.kaizen7.market_blueprint import default_market_blueprint
+from jarvis.kaizen7.monetization import default_monetization_engine
 from jarvis.kaizen7.providers import default_provider_registry
 
 Status = Literal["ok", "warn", "fail", "info"]
@@ -134,6 +135,29 @@ def run_kaizen7_doctor(
                 "ok",
                 f"universal agent gateway ready: {len(agents)} passports",
                 "Jarvis, Hermes, Codex, OpenHands, MCP, OpenAI-compatible, cloud agent.",
+            )
+        )
+
+    growth_playbooks = default_monetization_engine().playbooks()
+    unsafe_playbooks = [
+        item["id"] for item in growth_playbooks if item.get("execution_enabled")
+    ]
+    if unsafe_playbooks:
+        findings.append(
+            Kaizen7DoctorFinding(
+                "monetization",
+                "fail",
+                "growth playbooks expose execution by default: " + ", ".join(unsafe_playbooks),
+                "Keep monetization proposal-only until publishing, payments and data policies are approved.",
+            )
+        )
+    else:
+        findings.append(
+            Kaizen7DoctorFinding(
+                "monetization",
+                "ok",
+                f"monetization engine ready: {len(growth_playbooks)} playbooks",
+                "viral content, offer ladder, ecommerce readiness, lead magnet, affiliate, retention.",
             )
         )
 

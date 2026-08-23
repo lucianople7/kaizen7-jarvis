@@ -82,6 +82,20 @@ def test_kaizen7_doctor_reports_universal_agent_gateway(tmp_path: Path) -> None:
     assert "Jarvis, Hermes, Codex, OpenHands, MCP, OpenAI-compatible, cloud agent" in rendered
 
 
+def test_kaizen7_doctor_reports_monetization_engine(tmp_path: Path) -> None:
+    findings = run_kaizen7_doctor(
+        hermes=_FakeHermes(installed=False),
+        codex=_FakeCodex(installed=False),
+        bridge=ControlBridgeStore(root=tmp_path),
+    )
+
+    rendered = render_kaizen7_doctor(findings)
+
+    assert "monetization:" in rendered
+    assert "monetization engine ready: 6 playbooks" in rendered
+    assert "viral content, offer ladder, ecommerce readiness" in rendered
+
+
 def test_kaizen7_doctor_reports_capability_marketplace(tmp_path: Path) -> None:
     findings = run_kaizen7_doctor(
         hermes=_FakeHermes(installed=False),

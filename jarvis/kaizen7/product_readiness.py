@@ -9,6 +9,7 @@ from jarvis.kaizen7.adapters import default_adapter_registry
 from jarvis.kaizen7.bridge import ControlBridgeStore
 from jarvis.kaizen7.capabilities import default_capability_registry
 from jarvis.kaizen7.market_blueprint import default_market_blueprint
+from jarvis.kaizen7.monetization import default_monetization_engine
 from jarvis.kaizen7.providers import default_provider_registry
 
 
@@ -22,10 +23,13 @@ def build_product_readiness(
     bridge = bridge or ControlBridgeStore.from_config(config)
     agents = default_agent_gateway().list()
     adapters = default_adapter_registry().list()
+    growth_playbooks = default_monetization_engine().playbooks()
     providers = default_provider_registry().list()
     capabilities = default_capability_registry().list()
     patterns = default_market_blueprint().list()
-    checks = _checks(root, bridge, agents, adapters, providers, capabilities, patterns)
+    checks = _checks(
+        root, bridge, agents, adapters, growth_playbooks, providers, capabilities, patterns
+    )
     passed = sum(1 for check in checks if check["status"] == "ok")
     score = round((passed / len(checks)) * 100) if checks else 0
     return {
@@ -34,6 +38,7 @@ def build_product_readiness(
         "counts": {
             "agents": len(agents),
             "adapters": len(adapters),
+            "growth_playbooks": len(growth_playbooks),
             "providers": len(providers),
             "capabilities": len(capabilities),
             "market_patterns": len(patterns),
@@ -50,6 +55,7 @@ def render_product_readiness(readiness: dict[str, Any]) -> str:
     counts = readiness["counts"]
     lines.append(
         f"Surface: {counts['agents']} agents, {counts['adapters']} adapters, "
+        f"{counts['growth_playbooks']} growth playbooks, "
         f"{counts['providers']} providers, "
         f"{counts['capabilities']} capabilities, "
         f"{counts['market_patterns']} market patterns"
@@ -71,6 +77,7 @@ def _checks(
     bridge: ControlBridgeStore,
     agents: list[dict[str, Any]],
     adapters: list[dict[str, Any]],
+    growth_playbooks: list[dict[str, Any]],
     providers: list[dict[str, Any]],
     capabilities: list[dict[str, Any]],
     patterns: list[dict[str, Any]],
@@ -83,6 +90,7 @@ def _checks(
         _check("security", bool(bridge_status.get("approval_required_for")), "human approval categories configured"),
         _check("product", len(agents) >= 7, f"{len(agents)} agent passports registered"),
         _check("product", len(adapters) >= 6, f"{len(adapters)} adapters registered"),
+        _check("product", len(growth_playbooks) >= 6, f"{len(growth_playbooks)} growth playbooks registered"),
         _check("product", len(providers) >= 4, f"{len(providers)} providers registered"),
         _check("product", len(capabilities) >= 19, f"{len(capabilities)} capabilities registered"),
         _check("product", len(patterns) >= 16, f"{len(patterns)} market patterns mapped"),

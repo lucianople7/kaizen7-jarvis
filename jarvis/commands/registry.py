@@ -781,6 +781,116 @@ def _build_registry() -> tuple[AppCommand, ...]:
             },
         ),
         AppCommand(
+            id="kaizen7-monetization-playbooks",
+            title="List KAIZEN7 monetization playbooks",
+            description=(
+                "List proposal-only growth playbooks for viral content, offer "
+                "ladders, ecommerce readiness, lead magnets, affiliate "
+                "monetization and retention upsells."
+            ),
+            method="GET",
+            path="/api/kaizen7/monetization/playbooks",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige kaizen sieben monetarisierungs playbooks",),  # i18n-allow: input vocab
+                "en": ("list kaizen seven monetization playbooks",),
+                "es": ("lista los playbooks de monetizacion de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-monetization-pack",
+            title="Build KAIZEN7 monetization pack",
+            description=(
+                "Create a proposal-only growth pack with viral content, offer, "
+                "ecommerce readiness, monetization paths, experiments, gates "
+                "and next actions. This does not publish, charge or spend."
+            ),
+            method="POST",
+            path="/api/kaizen7/monetization/pack",
+            params={
+                "type": "object",
+                "properties": {
+                    "objective": _str_param(
+                        "Business monetization objective.",
+                        min_length=1,
+                        max_length=4000,
+                    ),
+                    "business": _str_param("Business or project name.", max_length=200),
+                    "audience": _str_param("Target buyer or audience.", max_length=500),
+                    "assets": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Existing assets such as logo, story, product, list or proof.",
+                    },
+                    "needs": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Needs such as content, ecommerce, sales or monetization.",
+                    },
+                    "constraints": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Constraints such as no_paid_ads or approval_required.",
+                    },
+                },
+                "required": ["objective"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("erstelle ein kaizen sieben monetarisierungs paket",),  # i18n-allow: input vocab
+                "en": ("build a kaizen seven monetization pack",),
+                "es": ("crea un pack de monetizacion de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-monetization-propose",
+            title="Propose KAIZEN7 monetization move",
+            description=(
+                "Record a monetization proposal and receipt. It prepares the "
+                "growth pack but never publishes, charges, sends messages, "
+                "changes credentials or collects customer data."
+            ),
+            method="POST",
+            path="/api/kaizen7/monetization/propose",
+            params={
+                "type": "object",
+                "properties": {
+                    "objective": _str_param(
+                        "Business monetization objective.",
+                        min_length=1,
+                        max_length=4000,
+                    ),
+                    "business": _str_param("Business or project name.", max_length=200),
+                    "audience": _str_param("Target buyer or audience.", max_length=500),
+                    "assets": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Existing assets such as logo, story, product, list or proof.",
+                    },
+                    "needs": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Needs such as content, ecommerce, sales or monetization.",
+                    },
+                    "constraints": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Constraints such as no_paid_ads or approval_required.",
+                    },
+                },
+                "required": ["objective"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("schlage eine kaizen sieben monetarisierung vor",),  # i18n-allow: input vocab
+                "en": ("propose a kaizen seven monetization move",),
+                "es": ("propÃ³n una monetizacion de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
             id="kaizen7-adapters-list",
             title="List KAIZEN7 adapters",
             description=(

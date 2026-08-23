@@ -366,6 +366,7 @@ class WebServer:
         from .kaizen7_codex_routes import router as kaizen7_codex_router
         from .kaizen7_hermes_routes import router as kaizen7_hermes_router
         from .kaizen7_market_blueprint_routes import router as kaizen7_market_blueprint_router
+        from .kaizen7_monetization_routes import router as kaizen7_monetization_router
         from .kaizen7_product_routes import router as kaizen7_product_router
         from .kaizen7_providers_routes import router as kaizen7_providers_router
         from .marketplace_routes import router as marketplace_router
@@ -465,6 +466,7 @@ class WebServer:
         app.include_router(kaizen7_codex_router)
         app.include_router(kaizen7_hermes_router)
         app.include_router(kaizen7_market_blueprint_router)
+        app.include_router(kaizen7_monetization_router)
         app.include_router(kaizen7_product_router)
         app.include_router(kaizen7_providers_router)
         app.include_router(friends_router)

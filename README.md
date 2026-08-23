@@ -74,6 +74,11 @@ Hermes, Codex and receipt views.
 - Agent Bench: dry-run readiness checks for a passport before trusting it. It
   reports missing env contracts and never calls the model, CLI, API, MCP server
   or cloud agent.
+- Monetization Engine for business growth. It creates proposal-only Growth
+  Packs with viral content angles, offer ladder, ecommerce readiness, revenue
+  paths, measurable experiments, risk gates and receipt memory. It never
+  publishes, charges, spends, sends outbound messages, changes credentials or
+  collects customer data without approval.
 - Provider recommendation engine inspired by current open-source agent
   platforms: rank connectors by capability fit, privacy, cost, latency and
   constraints before any handoff is proposed.
@@ -114,6 +119,11 @@ Provider APIs:
 - `POST /api/kaizen7/agents/{agent_id}/bench` runs a dry configuration bench.
 - `POST /api/kaizen7/agents/{agent_id}/propose` records a proposed handoff and
   receipt without executing the agent.
+- `GET /api/kaizen7/monetization/playbooks` lists viral content, offer,
+  ecommerce, lead magnet, affiliate and retention playbooks.
+- `POST /api/kaizen7/monetization/pack` creates a Growth Pack for content,
+  sales, ecommerce and monetization without publishing or charging.
+- `POST /api/kaizen7/monetization/propose` records the Growth Pack as a receipt.
 - `GET /api/kaizen7/providers` lists registered safe connectors.
 - `GET /api/kaizen7/providers/{provider_id}` inspects one connector.
 - `POST /api/kaizen7/providers/recommend` ranks the best connector for a
