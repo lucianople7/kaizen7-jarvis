@@ -357,6 +357,7 @@ class WebServer:
         from .feedback_routes import router as feedback_router
         from .friends_routes import router as friends_router
         from .frontier_routes import router as frontier_router
+        from .kaizen7_agent_os_routes import router as kaizen7_agent_os_router
         from .kaizen7_bots_routes import router as kaizen7_bots_router
         from .kaizen7_bridge_routes import router as kaizen7_bridge_router
         from .kaizen7_capabilities_routes import router as kaizen7_capabilities_router
@@ -452,6 +453,7 @@ class WebServer:
         # Command Registry — the one machine-readable catalog of app commands
         # (consumed by the app-command brain tool, the UI, CLI, and docs gen).
         app.include_router(commands_router)
+        app.include_router(kaizen7_agent_os_router)
         app.include_router(kaizen7_bots_router)
         app.include_router(kaizen7_bridge_router)
         app.include_router(kaizen7_capabilities_router)

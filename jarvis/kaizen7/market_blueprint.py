@@ -84,6 +84,7 @@ def market_upgrade_plan() -> dict[str, Any]:
             "workflow-console",
             "developer-studio",
             "designer-studio",
+            "skill-forge",
         }
     ]
     recommended_now.sort(key=lambda item: _CAPABILITY_ORDER.get(item["capability_id"], 99))
@@ -114,6 +115,7 @@ _CAPABILITY_ORDER = {
     "workflow-console": 80,
     "developer-studio": 90,
     "designer-studio": 100,
+    "skill-forge": 110,
 }
 
 
@@ -308,5 +310,17 @@ _PATTERNS: tuple[MarketPattern, ...] = (
         capability_id="designer-studio",
         adoption="adopt_now",
         reason="business growth needs content/design production, not only code and chat",
+    ),
+    MarketPattern(
+        id="skill-library",
+        source="Hermes skills / DeepSeek Harness plugins / Codex skills",
+        source_url="https://github.com/NousResearch/hermes-agent",
+        pattern="skills as reusable, tested operating units with owners, permissions and receipts",
+        source_license="reference pattern; verify exact license before code reuse",
+        license_posture="compatible-pattern",
+        kaizen7_layer="K7 Operator",
+        capability_id="skill-forge",
+        adoption="adopt_now",
+        reason="a market-ready agent must grow by adding verified skills, not ad-hoc prompts",
     ),
 )

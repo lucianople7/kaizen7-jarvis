@@ -34,6 +34,7 @@ def test_default_capabilities_cover_product_operating_loop() -> None:
         "designer-studio",
         "multi-device-command",
         "context-compaction",
+        "skill-forge",
     } <= ids
     assert all(capability["mode"] == "proposal_only" for capability in capabilities)
     assert all(capability["execution_enabled"] is False for capability in capabilities)
@@ -117,4 +118,19 @@ def test_agent_os_pack_routes_mobile_context_and_studios() -> None:
     assert "developer-studio" in capability_ids
     assert "designer-studio" in capability_ids
     assert "context-compaction" in capability_ids
+    assert plan["execution_enabled"] is False
+
+
+def test_skill_forge_routes_agent_skill_creation() -> None:
+    registry = default_capability_registry()
+
+    plan = registry.launch_plan(
+        "Create a reusable market research skill for every agent",
+        needs=("skills", "agents", "tests"),
+        constraints=("no_paid_api",),
+    )
+
+    capability_ids = [step["capability_id"] for step in plan["steps"]]
+    assert "skill-forge" in capability_ids
+    assert "quality-evaluation" in capability_ids
     assert plan["execution_enabled"] is False

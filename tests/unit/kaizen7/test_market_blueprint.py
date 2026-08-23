@@ -25,6 +25,7 @@ def test_market_blueprint_tracks_best_open_patterns_without_copying_code() -> No
         "dax-policy-core",
         "opendex-voice-ux",
         "somi-control-room",
+        "skill-library",
     } <= ids
     assert all(pattern["copy_code"] is False for pattern in patterns)
     assert all(pattern["license_posture"] in {"compatible-pattern", "reference-only"} for pattern in patterns)
@@ -58,6 +59,7 @@ def test_market_upgrade_plan_has_next_gen_product_pack() -> None:
         "workflow-console",
         "developer-studio",
         "designer-studio",
+        "skill-forge",
     } <= next_gen
 
 

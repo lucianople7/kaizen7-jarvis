@@ -74,9 +74,9 @@ Hermes, Codex and receipt views.
   frameworks by default.
 - Agent OS Pack: next-generation capabilities inspired by Row-Bot, OpenYak,
   Pioneer, Dax, OpenDex and SOMI: knowledge graph memory, multi-device command,
-  context compaction, workflow console, developer studio and designer studio.
-  These are planning/governance surfaces first; execution stays behind human
-  approval.
+  context compaction, workflow console, developer studio, designer studio and
+  Skill Forge. These are planning/governance surfaces first; execution stays
+  behind human approval.
 - Strict separation between proposing work and executing work.
 - Human approval required before payments, publishing, outbound messages,
   credentials, financial operations and irreversible changes.

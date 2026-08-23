@@ -132,7 +132,7 @@ def run_kaizen7_doctor(
                 "capabilities",
                 "ok",
                 f"capability marketplace ready: {len(capabilities)} safe capabilities",
-                "Agent OS pack: memory, mobile, context, workflow, developer, designer.",
+                "Agent OS pack: memory, mobile, context, workflow, developer, designer, skills.",
             )
         )
 
