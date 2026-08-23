@@ -12,6 +12,7 @@ from jarvis.kaizen7.bridge import APPROVAL_REQUIRED_FOR, ControlBridgeStore
 from jarvis.kaizen7.capabilities import default_capability_registry
 from jarvis.kaizen7.codex_runtime import CodexRuntime
 from jarvis.kaizen7.hermes_runtime import HermesRuntime
+from jarvis.kaizen7.market_blueprint import default_market_blueprint
 from jarvis.kaizen7.providers import default_provider_registry
 
 Status = Literal["ok", "warn", "fail", "info"]
@@ -132,6 +133,27 @@ def run_kaizen7_doctor(
                 "ok",
                 f"capability marketplace ready: {len(capabilities)} safe capabilities",
                 "focus, research, content, code, mobile approval, desktop planning.",
+            )
+        )
+
+    market_patterns = default_market_blueprint().list()
+    copied_patterns = [item["id"] for item in market_patterns if item.get("copy_code")]
+    if copied_patterns:
+        findings.append(
+            Kaizen7DoctorFinding(
+                "market-blueprint",
+                "fail",
+                "market patterns copied code: " + ", ".join(copied_patterns),
+                "Keep the blueprint as legal pattern adaptation unless explicitly approved.",
+            )
+        )
+    else:
+        findings.append(
+            Kaizen7DoctorFinding(
+                "market-blueprint",
+                "ok",
+                f"market pattern fork ready: {len(market_patterns)} patterns",
+                "no third-party code copied; patterns are mapped to KAIZEN7 capabilities.",
             )
         )
 

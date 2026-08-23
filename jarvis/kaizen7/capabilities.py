@@ -89,7 +89,7 @@ class CapabilityRegistry:
             if scored["matched"] or not requested:
                 selected.append(scored)
 
-        selected.sort(key=lambda item: (-int(item["score"]), int(item["order"]), str(item["id"])))
+        selected.sort(key=lambda item: (int(item["order"]), -int(item["score"]), str(item["id"])))
         return {
             "mission": clean_mission,
             "needs": sorted(requested),
@@ -214,11 +214,17 @@ def _score_capability(
 
 _ORDER = {
     "daily-focus": 10,
-    "business-research": 20,
-    "content-pipeline": 30,
-    "code-repair": 40,
-    "mobile-approval": 50,
-    "desktop-control-plan": 60,
+    "governed-memory": 20,
+    "business-research": 30,
+    "content-pipeline": 40,
+    "code-repair": 50,
+    "mcp-connector-plan": 60,
+    "quality-evaluation": 70,
+    "mobile-approval": 80,
+    "desktop-control-plan": 90,
+    "agent-session-control": 100,
+    "visual-workflow-plan": 110,
+    "social-publishing-plan": 120,
 }
 
 _DEFAULT_CAPABILITIES: tuple[Kaizen7Capability, ...] = (
@@ -245,6 +251,17 @@ _DEFAULT_CAPABILITIES: tuple[Kaizen7Capability, ...] = (
         cost="configurable",
     ),
     Kaizen7Capability(
+        id="governed-memory",
+        title="Governed Memory",
+        provider_id="cli",
+        summary="Keep decisions, context, metrics and receipts scoped, inspectable and recoverable.",
+        needs=("memory", "receipts", "context"),
+        permissions=("read_receipts", "write_receipt", "read_capsule"),
+        approval_required_for=("credentials", "irreversible_changes"),
+        privacy="local",
+        cost="local",
+    ),
+    Kaizen7Capability(
         id="content-pipeline",
         title="Content Pipeline",
         provider_id="hermes",
@@ -252,6 +269,28 @@ _DEFAULT_CAPABILITIES: tuple[Kaizen7Capability, ...] = (
         needs=("content", "sales", "publishing"),
         permissions=("read_capsule", "draft_content", "write_receipt"),
         approval_required_for=("publishing", "messages", "external_sends"),
+        privacy="mixed",
+        cost="configurable",
+    ),
+    Kaizen7Capability(
+        id="mcp-connector-plan",
+        title="MCP Connector Plan",
+        provider_id="api",
+        summary="Plan tool connectors through stable contracts instead of one-off integrations.",
+        needs=("mcp", "connectors", "tools"),
+        permissions=("read_context", "write_receipt"),
+        approval_required_for=("credentials", "external_sends", "financial_operations"),
+        privacy="mixed",
+        cost="configurable",
+    ),
+    Kaizen7Capability(
+        id="quality-evaluation",
+        title="Quality Evaluation",
+        provider_id="codex",
+        summary="Score agent proposals against tests, risks, evidence and acceptance criteria.",
+        needs=("evaluation", "quality", "tests"),
+        permissions=("read_context", "read_repo", "write_receipt"),
+        approval_required_for=("destructive_changes", "irreversible_changes"),
         privacy="mixed",
         cost="configurable",
     ),
@@ -287,5 +326,38 @@ _DEFAULT_CAPABILITIES: tuple[Kaizen7Capability, ...] = (
         approval_required_for=("credentials", "destructive_changes", "irreversible_changes"),
         privacy="local",
         cost="local",
+    ),
+    Kaizen7Capability(
+        id="agent-session-control",
+        title="Agent Session Control",
+        provider_id="hermes",
+        summary="Represent every agent run as a session with profile, owner, permissions and receipt trail.",
+        needs=("sessions", "agents", "audit"),
+        permissions=("read_receipts", "write_receipt", "read_capsule"),
+        approval_required_for=("messages", "external_sends", "irreversible_changes"),
+        privacy="mixed",
+        cost="configurable",
+    ),
+    Kaizen7Capability(
+        id="visual-workflow-plan",
+        title="Visual Workflow Plan",
+        provider_id="api",
+        summary="Generate a user-readable workflow graph before automation exists.",
+        needs=("workflow", "planning", "visual"),
+        permissions=("read_context", "write_receipt"),
+        approval_required_for=("external_sends", "financial_operations"),
+        privacy="mixed",
+        cost="configurable",
+    ),
+    Kaizen7Capability(
+        id="social-publishing-plan",
+        title="Social Publishing Plan",
+        provider_id="api",
+        summary="Prepare social/content publishing calendars with approval before any external post.",
+        needs=("publishing", "social", "content"),
+        permissions=("read_capsule", "draft_content", "write_receipt"),
+        approval_required_for=("publishing", "messages", "external_sends", "credentials"),
+        privacy="external",
+        cost="configurable",
     ),
 )

@@ -22,6 +22,12 @@ def test_default_capabilities_cover_product_operating_loop() -> None:
         "code-repair",
         "mobile-approval",
         "desktop-control-plan",
+        "governed-memory",
+        "mcp-connector-plan",
+        "quality-evaluation",
+        "visual-workflow-plan",
+        "social-publishing-plan",
+        "agent-session-control",
     } <= ids
     assert all(capability["mode"] == "proposal_only" for capability in capabilities)
     assert all(capability["execution_enabled"] is False for capability in capabilities)
@@ -45,14 +51,15 @@ def test_launch_plan_is_ordered_and_requires_approval() -> None:
     registry = default_capability_registry()
 
     plan = registry.launch_plan(
-        "Grow THE FOCUX this week",
-        needs=("focus", "research", "content"),
+        "Grow THE FOCUX this week with memory, research and content",
+        needs=("focus", "memory", "research", "content"),
         constraints=("no_paid_api",),
     )
 
-    assert plan["mission"] == "Grow THE FOCUX this week"
-    assert [step["capability_id"] for step in plan["steps"]][:3] == [
+    assert plan["mission"] == "Grow THE FOCUX this week with memory, research and content"
+    assert [step["capability_id"] for step in plan["steps"]][:4] == [
         "daily-focus",
+        "governed-memory",
         "business-research",
         "content-pipeline",
     ]

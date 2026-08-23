@@ -67,6 +67,11 @@ Hermes, Codex and receipt views.
   focus, business research, content pipeline, code repair, mobile approval and
   desktop control planning. Each capability declares provider, permissions,
   privacy, cost and human approval policy.
+- Market Blueprint: a legal pattern fork from the best open-source agent
+  products. KAIZEN7 tracks what to absorb from operator agents, plugin
+  marketplaces, visual workflows, local knowledge, MCP connectors, eval loops
+  and publishing tools without copying third-party code or installing heavy
+  frameworks by default.
 - Strict separation between proposing work and executing work.
 - Human approval required before payments, publishing, outbound messages,
   credentials, financial operations and irreversible changes.
@@ -86,6 +91,10 @@ Provider APIs:
 - `GET /api/kaizen7/capabilities/{capability_id}` inspects one capability.
 - `POST /api/kaizen7/capabilities/plan` creates a safe launch plan from
   capabilities without executing providers.
+- `GET /api/kaizen7/market-blueprint` shows absorbed, rejected and reference
+  market patterns.
+- `GET /api/kaizen7/market-blueprint/upgrade-plan` shows the proposal-only
+  product upgrade path derived from current open-source patterns.
 
 Configure optional external tools through environment variables or the OS
 credential manager. Do not commit secrets. See `.env.example`.

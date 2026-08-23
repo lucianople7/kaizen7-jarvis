@@ -692,6 +692,40 @@ def _build_registry() -> tuple[AppCommand, ...]:
             },
         ),
         AppCommand(
+            id="kaizen7-market-blueprint",
+            title="Show KAIZEN7 market blueprint",
+            description=(
+                "Show the legal pattern fork: which open-source market patterns "
+                "KAIZEN7 absorbs, rejects, or keeps as reference."
+            ),
+            method="GET",
+            path="/api/kaizen7/market-blueprint",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige den kaizen sieben markt bauplan",),  # i18n-allow: input vocab
+                "en": ("show kaizen seven market blueprint",),
+                "es": ("muestra el blueprint de mercado de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-market-upgrade-plan",
+            title="Show KAIZEN7 market upgrade plan",
+            description=(
+                "Show the proposal-only upgrade plan derived from the market "
+                "blueprint. It does not install dependencies or copy code."
+            ),
+            method="GET",
+            path="/api/kaizen7/market-blueprint/upgrade-plan",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige den kaizen sieben markt upgrade plan",),  # i18n-allow: input vocab
+                "en": ("show kaizen seven market upgrade plan",),
+                "es": ("muestra el plan de mejora de mercado de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
             id="kaizen7-bridge-capabilities",
             title="List Control Bridge capabilities",
             description=(
