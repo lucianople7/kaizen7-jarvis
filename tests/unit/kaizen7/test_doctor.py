@@ -64,8 +64,8 @@ def test_kaizen7_doctor_reports_capability_marketplace(tmp_path: Path) -> None:
     rendered = render_kaizen7_doctor(findings)
 
     assert "capabilities:" in rendered
-    assert "capability marketplace ready: 12 safe capabilities" in rendered
-    assert "focus, research, content, code, mobile approval, desktop planning" in rendered
+    assert "capability marketplace ready: 18 safe capabilities" in rendered
+    assert "Agent OS pack: memory, mobile, context, workflow, developer, designer" in rendered
 
 
 def test_kaizen7_doctor_reports_market_blueprint(tmp_path: Path) -> None:
@@ -78,7 +78,7 @@ def test_kaizen7_doctor_reports_market_blueprint(tmp_path: Path) -> None:
     rendered = render_kaizen7_doctor(findings)
 
     assert "market-blueprint:" in rendered
-    assert "market pattern fork ready:" in rendered
+    assert "market pattern fork ready: 15 patterns" in rendered
     assert "no third-party code copied" in rendered
 
 

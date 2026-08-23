@@ -28,6 +28,12 @@ def test_default_capabilities_cover_product_operating_loop() -> None:
         "visual-workflow-plan",
         "social-publishing-plan",
         "agent-session-control",
+        "knowledge-graph-memory",
+        "workflow-console",
+        "developer-studio",
+        "designer-studio",
+        "multi-device-command",
+        "context-compaction",
     } <= ids
     assert all(capability["mode"] == "proposal_only" for capability in capabilities)
     assert all(capability["execution_enabled"] is False for capability in capabilities)
@@ -93,3 +99,22 @@ def test_blank_launch_plan_mission_is_rejected() -> None:
 
     with pytest.raises(ValueError, match="mission cannot be blank"):
         registry.launch_plan("   ")
+
+
+def test_agent_os_pack_routes_mobile_context_and_studios() -> None:
+    registry = default_capability_registry()
+
+    plan = registry.launch_plan(
+        "Run a mobile-first agent OS with memory, workflows, coding and design",
+        needs=("mobile", "memory", "workflow", "code", "design", "context"),
+        constraints=("no_paid_api",),
+    )
+
+    capability_ids = [step["capability_id"] for step in plan["steps"]]
+    assert "multi-device-command" in capability_ids
+    assert "knowledge-graph-memory" in capability_ids
+    assert "workflow-console" in capability_ids
+    assert "developer-studio" in capability_ids
+    assert "designer-studio" in capability_ids
+    assert "context-compaction" in capability_ids
+    assert plan["execution_enabled"] is False

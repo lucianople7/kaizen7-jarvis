@@ -76,11 +76,18 @@ def market_upgrade_plan() -> dict[str, Any]:
         in {
             "daily-focus",
             "governed-memory",
+            "knowledge-graph-memory",
+            "multi-device-command",
             "mcp-connector-plan",
             "quality-evaluation",
+            "context-compaction",
+            "workflow-console",
+            "developer-studio",
+            "designer-studio",
         }
     ]
     recommended_now.sort(key=lambda item: _CAPABILITY_ORDER.get(item["capability_id"], 99))
+    recommended_now = _dedupe_by_capability(recommended_now)
     backlog = [
         item
         for item in blueprint.list()
@@ -99,9 +106,27 @@ def market_upgrade_plan() -> dict[str, Any]:
 _CAPABILITY_ORDER = {
     "daily-focus": 10,
     "governed-memory": 20,
-    "mcp-connector-plan": 30,
-    "quality-evaluation": 40,
+    "knowledge-graph-memory": 30,
+    "multi-device-command": 40,
+    "mcp-connector-plan": 50,
+    "quality-evaluation": 60,
+    "context-compaction": 70,
+    "workflow-console": 80,
+    "developer-studio": 90,
+    "designer-studio": 100,
 }
+
+
+def _dedupe_by_capability(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    seen: set[str] = set()
+    deduped: list[dict[str, Any]] = []
+    for item in items:
+        capability_id = str(item["capability_id"])
+        if capability_id in seen:
+            continue
+        seen.add(capability_id)
+        deduped.append(item)
+    return deduped
 
 _PATTERNS: tuple[MarketPattern, ...] = (
     MarketPattern(
@@ -187,5 +212,101 @@ _PATTERNS: tuple[MarketPattern, ...] = (
         capability_id="social-publishing-plan",
         adoption="test_later",
         reason="requires credentials or external publishing approval",
+    ),
+    MarketPattern(
+        id="rowbot-agent-os",
+        source="Row-Bot",
+        source_url="https://github.com/siddsachar/row-bot",
+        pattern="agent OS with durable memory, knowledge graph, workflows, profiles, MCP, plugins and multi-device access",
+        source_license="reference pattern; verify exact license before code reuse",
+        license_posture="compatible-pattern",
+        kaizen7_layer="K7 Operator",
+        capability_id="knowledge-graph-memory",
+        adoption="adopt_now",
+        reason="best benchmark for an evolvable personal/business agent OS",
+    ),
+    MarketPattern(
+        id="openyak-workspace",
+        source="OpenYak",
+        source_url="https://github.com/openyak/openyak",
+        pattern="workspace-first assistant for files, long context and secure remote access",
+        source_license="reference pattern; verify exact license before code reuse",
+        license_posture="compatible-pattern",
+        kaizen7_layer="K7 Context",
+        capability_id="context-compaction",
+        adoption="adopt_now",
+        reason="long-running work needs compact handoffs and file-grounded context",
+    ),
+    MarketPattern(
+        id="pioneer-gateway",
+        source="Pioneer",
+        source_url="https://github.com/pioneerdotai/pioneer",
+        pattern="gateway-first desktop agent with remote/local routing and MCP-style control",
+        source_license="reference pattern; verify exact license before code reuse",
+        license_posture="compatible-pattern",
+        kaizen7_layer="K7 Operator",
+        capability_id="multi-device-command",
+        adoption="adopt_now",
+        reason="mobile and desktop command need one governed gateway contract",
+    ),
+    MarketPattern(
+        id="dax-policy-core",
+        source="Dax Assistant",
+        source_url="https://github.com/daxrpm/dax-assistant",
+        pattern="backend-authoritative policy, approvals, audit and client separation",
+        source_license="reference pattern; verify exact license before code reuse",
+        license_posture="compatible-pattern",
+        kaizen7_layer="K7 Scope",
+        capability_id="multi-device-command",
+        adoption="adopt_now",
+        reason="keeps phone, desktop and agents behind one policy layer",
+    ),
+    MarketPattern(
+        id="opendex-voice-ux",
+        source="OpenDex",
+        source_url="https://github.com/wassgha/opendex",
+        pattern="voice-first Jarvis UX with hotkeys, local command intent and permission gate",
+        source_license="reference pattern; verify exact license before code reuse",
+        license_posture="compatible-pattern",
+        kaizen7_layer="K7 Operator",
+        capability_id="daily-focus",
+        adoption="adapt_pattern",
+        reason="voice UX should reduce friction without bypassing approvals",
+    ),
+    MarketPattern(
+        id="somi-control-room",
+        source="SOMI",
+        source_url="https://github.com/Somi-Project/Somi",
+        pattern="control-room product surface with research, coding, design and automation studios",
+        source_license="reference pattern; verify exact license before code reuse",
+        license_posture="compatible-pattern",
+        kaizen7_layer="K7 Operator",
+        capability_id="workflow-console",
+        adoption="adopt_now",
+        reason="KAIZEN7 needs studios and dashboards, not only chat",
+    ),
+    MarketPattern(
+        id="developer-studio-pattern",
+        source="Codex/OpenHands/Pioneer",
+        source_url="https://github.com/All-Hands-AI/OpenHands",
+        pattern="developer studio with repo context, tests, review gates and safe patches",
+        source_license="reference pattern; verify exact license before code reuse",
+        license_posture="compatible-pattern",
+        kaizen7_layer="K7 Operator",
+        capability_id="developer-studio",
+        adoption="adopt_now",
+        reason="a serious product agent needs a first-class software workbench",
+    ),
+    MarketPattern(
+        id="designer-studio-pattern",
+        source="SOMI / product design agent tools",
+        source_url="https://github.com/Somi-Project/Somi",
+        pattern="designer studio for brand, content, product assets and approval-first publishing",
+        source_license="reference pattern; verify exact license before code reuse",
+        license_posture="compatible-pattern",
+        kaizen7_layer="Content Factory",
+        capability_id="designer-studio",
+        adoption="adopt_now",
+        reason="business growth needs content/design production, not only code and chat",
     ),
 )
