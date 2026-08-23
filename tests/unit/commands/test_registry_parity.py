@@ -159,6 +159,21 @@ def test_kaizen7_adapter_commands_are_discoverable() -> None:
         assert commands[command_id].dangerous is False
 
 
+def test_kaizen7_agent_commands_are_discoverable() -> None:
+    commands = {cmd.id: cmd for cmd in get_registry()}
+    for command_id in (
+        "kaizen7-agents-list",
+        "kaizen7-agents-manifest",
+        "kaizen7-agent-recommend",
+        "kaizen7-agent-bench",
+        "kaizen7-agent-propose",
+    ):
+        assert command_id in commands
+        assert commands[command_id].ui_section == "agents"
+        assert commands[command_id].worker_allowed is True
+        assert commands[command_id].dangerous is False
+
+
 def test_kaizen7_capability_commands_are_discoverable() -> None:
     commands = {cmd.id: cmd for cmd in get_registry()}
     for command_id in (

@@ -636,6 +636,151 @@ def _build_registry() -> tuple[AppCommand, ...]:
             },
         ),
         AppCommand(
+            id="kaizen7-agents-list",
+            title="List KAIZEN7 agent passports",
+            description=(
+                "List every registered agent passport: local Jarvis, Hermes, "
+                "Codex, OpenHands, MCP, OpenAI-compatible models and generic "
+                "cloud agents. This never executes an agent."
+            ),
+            method="GET",
+            path="/api/kaizen7/agents",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige kaizen sieben agenten",),  # i18n-allow: input vocab
+                "en": ("list kaizen seven agents",),
+                "es": ("lista los agentes de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-agents-manifest",
+            title="Show KAIZEN7 agent manifest",
+            description=(
+                "Show the vendor-agnostic agent manifest for models, CLIs, "
+                "MCP servers, runtimes and cloud agents without exposing secrets."
+            ),
+            method="GET",
+            path="/api/kaizen7/agents/manifest",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige das kaizen sieben agenten manifest",),  # i18n-allow: input vocab
+                "en": ("show kaizen seven agent manifest",),
+                "es": ("muestra el manifiesto de agentes de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-agent-recommend",
+            title="Recommend a KAIZEN7 agent",
+            description=(
+                "Rank agent passports for a mission by capability, privacy, "
+                "cost and constraints. This does not call any agent."
+            ),
+            method="POST",
+            path="/api/kaizen7/agents/recommend",
+            params={
+                "type": "object",
+                "properties": {
+                    "mission": _str_param(
+                        "Mission or work request to route.",
+                        min_length=1,
+                        max_length=4000,
+                    ),
+                    "needs": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Needs such as code, tests, local, chat, memory, mcp, cloud, or workflow.",
+                    },
+                    "constraints": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Constraints such as local_only or no_paid_api.",
+                    },
+                },
+                "required": ["mission"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("empfiehl einen kaizen sieben agenten",),  # i18n-allow: input vocab
+                "en": ("recommend a kaizen seven agent",),
+                "es": ("recomienda un agente de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-agent-bench",
+            title="Dry-run bench a KAIZEN7 agent",
+            description=(
+                "Run a dry configuration bench for one agent passport. It only "
+                "checks declared environment contract and never calls the agent."
+            ),
+            method="POST",
+            path="/api/kaizen7/agents/{agent_id}/bench",
+            path_params=("agent_id",),
+            params={
+                "type": "object",
+                "properties": {
+                    "agent_id": _str_param(
+                        "Agent id such as codex-cli, hermes-runtime, mcp-tool-server, or generic-cloud-agent.",
+                        min_length=1,
+                        max_length=80,
+                    ),
+                    "env": {
+                        "type": "object",
+                        "description": "Optional fake env map for testing readiness without using real secrets.",
+                    },
+                },
+                "required": ["agent_id"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("teste einen kaizen sieben agenten trocken",),  # i18n-allow: input vocab
+                "en": ("dry run bench a kaizen seven agent",),
+                "es": ("prueba en seco un agente de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-agent-propose",
+            title="Propose work for a KAIZEN7 agent",
+            description=(
+                "Record a recommendation-only handoff proposal for any agent "
+                "passport. It does not call a model, CLI, MCP server, runtime "
+                "or cloud agent."
+            ),
+            method="POST",
+            path="/api/kaizen7/agents/{agent_id}/propose",
+            path_params=("agent_id",),
+            params={
+                "type": "object",
+                "properties": {
+                    "agent_id": _str_param(
+                        "Agent id such as codex-cli, hermes-runtime, openhands-worker, or openai-compatible-model.",
+                        min_length=1,
+                        max_length=80,
+                    ),
+                    "message": _str_param(
+                        "Work request to propose.",
+                        min_length=1,
+                        max_length=4000,
+                    ),
+                    "context": {
+                        "type": "object",
+                        "description": "Optional capsule, mission, workdir or routing context.",
+                    },
+                },
+                "required": ["agent_id", "message"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("schlage arbeit fuer einen kaizen sieben agenten vor",),  # i18n-allow: input vocab
+                "en": ("propose work for a kaizen seven agent",),
+                "es": ("propÃ³n trabajo para un agente de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
             id="kaizen7-adapters-list",
             title="List KAIZEN7 adapters",
             description=(

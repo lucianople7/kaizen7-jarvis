@@ -68,6 +68,20 @@ def test_kaizen7_doctor_reports_agnostic_adapter_registry(tmp_path: Path) -> Non
     assert "OpenAI-compatible, HTTP API, CLI, MCP, webhook, cloud agent" in rendered
 
 
+def test_kaizen7_doctor_reports_universal_agent_gateway(tmp_path: Path) -> None:
+    findings = run_kaizen7_doctor(
+        hermes=_FakeHermes(installed=False),
+        codex=_FakeCodex(installed=False),
+        bridge=ControlBridgeStore(root=tmp_path),
+    )
+
+    rendered = render_kaizen7_doctor(findings)
+
+    assert "agent-gateway:" in rendered
+    assert "universal agent gateway ready: 7 passports" in rendered
+    assert "Jarvis, Hermes, Codex, OpenHands, MCP, OpenAI-compatible, cloud agent" in rendered
+
+
 def test_kaizen7_doctor_reports_capability_marketplace(tmp_path: Path) -> None:
     findings = run_kaizen7_doctor(
         hermes=_FakeHermes(installed=False),

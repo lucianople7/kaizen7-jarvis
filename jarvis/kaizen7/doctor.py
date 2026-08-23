@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from jarvis.kaizen7.agent_gateway import default_agent_gateway
 from jarvis.kaizen7.adapters import default_adapter_registry
 from jarvis.kaizen7.bridge import APPROVAL_REQUIRED_FOR, ControlBridgeStore
 from jarvis.kaizen7.capabilities import default_capability_registry
@@ -110,6 +111,29 @@ def run_kaizen7_doctor(
                 "ok",
                 f"adapter registry ready: {len(adapters)} agnostic adapters",
                 "OpenAI-compatible, HTTP API, CLI, MCP, webhook, cloud agent.",
+            )
+        )
+
+    agents = default_agent_gateway().list()
+    unsafe_agents = [
+        agent["id"] for agent in agents if agent.get("execution_enabled")
+    ]
+    if unsafe_agents:
+        findings.append(
+            Kaizen7DoctorFinding(
+                "agent-gateway",
+                "fail",
+                "agent passports expose execution by default: " + ", ".join(unsafe_agents),
+                "Keep every agent proposal-only until a human approval contract exists.",
+            )
+        )
+    else:
+        findings.append(
+            Kaizen7DoctorFinding(
+                "agent-gateway",
+                "ok",
+                f"universal agent gateway ready: {len(agents)} passports",
+                "Jarvis, Hermes, Codex, OpenHands, MCP, OpenAI-compatible, cloud agent.",
             )
         )
 

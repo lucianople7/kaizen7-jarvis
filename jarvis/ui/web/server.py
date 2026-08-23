@@ -358,6 +358,7 @@ class WebServer:
         from .friends_routes import router as friends_router
         from .frontier_routes import router as frontier_router
         from .kaizen7_adapters_routes import router as kaizen7_adapters_router
+        from .kaizen7_agent_gateway_routes import router as kaizen7_agent_gateway_router
         from .kaizen7_agent_os_routes import router as kaizen7_agent_os_router
         from .kaizen7_bots_routes import router as kaizen7_bots_router
         from .kaizen7_bridge_routes import router as kaizen7_bridge_router
@@ -456,6 +457,7 @@ class WebServer:
         # (consumed by the app-command brain tool, the UI, CLI, and docs gen).
         app.include_router(commands_router)
         app.include_router(kaizen7_adapters_router)
+        app.include_router(kaizen7_agent_gateway_router)
         app.include_router(kaizen7_agent_os_router)
         app.include_router(kaizen7_bots_router)
         app.include_router(kaizen7_bridge_router)

@@ -4,6 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from jarvis.kaizen7.agent_gateway import default_agent_gateway
 from jarvis.kaizen7.adapters import default_adapter_registry
 from jarvis.kaizen7.bridge import ControlBridgeStore
 from jarvis.kaizen7.capabilities import default_capability_registry
@@ -19,17 +20,19 @@ def build_product_readiness(
 ) -> dict[str, Any]:
     root = repo_root or Path(__file__).resolve().parents[2]
     bridge = bridge or ControlBridgeStore.from_config(config)
+    agents = default_agent_gateway().list()
     adapters = default_adapter_registry().list()
     providers = default_provider_registry().list()
     capabilities = default_capability_registry().list()
     patterns = default_market_blueprint().list()
-    checks = _checks(root, bridge, adapters, providers, capabilities, patterns)
+    checks = _checks(root, bridge, agents, adapters, providers, capabilities, patterns)
     passed = sum(1 for check in checks if check["status"] == "ok")
     score = round((passed / len(checks)) * 100) if checks else 0
     return {
         "status": "ready" if score >= 90 else "needs_work",
         "score": score,
         "counts": {
+            "agents": len(agents),
             "adapters": len(adapters),
             "providers": len(providers),
             "capabilities": len(capabilities),
@@ -46,7 +49,8 @@ def render_product_readiness(readiness: dict[str, Any]) -> str:
     lines = ["KAIZEN7 Jarvis - product readiness", "=" * 48]
     counts = readiness["counts"]
     lines.append(
-        f"Surface: {counts['adapters']} adapters, {counts['providers']} providers, "
+        f"Surface: {counts['agents']} agents, {counts['adapters']} adapters, "
+        f"{counts['providers']} providers, "
         f"{counts['capabilities']} capabilities, "
         f"{counts['market_patterns']} market patterns"
     )
@@ -65,6 +69,7 @@ def render_product_readiness(readiness: dict[str, Any]) -> str:
 def _checks(
     root: Path,
     bridge: ControlBridgeStore,
+    agents: list[dict[str, Any]],
     adapters: list[dict[str, Any]],
     providers: list[dict[str, Any]],
     capabilities: list[dict[str, Any]],
@@ -76,6 +81,7 @@ def _checks(
         _check("install", (root / "install" / "install.sh").exists(), "Unix installer present"),
         _check("security", bridge_status.get("execution_enabled") is False, "execution disabled by default"),
         _check("security", bool(bridge_status.get("approval_required_for")), "human approval categories configured"),
+        _check("product", len(agents) >= 7, f"{len(agents)} agent passports registered"),
         _check("product", len(adapters) >= 6, f"{len(adapters)} adapters registered"),
         _check("product", len(providers) >= 4, f"{len(providers)} providers registered"),
         _check("product", len(capabilities) >= 19, f"{len(capabilities)} capabilities registered"),

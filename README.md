@@ -66,6 +66,14 @@ Hermes, Codex and receipt views.
   webhook agents and managed cloud agents. This is the connection layer for
   Cloud Code-style CLIs, future OpenCloud services, private APIs or local
   models without binding KAIZEN7 to one vendor.
+- Universal Agent Gateway with Agent Passports. Jarvis now knows the difference
+  between an adapter and a real agent surface: local KAIZEN7 CLI, Hermes,
+  Codex, OpenHands, MCP tool servers, OpenAI-compatible model gateways and
+  generic cloud agents. Each passport declares capabilities, cost, privacy,
+  risk, auth, required environment variables and approval policy.
+- Agent Bench: dry-run readiness checks for a passport before trusting it. It
+  reports missing env contracts and never calls the model, CLI, API, MCP server
+  or cloud agent.
 - Provider recommendation engine inspired by current open-source agent
   platforms: rank connectors by capability fit, privacy, cost, latency and
   constraints before any handoff is proposed.
@@ -98,6 +106,14 @@ Provider APIs:
   without calling it.
 - `POST /api/kaizen7/adapters/{adapter_id}/propose` records a proposed adapter
   handoff without calling any model, CLI, API, webhook or cloud agent.
+- `GET /api/kaizen7/agents` lists registered Agent Passports.
+- `GET /api/kaizen7/agents/manifest` returns the vendor-agnostic gateway
+  manifest.
+- `POST /api/kaizen7/agents/recommend` ranks agent passports for a mission
+  without calling them.
+- `POST /api/kaizen7/agents/{agent_id}/bench` runs a dry configuration bench.
+- `POST /api/kaizen7/agents/{agent_id}/propose` records a proposed handoff and
+  receipt without executing the agent.
 - `GET /api/kaizen7/providers` lists registered safe connectors.
 - `GET /api/kaizen7/providers/{provider_id}` inspects one connector.
 - `POST /api/kaizen7/providers/recommend` ranks the best connector for a

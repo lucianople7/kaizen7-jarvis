@@ -24,6 +24,7 @@ def test_product_readiness_scores_real_product_surfaces(tmp_path) -> None:
     assert readiness["execution_enabled"] is False
     assert readiness["requires_human_approval"] is True
     assert readiness["counts"] == {
+        "agents": 7,
         "adapters": 6,
         "providers": 4,
         "capabilities": 19,
@@ -50,6 +51,7 @@ def test_product_readiness_renderer_is_actionable(tmp_path) -> None:
 
     assert "KAIZEN7 Jarvis - product readiness" in rendered
     assert "RESULT: READY" in rendered
+    assert "7 agents" in rendered
     assert "6 adapters" in rendered
     assert "19 capabilities" in rendered
     assert "no execution without approval" in rendered
