@@ -726,6 +726,23 @@ def _build_registry() -> tuple[AppCommand, ...]:
             },
         ),
         AppCommand(
+            id="kaizen7-product-readiness",
+            title="Show KAIZEN7 product readiness",
+            description=(
+                "Score install, security, product surfaces, APIs, docs and tests "
+                "for KAIZEN7 Jarvis. This is read-only."
+            ),
+            method="GET",
+            path="/api/kaizen7/product/readiness",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige kaizen sieben produkt bereitschaft",),  # i18n-allow: input vocab
+                "en": ("show kaizen seven product readiness",),
+                "es": ("muestra la preparacion de producto de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
             id="kaizen7-bridge-capabilities",
             title="List Control Bridge capabilities",
             description=(

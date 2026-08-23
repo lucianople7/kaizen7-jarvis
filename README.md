@@ -38,6 +38,7 @@ python -m venv .venv
 pip install -e .[full]
 python -m jarvis --doctor
 python -m jarvis --kaizen7-doctor
+python -m jarvis --kaizen7-product
 python -m jarvis.ui.web.launcher --headless --no-lock --port 47821
 ```
 
@@ -100,6 +101,9 @@ Provider APIs:
   market patterns.
 - `GET /api/kaizen7/market-blueprint/upgrade-plan` shows the proposal-only
   product upgrade path derived from current open-source patterns.
+- `GET /api/kaizen7/product/readiness` returns the product readiness score:
+  install, security, product surfaces, APIs, docs and tests.
+- `python -m jarvis --kaizen7-product` prints the same readiness report in CLI.
 
 Configure optional external tools through environment variables or the OS
 credential manager. Do not commit secrets. See `.env.example`.

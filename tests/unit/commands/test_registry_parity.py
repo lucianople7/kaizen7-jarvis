@@ -169,6 +169,15 @@ def test_kaizen7_market_blueprint_commands_are_discoverable() -> None:
         assert commands[command_id].dangerous is False
 
 
+def test_kaizen7_product_commands_are_discoverable() -> None:
+    commands = {cmd.id: cmd for cmd in get_registry()}
+    command = commands["kaizen7-product-readiness"]
+    assert command.path == "/api/kaizen7/product/readiness"
+    assert command.ui_section == "agents"
+    assert command.worker_allowed is True
+    assert command.dangerous is False
+
+
 def test_reply_languages_match_brain_source_of_truth() -> None:
     from jarvis.brain.manager import SUPPORTED_REPLY_LANGUAGES
 

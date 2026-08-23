@@ -16,6 +16,17 @@ def test_status_reports_missing_cli() -> None:
     assert status["error"] == "Hermes CLI not found."
 
 
+def test_status_reports_timeout_without_traceback() -> None:
+    runtime = HermesRuntime(cli="hanging-hermes", runner=_timeout_runner)
+
+    status = runtime.status()
+
+    assert status["installed"] is False
+    assert status["execution_enabled"] is False
+    assert status["profile_count"] == 0
+    assert status["error"] == "Hermes CLI timed out."
+
+
 def test_status_parses_version_and_profiles() -> None:
     runtime = HermesRuntime(cli="hermes", runner=_happy_runner)
 
@@ -119,6 +130,10 @@ def test_profile_parser_accepts_active_profile_with_ansi_marker() -> None:
 
 def _missing_runner(*_args, **_kwargs):
     raise FileNotFoundError
+
+
+def _timeout_runner(*_args, **_kwargs):
+    raise subprocess.TimeoutExpired(cmd=["hermes", "--version"], timeout=30)
 
 
 def _happy_runner(args, **_kwargs):

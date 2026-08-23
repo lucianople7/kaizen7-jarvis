@@ -264,6 +264,8 @@ class HermesRuntime:
             )
         except FileNotFoundError:
             return {"version": "", "error": "Hermes CLI not found."}
+        except subprocess.TimeoutExpired:
+            return {"version": "", "error": "Hermes CLI timed out."}
         except OSError as exc:
             return {"version": "", "error": str(exc)}
         if result.returncode != 0:
@@ -280,7 +282,7 @@ class HermesRuntime:
                 timeout=30,
                 check=False,
             )
-        except (FileNotFoundError, OSError):
+        except (FileNotFoundError, OSError, subprocess.TimeoutExpired):
             return []
         if result.returncode != 0:
             return []
