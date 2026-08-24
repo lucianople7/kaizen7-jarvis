@@ -90,6 +90,45 @@ class MonetizationEngine:
             "requires_human_approval": True,
         }
 
+    def quick_start(
+        self,
+        objective: str,
+        *,
+        business: str = "KAIZEN7 Business",
+        audience: str = "buyers with a costly problem",
+        assets: tuple[str, ...] | list[str] = (),
+        needs: tuple[str, ...] | list[str] = (),
+        constraints: tuple[str, ...] | list[str] = (),
+    ) -> dict[str, Any]:
+        pack = self.growth_pack(
+            objective,
+            business=business,
+            audience=audience,
+            assets=assets,
+            needs=needs,
+            constraints=constraints,
+        )
+        score, score_reasons = _opportunity_score(pack)
+        next_move = _next_move(pack, score)
+        return {
+            "schema_version": "kaizen7.monetization_quick_start.v1",
+            "business": pack["business"],
+            "objective": pack["objective"],
+            "audience": pack["audience"],
+            "primary_lane": pack["primary_lane"],
+            "opportunity_score": score,
+            "score_reasons": score_reasons,
+            "next_move": next_move,
+            "quick_actions": _quick_actions(pack, score),
+            "success_metric": pack["experiments"][0]["metric"],
+            "ready_prompt": _ready_prompt(pack, next_move),
+            "risk_gates": pack["risk_gates"][:5],
+            "source_pack": pack,
+            "mode": "proposal_only",
+            "execution_enabled": False,
+            "requires_human_approval": True,
+        }
+
     def propose(
         self,
         objective: str,
@@ -306,6 +345,84 @@ def _next_actions(lane: str) -> list[str]:
         ],
     }
     return actions.get(lane, actions["monetization"])
+
+
+def _opportunity_score(pack: dict[str, Any]) -> tuple[int, list[str]]:
+    score = 35
+    reasons: list[str] = []
+    objective = str(pack["objective"]).lower()
+    audience = str(pack["audience"]).lower()
+    business = str(pack["business"]).lower()
+    if pack["primary_lane"] in {"ecommerce", "monetization", "content", "sales"}:
+        score += 15
+        reasons.append("clear revenue lane")
+    if audience and audience != "buyers with a costly problem":
+        score += 15
+        reasons.append("specific audience")
+    if business and business != "kaizen7 business":
+        score += 10
+        reasons.append("specific business")
+    if any(word in objective for word in ("ecommerce", "viral", "content", "offer", "monetize", "sales")):
+        score += 15
+        reasons.append("objective includes monetization signals")
+    if pack.get("assets_available"):
+        score += 5
+        reasons.append("existing assets available")
+    if not reasons:
+        reasons.append("needs buyer and offer definition")
+    return min(score, 100), reasons
+
+
+def _next_move(pack: dict[str, Any], score: int) -> dict[str, str]:
+    if score < 80:
+        return {
+            "title": "Define the buyer and first paid promise",
+            "why": "The objective is too broad to monetize efficiently.",
+            "output": "one buyer, one painful problem, one paid result",
+        }
+    lane = pack["primary_lane"]
+    if lane == "ecommerce":
+        return {
+            "title": "Build the first checkout-ready founding offer",
+            "why": "Ecommerce intent is present, so the fastest useful move is a product page plus waitlist/CTA.",
+            "output": "product page skeleton, founding CTA and checkout risk list",
+        }
+    if lane == "content":
+        return {
+            "title": "Launch a 3-hook viral trust sprint",
+            "why": "Attention must turn into owned audience before monetization scales.",
+            "output": "three hooks, one proof asset and one CTA",
+        }
+    return {
+        "title": "Validate the first paid path",
+        "why": "The fastest path is proving paid intent before building more.",
+        "output": "one offer card, one price hypothesis and one reply metric",
+    }
+
+
+def _quick_actions(pack: dict[str, Any], score: int) -> list[dict[str, Any]]:
+    if score < 80:
+        return [
+            {"minutes": 15, "action": "Define the buyer, painful problem and paid result"},
+            {"minutes": 20, "action": "Write one offer promise with one proof requirement"},
+            {"minutes": 25, "action": "Choose one channel and one metric for the first test"},
+        ]
+    next_actions = pack["next_actions"]
+    return [
+        {"minutes": 20, "action": next_actions[0]},
+        {"minutes": 25, "action": next_actions[1]},
+        {"minutes": 30, "action": next_actions[2]},
+    ]
+
+
+def _ready_prompt(pack: dict[str, Any], next_move: dict[str, str]) -> str:
+    return (
+        "Create a proposal-only growth asset for "
+        f"{pack['business']}. Objective: {pack['objective']}. Audience: "
+        f"{pack['audience']}. Next move: {next_move['title']}. Output: "
+        f"{next_move['output']}. Do not publish, charge, spend, send messages, "
+        "change credentials or collect customer data."
+    )
 
 
 _DEFAULT_PLAYBOOKS: tuple[GrowthPlaybook, ...] = (

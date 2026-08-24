@@ -46,6 +46,24 @@ def test_monetization_routes_list_playbooks_and_build_pack(tmp_path) -> None:
     assert body["experiments"][0]["metric"]
 
 
+def test_monetization_quick_route_returns_one_move(tmp_path) -> None:
+    with _client(tmp_path) as client:
+        quick = client.post(
+            "/api/kaizen7/monetization/quick",
+            json={
+                "objective": "Monetize THE FOCUX with ecommerce and viral content",
+                "business": "THE FOCUX",
+                "audience": "premium buyers",
+            },
+        )
+
+    assert quick.status_code == 200
+    body = quick.json()["quick_start"]
+    assert body["opportunity_score"] >= 80
+    assert body["next_move"]["title"]
+    assert len(body["quick_actions"]) == 3
+
+
 def test_monetization_proposal_records_receipt(tmp_path) -> None:
     with _client(tmp_path) as client:
         proposed = client.post(

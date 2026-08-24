@@ -68,6 +68,32 @@ def test_growth_pack_limits_priorities_and_creates_measurable_experiments() -> N
     assert all(experiment["duration_days"] <= 14 for experiment in pack["experiments"])
 
 
+def test_quick_start_returns_one_clear_next_move_and_score() -> None:
+    quick = default_monetization_engine().quick_start(
+        "Monetize THE FOCUX with viral content and ecommerce",
+        business="THE FOCUX",
+        audience="premium buyers",
+    )
+
+    assert quick["schema_version"] == "kaizen7.monetization_quick_start.v1"
+    assert quick["business"] == "THE FOCUX"
+    assert quick["opportunity_score"] >= 80
+    assert quick["next_move"]["title"]
+    assert quick["next_move"]["why"]
+    assert len(quick["quick_actions"]) == 3
+    assert quick["quick_actions"][0]["minutes"] <= 30
+    assert quick["ready_prompt"].startswith("Create a proposal-only growth asset")
+    assert quick["execution_enabled"] is False
+    assert quick["requires_human_approval"] is True
+
+
+def test_quick_start_detects_lower_readiness_when_buyer_is_generic() -> None:
+    quick = default_monetization_engine().quick_start("make money")
+
+    assert quick["opportunity_score"] < 80
+    assert "Define the buyer" in quick["quick_actions"][0]["action"]
+
+
 def test_growth_proposal_records_receipt_without_execution(tmp_path) -> None:
     engine = default_monetization_engine()
     bridge = ControlBridgeStore.from_config(_config(tmp_path))

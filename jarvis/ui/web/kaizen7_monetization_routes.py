@@ -72,6 +72,25 @@ async def monetization_pack(
     return {"growth_pack": pack}
 
 
+@router.post("/quick")
+async def monetization_quick(
+    request: Request,
+    payload: GrowthPackRequest,
+) -> dict[str, Any]:
+    try:
+        quick = _engine(request).quick_start(
+            payload.objective,
+            business=payload.business,
+            audience=payload.audience,
+            assets=payload.assets,
+            needs=payload.needs,
+            constraints=payload.constraints,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"quick_start": quick}
+
+
 @router.post("/propose")
 async def monetization_propose(
     request: Request,

@@ -79,6 +79,9 @@ Hermes, Codex and receipt views.
   paths, measurable experiments, risk gates and receipt memory. It never
   publishes, charges, spends, sends outbound messages, changes credentials or
   collects customer data without approval.
+- Monetization Quick Start: one objective in, one next move out. It returns an
+  opportunity score, three quick actions, one success metric and a ready prompt
+  for a growth asset.
 - Provider recommendation engine inspired by current open-source agent
   platforms: rank connectors by capability fit, privacy, cost, latency and
   constraints before any handoff is proposed.
@@ -121,6 +124,8 @@ Provider APIs:
   receipt without executing the agent.
 - `GET /api/kaizen7/monetization/playbooks` lists viral content, offer,
   ecommerce, lead magnet, affiliate and retention playbooks.
+- `POST /api/kaizen7/monetization/quick` returns one prioritized monetization
+  move with score, quick actions, metric and ready prompt.
 - `POST /api/kaizen7/monetization/pack` creates a Growth Pack for content,
   sales, ecommerce and monetization without publishing or charging.
 - `POST /api/kaizen7/monetization/propose` records the Growth Pack as a receipt.

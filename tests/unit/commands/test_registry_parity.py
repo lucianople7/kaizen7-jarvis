@@ -178,6 +178,7 @@ def test_kaizen7_monetization_commands_are_discoverable() -> None:
     commands = {cmd.id: cmd for cmd in get_registry()}
     for command_id in (
         "kaizen7-monetization-playbooks",
+        "kaizen7-monetization-quick",
         "kaizen7-monetization-pack",
         "kaizen7-monetization-propose",
     ):

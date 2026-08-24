@@ -845,6 +845,52 @@ def _build_registry() -> tuple[AppCommand, ...]:
             },
         ),
         AppCommand(
+            id="kaizen7-monetization-quick",
+            title="Get one KAIZEN7 monetization move",
+            description=(
+                "Return the easiest high-leverage monetization move: score, "
+                "next move, three quick actions, success metric and ready prompt. "
+                "This does not publish, charge or spend."
+            ),
+            method="POST",
+            path="/api/kaizen7/monetization/quick",
+            params={
+                "type": "object",
+                "properties": {
+                    "objective": _str_param(
+                        "Business monetization objective.",
+                        min_length=1,
+                        max_length=4000,
+                    ),
+                    "business": _str_param("Business or project name.", max_length=200),
+                    "audience": _str_param("Target buyer or audience.", max_length=500),
+                    "assets": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Existing assets such as logo, story, product, list or proof.",
+                    },
+                    "needs": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Needs such as content, ecommerce, sales or monetization.",
+                    },
+                    "constraints": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Constraints such as no_paid_ads or approval_required.",
+                    },
+                },
+                "required": ["objective"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("gib mir den naechsten kaizen sieben monetarisierungs schritt",),  # i18n-allow: input vocab
+                "en": ("give me the next kaizen seven monetization move",),
+                "es": ("dame el siguiente movimiento de monetizacion de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
             id="kaizen7-monetization-propose",
             title="Propose KAIZEN7 monetization move",
             description=(
