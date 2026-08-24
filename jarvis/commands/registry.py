@@ -937,6 +937,148 @@ def _build_registry() -> tuple[AppCommand, ...]:
             },
         ),
         AppCommand(
+            id="kaizen7-growth-command",
+            title="Build KAIZEN7 Growth OS card",
+            description=(
+                "Return one proposal-only operating card with next move, draft "
+                "asset, distribution plan, ecommerce audit, agentic-commerce "
+                "readiness and receipt seed."
+            ),
+            method="POST",
+            path="/api/kaizen7/growth/command",
+            params={
+                "type": "object",
+                "properties": {
+                    "objective": _str_param("Growth objective.", min_length=1, max_length=4000),
+                    "business": _str_param("Business or project name.", max_length=200),
+                    "audience": _str_param("Target buyer or audience.", max_length=500),
+                    "channels": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Channels such as instagram, youtube, email or owned_content.",
+                    },
+                    "assets": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Existing assets such as logo, product, proof, schema or analytics.",
+                    },
+                    "constraints": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Constraints such as no_paid_ads or approval_required.",
+                    },
+                },
+                "required": ["objective"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("erstelle eine kaizen sieben growth os karte",),  # i18n-allow: input vocab
+                "en": ("build a kaizen seven growth os card",),
+                "es": ("crea una tarjeta growth os de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-growth-asset",
+            title="Draft KAIZEN7 growth asset",
+            description=(
+                "Create one draft-only growth asset such as a short video "
+                "script, carousel, landing section or email. It does not publish."
+            ),
+            method="POST",
+            path="/api/kaizen7/growth/asset",
+            params={
+                "type": "object",
+                "properties": {
+                    "objective": _str_param("Asset objective.", min_length=1, max_length=4000),
+                    "business": _str_param("Business or project name.", max_length=200),
+                    "audience": _str_param("Target buyer or audience.", max_length=500),
+                    "channels": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Preferred channel; first item is used.",
+                    },
+                },
+                "required": ["objective"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("entwirf ein kaizen sieben growth asset",),  # i18n-allow: input vocab
+                "en": ("draft a kaizen seven growth asset",),
+                "es": ("crea un borrador de activo growth de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-ecommerce-audit",
+            title="Audit ecommerce readiness",
+            description=(
+                "Check product clarity, proof, checkout policy, analytics and "
+                "agent-readable commerce before launch. Proposal-only."
+            ),
+            method="POST",
+            path="/api/kaizen7/growth/ecommerce-audit",
+            params={
+                "type": "object",
+                "properties": {
+                    "business": _str_param("Business or project name.", max_length=200),
+                    "assets": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Existing assets such as product, proof, policy, analytics, llms.txt or schema.",
+                    },
+                },
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("pruefe ecommerce readiness",),  # i18n-allow: input vocab
+                "en": ("audit ecommerce readiness",),
+                "es": ("audita la preparacion ecommerce",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-growth-propose",
+            title="Propose KAIZEN7 Growth OS move",
+            description=(
+                "Record a Growth OS proposal and receipt. It prepares work for "
+                "human approval but never publishes, charges, sends or spends."
+            ),
+            method="POST",
+            path="/api/kaizen7/growth/propose",
+            params={
+                "type": "object",
+                "properties": {
+                    "objective": _str_param("Growth objective.", min_length=1, max_length=4000),
+                    "business": _str_param("Business or project name.", max_length=200),
+                    "audience": _str_param("Target buyer or audience.", max_length=500),
+                    "channels": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Channels such as instagram, youtube, email or owned_content.",
+                    },
+                    "assets": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Existing assets such as logo, product, proof, schema or analytics.",
+                    },
+                    "constraints": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Constraints such as no_paid_ads or approval_required.",
+                    },
+                },
+                "required": ["objective"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("schlage einen kaizen sieben growth os schritt vor",),  # i18n-allow: input vocab
+                "en": ("propose a kaizen seven growth os move",),
+                "es": ("propone un movimiento growth os de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
             id="kaizen7-adapters-list",
             title="List KAIZEN7 adapters",
             description=(

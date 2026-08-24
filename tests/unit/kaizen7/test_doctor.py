@@ -96,6 +96,20 @@ def test_kaizen7_doctor_reports_monetization_engine(tmp_path: Path) -> None:
     assert "viral content, offer ladder, ecommerce readiness" in rendered
 
 
+def test_kaizen7_doctor_reports_growth_os(tmp_path: Path) -> None:
+    findings = run_kaizen7_doctor(
+        hermes=_FakeHermes(installed=False),
+        codex=_FakeCodex(installed=False),
+        bridge=ControlBridgeStore(root=tmp_path),
+    )
+
+    rendered = render_kaizen7_doctor(findings)
+
+    assert "growth-os:" in rendered
+    assert "growth OS ready: one-command growth, assets, ecommerce audit, agentic commerce" in rendered
+    assert "proposal-only operating layer" in rendered
+
+
 def test_kaizen7_doctor_reports_capability_marketplace(tmp_path: Path) -> None:
     findings = run_kaizen7_doctor(
         hermes=_FakeHermes(installed=False),

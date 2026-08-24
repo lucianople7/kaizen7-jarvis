@@ -188,6 +188,20 @@ def test_kaizen7_monetization_commands_are_discoverable() -> None:
         assert commands[command_id].dangerous is False
 
 
+def test_kaizen7_growth_os_commands_are_discoverable() -> None:
+    commands = {cmd.id: cmd for cmd in get_registry()}
+    for command_id in (
+        "kaizen7-growth-command",
+        "kaizen7-growth-asset",
+        "kaizen7-ecommerce-audit",
+        "kaizen7-growth-propose",
+    ):
+        assert command_id in commands
+        assert commands[command_id].ui_section == "agents"
+        assert commands[command_id].worker_allowed is True
+        assert commands[command_id].dangerous is False
+
+
 def test_kaizen7_capability_commands_are_discoverable() -> None:
     commands = {cmd.id: cmd for cmd in get_registry()}
     for command_id in (

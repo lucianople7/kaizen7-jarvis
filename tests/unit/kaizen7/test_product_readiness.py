@@ -27,6 +27,7 @@ def test_product_readiness_scores_real_product_surfaces(tmp_path) -> None:
         "agents": 7,
         "adapters": 6,
         "growth_playbooks": 6,
+        "growth_surfaces": 4,
         "providers": 4,
         "capabilities": 19,
         "market_patterns": 16,
@@ -55,5 +56,6 @@ def test_product_readiness_renderer_is_actionable(tmp_path) -> None:
     assert "7 agents" in rendered
     assert "6 adapters" in rendered
     assert "6 growth playbooks" in rendered
+    assert "4 growth surfaces" in rendered
     assert "19 capabilities" in rendered
     assert "no execution without approval" in rendered

@@ -82,6 +82,10 @@ Hermes, Codex and receipt views.
 - Monetization Quick Start: one objective in, one next move out. It returns an
   opportunity score, three quick actions, one success metric and a ready prompt
   for a growth asset.
+- Growth OS: one command turns a business objective into an operating card:
+  next move, draft asset, distribution plan, ecommerce audit, agent-readable
+  commerce notes, approval gates and receipt seed. This is the practical
+  product layer for viral content, ecommerce, monetization and agent handoff.
 - Provider recommendation engine inspired by current open-source agent
   platforms: rank connectors by capability fit, privacy, cost, latency and
   constraints before any handoff is proposed.
@@ -129,6 +133,13 @@ Provider APIs:
 - `POST /api/kaizen7/monetization/pack` creates a Growth Pack for content,
   sales, ecommerce and monetization without publishing or charging.
 - `POST /api/kaizen7/monetization/propose` records the Growth Pack as a receipt.
+- `GET /api/kaizen7/growth/playbooks` lists Growth OS surfaces.
+- `POST /api/kaizen7/growth/command` returns the one-command operating card.
+- `POST /api/kaizen7/growth/asset` drafts one content, email, carousel or
+  landing asset without publishing.
+- `POST /api/kaizen7/growth/ecommerce-audit` checks product clarity, proof,
+  checkout policy, analytics and agent-readable commerce.
+- `POST /api/kaizen7/growth/propose` records the Growth OS card as a receipt.
 - `GET /api/kaizen7/providers` lists registered safe connectors.
 - `GET /api/kaizen7/providers/{provider_id}` inspects one connector.
 - `POST /api/kaizen7/providers/recommend` ranks the best connector for a
@@ -149,6 +160,18 @@ Provider APIs:
 
 Configure optional external tools through environment variables or the OS
 credential manager. Do not commit secrets. See `.env.example`.
+
+Open-source patterns absorbed legally, without copying code into Growth OS:
+
+- PersonalJarvis remains the product runtime base under its existing notices.
+- Hermes/Buzz style agent transport informs the agent-gateway handoff model.
+- Postiz-style scheduling informs draft distribution planning only; no Postiz
+  code is vendored.
+- Shopify storefront/MCP and agentic-commerce patterns inform the ecommerce
+  audit and agent-readable checks.
+- LangGraph, Mastra and OpenAI Agents SDK patterns inform durable workflow,
+  memory, MCP and guardrail concepts without adding those frameworks as hard
+  dependencies.
 
 ---
 

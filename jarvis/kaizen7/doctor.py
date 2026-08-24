@@ -13,6 +13,7 @@ from jarvis.kaizen7.adapters import default_adapter_registry
 from jarvis.kaizen7.bridge import APPROVAL_REQUIRED_FOR, ControlBridgeStore
 from jarvis.kaizen7.capabilities import default_capability_registry
 from jarvis.kaizen7.codex_runtime import CodexRuntime
+from jarvis.kaizen7.growth_os import default_growth_os
 from jarvis.kaizen7.hermes_runtime import HermesRuntime
 from jarvis.kaizen7.market_blueprint import default_market_blueprint
 from jarvis.kaizen7.monetization import default_monetization_engine
@@ -158,6 +159,29 @@ def run_kaizen7_doctor(
                 "ok",
                 f"monetization engine ready: {len(growth_playbooks)} playbooks",
                 "viral content, offer ladder, ecommerce readiness, lead magnet, affiliate, retention.",
+            )
+        )
+
+    growth_surfaces = default_growth_os().surfaces()
+    unsafe_growth_surfaces = [
+        item["id"] for item in growth_surfaces if item.get("execution_enabled")
+    ]
+    if unsafe_growth_surfaces:
+        findings.append(
+            Kaizen7DoctorFinding(
+                "growth-os",
+                "fail",
+                "growth surfaces expose execution by default: " + ", ".join(unsafe_growth_surfaces),
+                "Keep Growth OS proposal-only until publishing, payments and data policies are approved.",
+            )
+        )
+    else:
+        findings.append(
+            Kaizen7DoctorFinding(
+                "growth-os",
+                "ok",
+                "growth OS ready: one-command growth, assets, ecommerce audit, agentic commerce",
+                "proposal-only operating layer for monetization and business execution.",
             )
         )
 
