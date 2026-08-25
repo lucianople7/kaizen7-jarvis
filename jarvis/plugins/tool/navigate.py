@@ -61,6 +61,10 @@ KNOWN: frozenset[str] = frozenset(
         # grid" an unknown section to the brain.
         "agentic-ide-classic",
         "chat-workspace",
+        "business",
+        "kaizen7",
+        "mobile",
+        "modes",
     }
 )
 
@@ -181,6 +185,19 @@ _ALIASES: dict[str, str] = {
     "voice input keys": "voice-api-keys",
     "spracheingabe-schlüssel": "voice-api-keys",  # i18n-allow: input vocab
     "claves de entrada de voz": "voice-api-keys",  # i18n-allow: input vocab
+    # Business workspace + KAIZEN7 + mobile companion + modes sections.
+    "business": "business",
+    "negocio": "business",  # i18n-allow: input vocab
+    "empresa": "business",  # i18n-allow: input vocab
+    "kaizen7": "kaizen7",
+    "kaizen sieben": "kaizen7",  # i18n-allow: input vocab
+    "mobile": "mobile",
+    "móvil": "mobile",  # i18n-allow: input vocab
+    "modes": "modes",
+    "modos": "modes",  # i18n-allow: input vocab
+    "modi": "modes",  # i18n-allow: input vocab
+    "characters": "modes",
+    "personas": "modes",
 }
 
 

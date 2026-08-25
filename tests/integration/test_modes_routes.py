@@ -47,7 +47,8 @@ def test_router_is_mounted_and_lists_the_builtins(client: TestClient) -> None:
     resp = client.get("/api/modes")
     assert resp.status_code == 200
     body = resp.json()
-    assert [m["slug"] for m in body["modes"]][:5] == list(modes.BUILTIN_SLUGS)
+    listed = [m["slug"] for m in body["modes"]]
+    assert listed[: len(modes.BUILTIN_SLUGS)] == list(modes.BUILTIN_SLUGS)
     assert body["active"] == modes.DEFAULT_MODE
 
 

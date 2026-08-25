@@ -23,5 +23,19 @@
       "type": "image/png",
       "purpose": "any"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "Mobile Companion",
+      "short_name": "Mobile",
+      "url": "/?view=mobile",
+      "description": "Open mobile approvals and intent capture."
+    },
+    {
+      "name": "KAIZEN7 Capsule",
+      "short_name": "KAIZEN7",
+      "url": "/?view=kaizen7",
+      "description": "Open the read-only KAIZEN7 capsule."
+    }
   ]
 }

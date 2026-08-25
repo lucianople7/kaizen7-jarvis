@@ -86,12 +86,14 @@ MODE_FRIEND = "friend"
 MODE_COACH = "coach"
 MODE_FOCUS = "focus"
 MODE_CODING = "coding"
+MODE_KAIZEN7 = "kaizen7"
 BUILTIN_SLUGS: tuple[str, ...] = (
     MODE_ASSISTANT,
     MODE_FRIEND,
     MODE_COACH,
     MODE_FOCUS,
     MODE_CODING,
+    MODE_KAIZEN7,
 )
 
 #: The mode in force when the user has never chosen one. Reproduces the
@@ -687,6 +689,7 @@ __all__ = [
     "MODE_COACH",
     "MODE_FOCUS",
     "MODE_FRIEND",
+    "MODE_KAIZEN7",
     "PROACTIVITIES",
     "VERBOSITIES",
     "Mode",

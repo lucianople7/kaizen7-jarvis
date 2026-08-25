@@ -81,6 +81,14 @@ const WikiView = lazyView(() =>
 const ModesView = lazyView(() =>
   import("@/views/ModesView").then((m) => ({ default: m.ModesView })),
 );
+const Kaizen7View = lazyView(() =>
+  import("@/views/Kaizen7View").then((m) => ({ default: m.Kaizen7View })),
+);
+const MobileCompanionView = lazyView(() =>
+  import("@/views/MobileCompanionView").then((m) => ({
+    default: m.MobileCompanionView,
+  })),
+);
 const ApiKeysView = lazyView(() =>
   import("@/views/ApiKeysView").then((m) => ({ default: m.ApiKeysView })),
 );
@@ -367,6 +375,10 @@ function SwitchOnActiveSection({ active }: { active: string }) {
       return <ChatsView />;
     case "agents":
       return <JarvisAgentsView />;
+    case "kaizen7":
+      return <Kaizen7View />;
+    case "mobile":
+      return <MobileCompanionView />;
     // Skills + Plugins + MCPs are merged behind the "Skills & Tools" entry with
     // an in-view tab switcher; the active id doubles as the tab state.
     case "skills":
