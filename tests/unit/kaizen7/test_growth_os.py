@@ -27,6 +27,24 @@ def test_growth_command_returns_one_operating_card() -> None:
     assert card["agentic_commerce"]["status"] == "proposal_only"
 
 
+def test_launch_kit_turns_repo_into_five_minute_product_onboarding() -> None:
+    kit = default_growth_os().launch_kit(
+        "Help a new user monetize with KAIZEN7 Jarvis",
+        business="KAIZEN7 Jarvis",
+        audience="solo builders",
+    )
+
+    assert kit["schema_version"] == "kaizen7.launch_kit.v1"
+    assert kit["github_pitch"]["headline"] == "KAIZEN7 Jarvis"
+    assert kit["five_minute_start"][0]["command"]
+    assert kit["demo_payload"]["objective"]
+    assert kit["first_value"]["success_metric"]
+    assert len(kit["community_tasks"]) == 5
+    assert kit["mode"] == "proposal_only"
+    assert kit["execution_enabled"] is False
+    assert kit["requires_human_approval"] is True
+
+
 def test_growth_asset_is_draft_only_and_channel_specific() -> None:
     asset = default_growth_os().asset(
         "Create a viral launch for THE FOCUX ecommerce offer",

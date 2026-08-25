@@ -77,6 +77,22 @@ async def growth_command(
     return {"growth_command": card}
 
 
+@router.post("/launch-kit")
+async def launch_kit(
+    request: Request,
+    payload: GrowthCommandRequest,
+) -> dict[str, Any]:
+    try:
+        kit = _growth_os(request).launch_kit(
+            payload.objective,
+            business=payload.business,
+            audience=payload.audience,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"launch_kit": kit}
+
+
 @router.post("/asset")
 async def growth_asset(
     request: Request,

@@ -43,6 +43,24 @@ def test_growth_command_route_returns_operating_card(tmp_path) -> None:
     assert card["distribution_plan"]["publishing_enabled"] is False
 
 
+def test_launch_kit_route_returns_installable_onboarding(tmp_path) -> None:
+    with _client(tmp_path) as client:
+        response = client.post(
+            "/api/kaizen7/growth/launch-kit",
+            json={
+                "objective": "Help a new user monetize with KAIZEN7 Jarvis",
+                "business": "KAIZEN7 Jarvis",
+                "audience": "solo builders",
+            },
+        )
+
+    assert response.status_code == 200
+    kit = response.json()["launch_kit"]
+    assert kit["schema_version"] == "kaizen7.launch_kit.v1"
+    assert kit["five_minute_start"][0]["command"]
+    assert kit["demo_payload"]["business"] == "KAIZEN7 Jarvis"
+
+
 def test_growth_asset_and_ecommerce_audit_routes(tmp_path) -> None:
     with _client(tmp_path) as client:
         asset = client.post(

@@ -7,6 +7,8 @@ Implemented:
 
 - `jarvis.kaizen7.growth_os.GrowthOS`
 - one-command growth operating card
+- five-minute Launch Kit with GitHub pitch, install commands, demo payload,
+  first value path, community tasks and acceptance tests
 - draft-only asset generator
 - ecommerce and agent-readable commerce audit
 - Growth OS proposal receipts

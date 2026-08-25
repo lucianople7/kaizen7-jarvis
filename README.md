@@ -86,6 +86,9 @@ Hermes, Codex and receipt views.
   next move, draft asset, distribution plan, ecommerce audit, agent-readable
   commerce notes, approval gates and receipt seed. This is the practical
   product layer for viral content, ecommerce, monetization and agent handoff.
+- Launch Kit: a five-minute onboarding pack for new users and contributors:
+  GitHub pitch, install commands, demo payload, first value path, community
+  tasks and acceptance tests.
 - Provider recommendation engine inspired by current open-source agent
   platforms: rank connectors by capability fit, privacy, cost, latency and
   constraints before any handoff is proposed.
@@ -135,6 +138,8 @@ Provider APIs:
 - `POST /api/kaizen7/monetization/propose` records the Growth Pack as a receipt.
 - `GET /api/kaizen7/growth/playbooks` lists Growth OS surfaces.
 - `POST /api/kaizen7/growth/command` returns the one-command operating card.
+- `POST /api/kaizen7/growth/launch-kit` returns a five-minute install and
+  first-value kit for users, maintainers and contributors.
 - `POST /api/kaizen7/growth/asset` drafts one content, email, carousel or
   landing asset without publishing.
 - `POST /api/kaizen7/growth/ecommerce-audit` checks product clarity, proof,

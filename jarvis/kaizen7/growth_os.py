@@ -32,6 +32,12 @@ class GrowthOS:
                 "execution_enabled": False,
             },
             {
+                "id": "launch-kit",
+                "title": "Five-minute product launch kit",
+                "output": "GitHub pitch, install checklist, demo payload and first value path",
+                "execution_enabled": False,
+            },
+            {
                 "id": "ecommerce-audit",
                 "title": "Ecommerce and agent-readable audit",
                 "output": "checkout, claims, analytics and agentic-commerce blockers",
@@ -101,6 +107,81 @@ class GrowthOS:
                 "route": route,
                 "metric": quick["success_metric"],
             },
+            "mode": "proposal_only",
+            "execution_enabled": False,
+            "requires_human_approval": True,
+        }
+
+    def launch_kit(
+        self,
+        objective: str,
+        *,
+        business: str = "KAIZEN7 Jarvis",
+        audience: str = "builders and small businesses",
+    ) -> dict[str, Any]:
+        clean_objective = _clean(objective, field="objective")
+        clean_business = _clean_default(business, "KAIZEN7 Jarvis")
+        clean_audience = _clean_default(audience, "builders and small businesses")
+        demo_payload = {
+            "objective": clean_objective,
+            "business": clean_business,
+            "audience": clean_audience,
+            "channels": ["owned_content", "instagram", "youtube"],
+            "assets": ["logo", "product", "proof"],
+        }
+        first_card = self.command(
+            clean_objective,
+            business=clean_business,
+            audience=clean_audience,
+            channels=demo_payload["channels"],
+            assets=demo_payload["assets"],
+        )
+        return {
+            "schema_version": "kaizen7.launch_kit.v1",
+            "github_pitch": {
+                "headline": clean_business,
+                "tagline": "A proposal-only business agent that turns one objective into the next monetizable move.",
+                "promise": "Install it, run one growth command, get an asset, an audit, gates and a receipt.",
+                "best_for": [
+                    "solo builders",
+                    "content-led ecommerce",
+                    "agent-agnostic business operations",
+                ],
+            },
+            "five_minute_start": [
+                {
+                    "step": "install",
+                    "command": "irm https://raw.githubusercontent.com/lucianople7/kaizen7-jarvis/main/install/install.ps1 | iex",
+                },
+                {
+                    "step": "doctor",
+                    "command": "python -m jarvis --kaizen7-doctor",
+                },
+                {
+                    "step": "first-growth-card",
+                    "command": "python -m jarvis --kaizen7-product",
+                },
+            ],
+            "demo_payload": demo_payload,
+            "first_value": {
+                "next_move": first_card["next_move"],
+                "asset_type": first_card["asset_to_create"]["type"],
+                "success_metric": first_card["receipt_seed"]["metric"],
+                "approval_gate": "human approval before publishing, payments, messages or irreversible changes",
+            },
+            "community_tasks": [
+                "try the launch kit on one real business objective",
+                "add one new adapter passport as proposal-only",
+                "improve one ecommerce audit check with evidence",
+                "publish one safe example payload with no secrets",
+                "report one missing install friction with exact command output",
+            ],
+            "acceptance_tests": [
+                "doctor reports OK",
+                "product readiness reports READY 100/100",
+                "growth command returns a draft-only asset",
+                "proposal receipt is recorded without execution",
+            ],
             "mode": "proposal_only",
             "execution_enabled": False,
             "requires_human_approval": True,

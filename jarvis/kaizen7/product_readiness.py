@@ -104,7 +104,7 @@ def _checks(
         _check("product", len(agents) >= 7, f"{len(agents)} agent passports registered"),
         _check("product", len(adapters) >= 6, f"{len(adapters)} adapters registered"),
         _check("product", len(growth_playbooks) >= 6, f"{len(growth_playbooks)} growth playbooks registered"),
-        _check("product", len(growth_surfaces) >= 4, f"{len(growth_surfaces)} growth surfaces registered"),
+        _check("product", len(growth_surfaces) >= 5, f"{len(growth_surfaces)} growth surfaces registered"),
         _check("product", len(providers) >= 4, f"{len(providers)} providers registered"),
         _check("product", len(capabilities) >= 19, f"{len(capabilities)} capabilities registered"),
         _check("product", len(patterns) >= 16, f"{len(patterns)} market patterns mapped"),

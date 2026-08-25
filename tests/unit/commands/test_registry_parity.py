@@ -192,6 +192,7 @@ def test_kaizen7_growth_os_commands_are_discoverable() -> None:
     commands = {cmd.id: cmd for cmd in get_registry()}
     for command_id in (
         "kaizen7-growth-command",
+        "kaizen7-launch-kit",
         "kaizen7-growth-asset",
         "kaizen7-ecommerce-audit",
         "kaizen7-growth-propose",

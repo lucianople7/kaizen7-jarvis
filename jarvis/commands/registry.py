@@ -1010,6 +1010,33 @@ def _build_registry() -> tuple[AppCommand, ...]:
             },
         ),
         AppCommand(
+            id="kaizen7-launch-kit",
+            title="Build KAIZEN7 launch kit",
+            description=(
+                "Return a five-minute product onboarding kit with GitHub pitch, "
+                "install commands, demo payload, first value path, community "
+                "tasks and acceptance tests. Proposal-only."
+            ),
+            method="POST",
+            path="/api/kaizen7/growth/launch-kit",
+            params={
+                "type": "object",
+                "properties": {
+                    "objective": _str_param("Launch objective.", min_length=1, max_length=4000),
+                    "business": _str_param("Business or project name.", max_length=200),
+                    "audience": _str_param("Target user or buyer.", max_length=500),
+                },
+                "required": ["objective"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("erstelle ein kaizen sieben launch kit",),  # i18n-allow: input vocab
+                "en": ("build a kaizen seven launch kit",),
+                "es": ("crea un launch kit de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
             id="kaizen7-ecommerce-audit",
             title="Audit ecommerce readiness",
             description=(
