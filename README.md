@@ -11,6 +11,30 @@
 > under the MIT license. Upstream copyright, license and trademark notices are
 > preserved. The KAIZEN7 additions live on top of the original runtime.
 
+## THE FOCUX DNA
+
+This repository is also the home of **THE FOCUX Agent** — the business
+superagent whose business logic is its native core. The `focux/` directory
+holds the portable DNA layer: deterministic policy, content/voice/soul
+modules, and shell-agnostic skills. It runs on this runtime, CowAgent,
+OpenClaw, or any future shell.
+
+```bash
+cd focux
+python -m pytest            # 72 tests: constitution, soul, voice, content, cli, money-gate
+python tools/skill_validator.py   # 17 skills, all valid
+```
+
+- `focux/policy/constitution.py` — three immutable laws as code (I never harm,
+  II earn existence, III never deceive); Law I failure is absolute.
+- `focux/policy/focux_soul.py` — SOUL.md validation with injection defense.
+- `focux/policy/focux_voice.py` — voice profile builder (absence signals).
+- `focux/policy/focux_content.py` — content matrix + hook generator.
+- `focux/policy/focux_cli.py` — agent-native CLI layer, installs/spends gated.
+- `focux/skills/` — 17 SKILL.md (13 base + voice-builder, content-matrix,
+  hook-generator, cli-hub-meta-skill).
+- Design spec: `focux/docs/plans/2026-08-28-thefocux-agent-design.md`.
+
 ## KAIZEN7 Ready Install
 
 The one-liners below install this repository, not the upstream PersonalJarvis
