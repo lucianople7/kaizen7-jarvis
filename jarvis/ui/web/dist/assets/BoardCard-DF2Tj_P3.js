@@ -1,5 +1,0 @@
-<<<<<<<< HEAD:jarvis/ui/web/dist/assets/BoardCard-DSVwuVmX.js
-import{j as e,p as n}from"./index-DG2bcA-b.js";function t({children:r,className:o,glow:s}){return e.jsxs("div",{className:n("relative overflow-hidden rounded-[20px]","bg-gradient-to-b from-sheen/[0.055] to-sheen/[0.015]","border border-sheen/[0.07]","shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_16px_40px_-20px_rgba(0,0,0,0.8)]",o),children:[s&&e.jsx("div",{className:"pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-primary/[0.12] blur-3xl"}),r]})}export{t as B};
-========
-import{j as e,p as n}from"./index-DLv-KW8b.js";function t({children:r,className:o,glow:s}){return e.jsxs("div",{className:n("relative overflow-hidden rounded-[20px]","bg-gradient-to-b from-sheen/[0.055] to-sheen/[0.015]","border border-sheen/[0.07]","shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_16px_40px_-20px_rgba(0,0,0,0.8)]",o),children:[s&&e.jsx("div",{className:"pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-primary/[0.12] blur-3xl"}),r]})}export{t as B};
->>>>>>>> origin/main:jarvis/ui/web/dist/assets/BoardCard-DF2Tj_P3.js
