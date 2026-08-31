@@ -1,3 +1,185 @@
+<h1 align="center">KAIZEN7 Jarvis</h1>
+
+<p align="center">
+  Personal Jarvis fork prepared for Luciano's KAIZEN7 operating system:
+  local Jarvis control, KAIZEN7 business cockpit, Codex handoff proposals,
+  and Hermes Bot Mode inspection without hidden execution.
+</p>
+
+> This repository is a clean fork of
+> [PersonalJarvis/PersonalJarvis](https://github.com/PersonalJarvis/PersonalJarvis)
+> under the MIT license. Upstream copyright, license and trademark notices are
+> preserved. The KAIZEN7 additions live on top of the original runtime.
+
+## KAIZEN7 Ready Install
+
+The one-liners below install this repository, not the upstream PersonalJarvis
+repository, into a separate `~/.kaizen7-jarvis` folder.
+
+**Windows PowerShell**
+
+```powershell
+irm https://raw.githubusercontent.com/lucianople7/kaizen7-jarvis/main/install/install.ps1 | iex
+```
+
+**macOS / Linux**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/lucianople7/kaizen7-jarvis/main/install/install.sh | bash
+```
+
+**Manual developer install**
+
+```powershell
+git clone https://github.com/lucianople7/kaizen7-jarvis.git
+cd kaizen7-jarvis
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1  # Windows
+pip install -e .[full]
+python -m jarvis --doctor
+python -m jarvis --kaizen7-doctor
+python -m jarvis --kaizen7-product
+python -m jarvis.ui.web.launcher --headless --no-lock --port 47821
+```
+
+On macOS/Linux, replace the activation line with:
+
+```bash
+. .venv/bin/activate
+```
+
+Open `http://127.0.0.1:47821` and use the **Business** section for KAIZEN7,
+Hermes, Codex and receipt views.
+
+## KAIZEN7 Layer
+
+- Business cockpit in the web UI with goals, tasks, metrics, memory and activity receipts.
+- Read-only Hermes runtime/status/profile/capability inspection.
+- Hermes Bot Mode contract for persistent specialist bots.
+- Codex handoff proposal path.
+- Universal provider registry for Hermes, Codex, local CLI agents, or any
+  external HTTP API. New providers enter through the same contract:
+  proposal-only, explicit auth method, cost note, capabilities list and receipt
+  logging.
+- Agent-agnostic Adapter Registry for any model or agent surface:
+  OpenAI-compatible APIs, generic HTTP APIs, local CLI agents, MCP servers,
+  webhook agents and managed cloud agents. This is the connection layer for
+  Cloud Code-style CLIs, future OpenCloud services, private APIs or local
+  models without binding KAIZEN7 to one vendor.
+- Universal Agent Gateway with Agent Passports. Jarvis now knows the difference
+  between an adapter and a real agent surface: local KAIZEN7 CLI, Hermes,
+  Codex, OpenHands, MCP tool servers, OpenAI-compatible model gateways and
+  generic cloud agents. Each passport declares capabilities, cost, privacy,
+  risk, auth, required environment variables and approval policy.
+- Agent Bench: dry-run readiness checks for a passport before trusting it. It
+  reports missing env contracts and never calls the model, CLI, API, MCP server
+  or cloud agent.
+- Monetization Engine for business growth. It creates proposal-only Growth
+  Packs with viral content angles, offer ladder, ecommerce readiness, revenue
+  paths, measurable experiments, risk gates and receipt memory. It never
+  publishes, charges, spends, sends outbound messages, changes credentials or
+  collects customer data without approval.
+- Monetization Quick Start: one objective in, one next move out. It returns an
+  opportunity score, three quick actions, one success metric and a ready prompt
+  for a growth asset.
+- Growth OS: one command turns a business objective into an operating card:
+  next move, draft asset, distribution plan, ecommerce audit, agent-readable
+  commerce notes, approval gates and receipt seed. This is the practical
+  product layer for viral content, ecommerce, monetization and agent handoff.
+- Launch Kit: a five-minute onboarding pack for new users and contributors:
+  GitHub pitch, install commands, demo payload, first value path, community
+  tasks and acceptance tests.
+- Provider recommendation engine inspired by current open-source agent
+  platforms: rank connectors by capability fit, privacy, cost, latency and
+  constraints before any handoff is proposed.
+- Internal Capability Marketplace: reusable product abilities such as daily
+  focus, business research, content pipeline, code repair, mobile approval and
+  desktop control planning. Each capability declares provider, permissions,
+  privacy, cost and human approval policy.
+- Market Blueprint: a legal pattern fork from the best open-source agent
+  products. KAIZEN7 tracks what to absorb from operator agents, plugin
+  marketplaces, visual workflows, local knowledge, MCP connectors, eval loops
+  and publishing tools without copying third-party code or installing heavy
+  frameworks by default.
+- Agent OS Pack: next-generation capabilities inspired by Row-Bot, OpenYak,
+  Pioneer, Dax, OpenDex and SOMI: knowledge graph memory, multi-device command,
+  context compaction, workflow console, developer studio, designer studio and
+  Skill Forge. These are planning/governance surfaces first; execution stays
+  behind human approval.
+- Strict separation between proposing work and executing work.
+- Human approval required before payments, publishing, outbound messages,
+  credentials, financial operations and irreversible changes.
+- `python -m jarvis --kaizen7-doctor` checks the KAIZEN7 bridge, adapter
+  registry, Hermes CLI, Codex CLI, Bot Mode profile coverage, universal
+  providers and approval gates without executing external actions.
+
+Provider APIs:
+
+- `GET /api/kaizen7/adapters` lists registered connection adapters.
+- `GET /api/kaizen7/adapters/manifest` returns the stable adapter manifest.
+- `POST /api/kaizen7/adapters/recommend` ranks the best adapter for a mission
+  without calling it.
+- `POST /api/kaizen7/adapters/{adapter_id}/propose` records a proposed adapter
+  handoff without calling any model, CLI, API, webhook or cloud agent.
+- `GET /api/kaizen7/agents` lists registered Agent Passports.
+- `GET /api/kaizen7/agents/manifest` returns the vendor-agnostic gateway
+  manifest.
+- `POST /api/kaizen7/agents/recommend` ranks agent passports for a mission
+  without calling them.
+- `POST /api/kaizen7/agents/{agent_id}/bench` runs a dry configuration bench.
+- `POST /api/kaizen7/agents/{agent_id}/propose` records a proposed handoff and
+  receipt without executing the agent.
+- `GET /api/kaizen7/monetization/playbooks` lists viral content, offer,
+  ecommerce, lead magnet, affiliate and retention playbooks.
+- `POST /api/kaizen7/monetization/quick` returns one prioritized monetization
+  move with score, quick actions, metric and ready prompt.
+- `POST /api/kaizen7/monetization/pack` creates a Growth Pack for content,
+  sales, ecommerce and monetization without publishing or charging.
+- `POST /api/kaizen7/monetization/propose` records the Growth Pack as a receipt.
+- `GET /api/kaizen7/growth/playbooks` lists Growth OS surfaces.
+- `POST /api/kaizen7/growth/command` returns the one-command operating card.
+- `POST /api/kaizen7/growth/launch-kit` returns a five-minute install and
+  first-value kit for users, maintainers and contributors.
+- `POST /api/kaizen7/growth/asset` drafts one content, email, carousel or
+  landing asset without publishing.
+- `POST /api/kaizen7/growth/ecommerce-audit` checks product clarity, proof,
+  checkout policy, analytics and agent-readable commerce.
+- `POST /api/kaizen7/growth/propose` records the Growth OS card as a receipt.
+- `GET /api/kaizen7/providers` lists registered safe connectors.
+- `GET /api/kaizen7/providers/{provider_id}` inspects one connector.
+- `POST /api/kaizen7/providers/recommend` ranks the best connector for a
+  mission without calling it.
+- `POST /api/kaizen7/providers/{provider_id}/propose` records a proposed
+  handoff for any registered agent/API without calling it.
+- `GET /api/kaizen7/capabilities` lists the internal capability marketplace.
+- `GET /api/kaizen7/capabilities/{capability_id}` inspects one capability.
+- `POST /api/kaizen7/capabilities/plan` creates a safe launch plan from
+  capabilities without executing providers.
+- `GET /api/kaizen7/market-blueprint` shows absorbed, rejected and reference
+  market patterns.
+- `GET /api/kaizen7/market-blueprint/upgrade-plan` shows the proposal-only
+  product upgrade path derived from current open-source patterns.
+- `GET /api/kaizen7/product/readiness` returns the product readiness score:
+  install, security, product surfaces, APIs, docs and tests.
+- `python -m jarvis --kaizen7-product` prints the same readiness report in CLI.
+
+Configure optional external tools through environment variables or the OS
+credential manager. Do not commit secrets. See `.env.example`.
+
+Open-source patterns absorbed legally, without copying code into Growth OS:
+
+- PersonalJarvis remains the product runtime base under its existing notices.
+- Hermes/Buzz style agent transport informs the agent-gateway handoff model.
+- Postiz-style scheduling informs draft distribution planning only; no Postiz
+  code is vendored.
+- Shopify storefront/MCP and agentic-commerce patterns inform the ecommerce
+  audit and agent-readable checks.
+- LangGraph, Mastra and OpenAI Agents SDK patterns inform durable workflow,
+  memory, MCP and guardrail concepts without adding those frameworks as hard
+  dependencies.
+
+---
+
 <p align="center">
   <a href="https://github.com/PersonalJarvis/PersonalJarvis">
     <img src="https://github.com/PersonalJarvis/PersonalJarvis/raw/main/assets/brand/banner.png" alt="Personal Jarvis, a voice-driven meta-orchestrator" width="860" />

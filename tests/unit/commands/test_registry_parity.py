@@ -120,6 +120,122 @@ def test_worker_commands_are_explicitly_non_dangerous_and_non_configuring() -> N
         )
 
 
+def test_kaizen7_codex_commands_are_discoverable() -> None:
+    commands = {cmd.id: cmd for cmd in get_registry()}
+    for command_id in (
+        "kaizen7-codex-status",
+        "kaizen7-codex-capabilities",
+        "kaizen7-codex-delegate-propose",
+    ):
+        assert command_id in commands
+        assert commands[command_id].ui_section == "agents"
+        assert commands[command_id].worker_allowed is True
+
+
+def test_kaizen7_provider_commands_are_discoverable() -> None:
+    commands = {cmd.id: cmd for cmd in get_registry()}
+    for command_id in (
+        "kaizen7-providers-list",
+        "kaizen7-provider-recommend",
+        "kaizen7-provider-propose",
+    ):
+        assert command_id in commands
+        assert commands[command_id].ui_section == "agents"
+        assert commands[command_id].worker_allowed is True
+        assert commands[command_id].dangerous is False
+
+
+def test_kaizen7_adapter_commands_are_discoverable() -> None:
+    commands = {cmd.id: cmd for cmd in get_registry()}
+    for command_id in (
+        "kaizen7-adapters-list",
+        "kaizen7-adapters-manifest",
+        "kaizen7-adapter-recommend",
+        "kaizen7-adapter-propose",
+    ):
+        assert command_id in commands
+        assert commands[command_id].ui_section == "agents"
+        assert commands[command_id].worker_allowed is True
+        assert commands[command_id].dangerous is False
+
+
+def test_kaizen7_agent_commands_are_discoverable() -> None:
+    commands = {cmd.id: cmd for cmd in get_registry()}
+    for command_id in (
+        "kaizen7-agents-list",
+        "kaizen7-agents-manifest",
+        "kaizen7-agent-recommend",
+        "kaizen7-agent-bench",
+        "kaizen7-agent-propose",
+    ):
+        assert command_id in commands
+        assert commands[command_id].ui_section == "agents"
+        assert commands[command_id].worker_allowed is True
+        assert commands[command_id].dangerous is False
+
+
+def test_kaizen7_monetization_commands_are_discoverable() -> None:
+    commands = {cmd.id: cmd for cmd in get_registry()}
+    for command_id in (
+        "kaizen7-monetization-playbooks",
+        "kaizen7-monetization-quick",
+        "kaizen7-monetization-pack",
+        "kaizen7-monetization-propose",
+    ):
+        assert command_id in commands
+        assert commands[command_id].ui_section == "agents"
+        assert commands[command_id].worker_allowed is True
+        assert commands[command_id].dangerous is False
+
+
+def test_kaizen7_growth_os_commands_are_discoverable() -> None:
+    commands = {cmd.id: cmd for cmd in get_registry()}
+    for command_id in (
+        "kaizen7-growth-command",
+        "kaizen7-launch-kit",
+        "kaizen7-growth-asset",
+        "kaizen7-ecommerce-audit",
+        "kaizen7-growth-propose",
+    ):
+        assert command_id in commands
+        assert commands[command_id].ui_section == "agents"
+        assert commands[command_id].worker_allowed is True
+        assert commands[command_id].dangerous is False
+
+
+def test_kaizen7_capability_commands_are_discoverable() -> None:
+    commands = {cmd.id: cmd for cmd in get_registry()}
+    for command_id in (
+        "kaizen7-capabilities-list",
+        "kaizen7-capability-plan",
+    ):
+        assert command_id in commands
+        assert commands[command_id].ui_section == "agents"
+        assert commands[command_id].worker_allowed is True
+        assert commands[command_id].dangerous is False
+
+
+def test_kaizen7_market_blueprint_commands_are_discoverable() -> None:
+    commands = {cmd.id: cmd for cmd in get_registry()}
+    for command_id in (
+        "kaizen7-market-blueprint",
+        "kaizen7-market-upgrade-plan",
+    ):
+        assert command_id in commands
+        assert commands[command_id].ui_section == "agents"
+        assert commands[command_id].worker_allowed is True
+        assert commands[command_id].dangerous is False
+
+
+def test_kaizen7_product_commands_are_discoverable() -> None:
+    commands = {cmd.id: cmd for cmd in get_registry()}
+    command = commands["kaizen7-product-readiness"]
+    assert command.path == "/api/kaizen7/product/readiness"
+    assert command.ui_section == "agents"
+    assert command.worker_allowed is True
+    assert command.dangerous is False
+
+
 def test_reply_languages_match_brain_source_of_truth() -> None:
     from jarvis.brain.manager import SUPPORTED_REPLY_LANGUAGES
 

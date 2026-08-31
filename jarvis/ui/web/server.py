@@ -358,6 +358,19 @@ class WebServer:
         from .friends_routes import router as friends_router
         from .frontier_routes import router as frontier_router
         from .kaizen7_routes import router as kaizen7_router
+        from .kaizen7_adapters_routes import router as kaizen7_adapters_router
+        from .kaizen7_agent_gateway_routes import router as kaizen7_agent_gateway_router
+        from .kaizen7_agent_os_routes import router as kaizen7_agent_os_router
+        from .kaizen7_bots_routes import router as kaizen7_bots_router
+        from .kaizen7_bridge_routes import router as kaizen7_bridge_router
+        from .kaizen7_capabilities_routes import router as kaizen7_capabilities_router
+        from .kaizen7_codex_routes import router as kaizen7_codex_router
+        from .kaizen7_growth_routes import router as kaizen7_growth_router
+        from .kaizen7_hermes_routes import router as kaizen7_hermes_router
+        from .kaizen7_market_blueprint_routes import router as kaizen7_market_blueprint_router
+        from .kaizen7_monetization_routes import router as kaizen7_monetization_router
+        from .kaizen7_product_routes import router as kaizen7_product_router
+        from .kaizen7_providers_routes import router as kaizen7_providers_router
         from .marketplace_routes import router as marketplace_router
         from .mcp_routes import router as mcp_router
         from .missions_auth import router as missions_auth_router
@@ -449,6 +462,19 @@ class WebServer:
         # Command Registry — the one machine-readable catalog of app commands
         # (consumed by the app-command brain tool, the UI, CLI, and docs gen).
         app.include_router(commands_router)
+        app.include_router(kaizen7_adapters_router)
+        app.include_router(kaizen7_agent_gateway_router)
+        app.include_router(kaizen7_agent_os_router)
+        app.include_router(kaizen7_bots_router)
+        app.include_router(kaizen7_bridge_router)
+        app.include_router(kaizen7_capabilities_router)
+        app.include_router(kaizen7_codex_router)
+        app.include_router(kaizen7_growth_router)
+        app.include_router(kaizen7_hermes_router)
+        app.include_router(kaizen7_market_blueprint_router)
+        app.include_router(kaizen7_monetization_router)
+        app.include_router(kaizen7_product_router)
+        app.include_router(kaizen7_providers_router)
         app.include_router(friends_router)
         app.include_router(marketplace_router)
         app.state.friend_registry = None

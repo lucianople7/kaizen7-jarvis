@@ -18,7 +18,7 @@ _CURRENT_IDENTITY = {
     "CONTROL_KEY_PREFIX": "jctl_",
     "SESSION_COOKIE_NAME": "jarvis_session",
     "MANAGED_INSTALL_MARKER": ".jarvis-managed-install",
-    "DEFAULT_INSTALL_DIR_NAME": ".personal-jarvis",
+    "DEFAULT_INSTALL_DIR_NAME": ".kaizen7-jarvis",
     "WINDOWS_USER_DATA_DIR_NAME": "Jarvis",
     "FALLBACK_USER_DATA_DIR_NAME": ".jarvis",
     "DESKTOP_OUTPUT_MIRROR_DIR_NAME": "Jarvis-Output",
@@ -41,13 +41,13 @@ _CURRENT_IDENTITY = {
     "LINUX_APP_NAME": "Personal Jarvis",
     "LINUX_DESKTOP_ENTRY_FILE_NAME": "personal-jarvis.desktop",
     "LINUX_WM_CLASS": "personal-jarvis",
-    "DEFAULT_OFFICIAL_REPO_SLUG": "PersonalJarvis/PersonalJarvis",
+    "DEFAULT_OFFICIAL_REPO_SLUG": "lucianople7/kaizen7-jarvis",
     "OFFICIAL_REPO_SLUG_ENV_VAR": "JARVIS_OFFICIAL_REPO_SLUG",
-    "OFFICIAL_REPO_SLUG": "PersonalJarvis/PersonalJarvis",
-    "OFFICIAL_REPO_URL": "https://github.com/PersonalJarvis/PersonalJarvis",
-    "OFFICIAL_REPO_GIT_URL": "https://github.com/PersonalJarvis/PersonalJarvis.git",
+    "OFFICIAL_REPO_SLUG": "lucianople7/kaizen7-jarvis",
+    "OFFICIAL_REPO_URL": "https://github.com/lucianople7/kaizen7-jarvis",
+    "OFFICIAL_REPO_GIT_URL": "https://github.com/lucianople7/kaizen7-jarvis.git",
     "OFFICIAL_RELEASES_LATEST_API_URL": (
-        "https://api.github.com/repos/PersonalJarvis/PersonalJarvis/releases/latest"
+        "https://api.github.com/repos/lucianople7/kaizen7-jarvis/releases/latest"
     ),
     "UPDATER_USER_AGENT": "PersonalJarvis-Updater",
 }

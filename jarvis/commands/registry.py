@@ -298,6 +298,1094 @@ def _build_registry() -> tuple[AppCommand, ...]:
             },
         ),
         AppCommand(
+            id="kaizen7-bridge-status",
+            title="Show Control Bridge status",
+            description=(
+                "Show the local recommendation-only bridge status and receipt "
+                "count. This never executes external actions."
+            ),
+            method="GET",
+            path="/api/kaizen7/bridge/status",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige den control bridge status",),  # i18n-allow: input vocab
+                "en": ("show the control bridge status",),
+                "es": ("muestra el estado del puente de control",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-bots-list",
+            title="List KAIZEN7 bots",
+            description=(
+                "List the recommendation-only bot roster derived from assistant "
+                "modes. This does not execute bot work."
+            ),
+            method="GET",
+            path="/api/kaizen7/bots",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige die kaizen sieben bots",),  # i18n-allow: input vocab
+                "en": ("show the kaizen seven bots",),
+                "es": ("muestra los bots de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-bots-propose",
+            title="Propose a KAIZEN7 bot",
+            description=(
+                "Record a recommendation-only proposal for a new bot profile. "
+                "It does not create, run, message, or schedule anything."
+            ),
+            method="POST",
+            path="/api/kaizen7/bots/propose",
+            params={
+                "type": "object",
+                "properties": {
+                    "name": _str_param("Bot name.", min_length=1, max_length=80),
+                    "title": _str_param("Short bot title.", max_length=80),
+                    "description": _str_param(
+                        "Bot responsibility summary.", max_length=280
+                    ),
+                },
+                "required": ["name"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("schlage einen kaizen sieben bot vor",),  # i18n-allow: input vocab
+                "en": ("propose a kaizen seven bot",),
+                "es": ("propón un bot de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-hermes-status",
+            title="Show Hermes runtime status",
+            description=(
+                "Inspect the local Hermes CLI installation and profile count. "
+                "This is read-only and never starts a profile."
+            ),
+            method="GET",
+            path="/api/kaizen7/hermes/status",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige den hermes runtime status",),  # i18n-allow: input vocab
+                "en": ("show hermes runtime status",),
+                "es": ("muestra el estado de hermes",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-hermes-profiles",
+            title="List Hermes profiles",
+            description=(
+                "List local Hermes profiles available as execution surfaces. "
+                "This is read-only and never runs a chat."
+            ),
+            method="GET",
+            path="/api/kaizen7/hermes/profiles",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige die hermes profile",),  # i18n-allow: input vocab
+                "en": ("list hermes profiles",),
+                "es": ("lista los perfiles de hermes",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-hermes-capabilities",
+            title="List Hermes runtime capabilities",
+            description=(
+                "List Hermes profile, chat, cron, and peer capabilities exposed "
+                "to KAIZEN7. This does not execute profile chat."
+            ),
+            method="GET",
+            path="/api/kaizen7/hermes/capabilities",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige die hermes faehigkeiten",),  # i18n-allow: input vocab
+                "en": ("list hermes capabilities",),
+                "es": ("lista las capacidades de hermes",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-hermes-chat-propose",
+            title="Propose Hermes profile chat",
+            description=(
+                "Record a proposed handoff to a Hermes profile using query-file "
+                "transport. It does not execute the chat."
+            ),
+            method="POST",
+            path="/api/kaizen7/hermes/chat/propose",
+            params={
+                "type": "object",
+                "properties": {
+                    "profile": _str_param(
+                        "Hermes profile name.", min_length=1, max_length=80
+                    ),
+                    "message": _str_param(
+                        "Message to hand off.", min_length=1, max_length=20000
+                    ),
+                },
+                "required": ["profile", "message"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("schlage einen hermes chat vor",),  # i18n-allow: input vocab
+                "en": ("propose a hermes chat",),
+                "es": ("propón un chat con hermes",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-hermes-cron-list",
+            title="List Hermes cron routines",
+            description="List Hermes cron routines through the local runtime.",
+            method="GET",
+            path="/api/kaizen7/hermes/cron",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige hermes routinen",),  # i18n-allow: input vocab
+                "en": ("list hermes routines",),
+                "es": ("lista las rutinas de hermes",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-hermes-peer-list",
+            title="List Hermes peers",
+            description="List registered Hermes peers through the local runtime.",
+            method="GET",
+            path="/api/kaizen7/hermes/peers",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige hermes peers",),  # i18n-allow: input vocab
+                "en": ("list hermes peers",),
+                "es": ("lista los peers de hermes",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-codex-status",
+            title="Show Codex CLI status",
+            description=(
+                "Inspect the local OpenAI Codex CLI installation. This is "
+                "read-only and never starts an agent."
+            ),
+            method="GET",
+            path="/api/kaizen7/codex/status",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige den codex cli status",),  # i18n-allow: input vocab
+                "en": ("show codex cli status",),
+                "es": ("muestra el estado de codex cli",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-codex-capabilities",
+            title="List Codex CLI capabilities",
+            description=(
+                "List the Codex CLI delegation patterns known to KAIZEN7. "
+                "This does not run Codex."
+            ),
+            method="GET",
+            path="/api/kaizen7/codex/capabilities",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige die codex cli faehigkeiten",),  # i18n-allow: input vocab
+                "en": ("list codex cli capabilities",),
+                "es": ("lista las capacidades de codex cli",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-codex-delegate-propose",
+            title="Propose Codex CLI delegation",
+            description=(
+                "Record a proposed Codex CLI task with workdir, prompt, PTY "
+                "and sandbox requirements. It does not execute Codex."
+            ),
+            method="POST",
+            path="/api/kaizen7/codex/delegate/propose",
+            params={
+                "type": "object",
+                "properties": {
+                    "workdir": _str_param(
+                        "Git repository where Codex should run.",
+                        min_length=1,
+                        max_length=500,
+                    ),
+                    "prompt": _str_param(
+                        "Coding task prompt to delegate.",
+                        min_length=1,
+                        max_length=20000,
+                    ),
+                    "sandbox": {
+                        "type": "string",
+                        "enum": ["workspace-write", "danger-full-access"],
+                        "default": "workspace-write",
+                        "description": "Codex sandbox mode to request after approval.",
+                    },
+                },
+                "required": ["workdir", "prompt"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("schlage eine codex cli delegierung vor",),  # i18n-allow: input vocab
+                "en": ("propose codex cli delegation",),
+                "es": ("propón delegar a codex cli",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-providers-list",
+            title="List KAIZEN7 providers",
+            description=(
+                "List pluggable KAIZEN7 agent/API providers. Every provider is "
+                "proposal-only until credentials, cost limits, and human "
+                "approval are configured."
+            ),
+            method="GET",
+            path="/api/kaizen7/providers",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige kaizen sieben provider",),  # i18n-allow: input vocab
+                "en": ("list kaizen seven providers",),
+                "es": ("lista los proveedores de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-provider-recommend",
+            title="Recommend a KAIZEN7 provider",
+            description=(
+                "Rank available agent/API providers for a mission using "
+                "capability, privacy, cost, and safety constraints. This does "
+                "not call any provider."
+            ),
+            method="POST",
+            path="/api/kaizen7/providers/recommend",
+            params={
+                "type": "object",
+                "properties": {
+                    "mission": _str_param(
+                        "Mission or work request to route.",
+                        min_length=1,
+                        max_length=4000,
+                    ),
+                    "needs": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Capabilities such as code, tests, research, chat, or diagnostics.",
+                    },
+                    "constraints": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Constraints such as local_only or no_paid_api.",
+                    },
+                },
+                "required": ["mission"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("empfiehl einen kaizen sieben provider",),  # i18n-allow: input vocab
+                "en": ("recommend a kaizen seven provider",),
+                "es": ("recomienda un proveedor de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-provider-propose",
+            title="Propose work for a KAIZEN7 provider",
+            description=(
+                "Record a recommendation-only proposal for any registered "
+                "agent, CLI, or API provider. It does not call the provider."
+            ),
+            method="POST",
+            path="/api/kaizen7/providers/{provider_id}/propose",
+            path_params=("provider_id",),
+            params={
+                "type": "object",
+                "properties": {
+                    "provider_id": _str_param(
+                        "Provider id such as hermes, codex, api, or cli.",
+                        min_length=1,
+                        max_length=80,
+                    ),
+                    "message": _str_param(
+                        "Work request to propose.",
+                        min_length=1,
+                        max_length=4000,
+                    ),
+                    "context": {
+                        "type": "object",
+                        "description": "Optional capsule or business context.",
+                    },
+                },
+                "required": ["provider_id", "message"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("schlage arbeit fuer einen kaizen sieben provider vor",),  # i18n-allow: input vocab
+                "en": ("propose work for a kaizen seven provider",),
+                "es": ("propón trabajo para un proveedor de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-agents-list",
+            title="List KAIZEN7 agent passports",
+            description=(
+                "List every registered agent passport: local Jarvis, Hermes, "
+                "Codex, OpenHands, MCP, OpenAI-compatible models and generic "
+                "cloud agents. This never executes an agent."
+            ),
+            method="GET",
+            path="/api/kaizen7/agents",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige kaizen sieben agenten",),  # i18n-allow: input vocab
+                "en": ("list kaizen seven agents",),
+                "es": ("lista los agentes de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-agents-manifest",
+            title="Show KAIZEN7 agent manifest",
+            description=(
+                "Show the vendor-agnostic agent manifest for models, CLIs, "
+                "MCP servers, runtimes and cloud agents without exposing secrets."
+            ),
+            method="GET",
+            path="/api/kaizen7/agents/manifest",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige das kaizen sieben agenten manifest",),  # i18n-allow: input vocab
+                "en": ("show kaizen seven agent manifest",),
+                "es": ("muestra el manifiesto de agentes de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-agent-recommend",
+            title="Recommend a KAIZEN7 agent",
+            description=(
+                "Rank agent passports for a mission by capability, privacy, "
+                "cost and constraints. This does not call any agent."
+            ),
+            method="POST",
+            path="/api/kaizen7/agents/recommend",
+            params={
+                "type": "object",
+                "properties": {
+                    "mission": _str_param(
+                        "Mission or work request to route.",
+                        min_length=1,
+                        max_length=4000,
+                    ),
+                    "needs": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Needs such as code, tests, local, chat, memory, mcp, cloud, or workflow.",
+                    },
+                    "constraints": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Constraints such as local_only or no_paid_api.",
+                    },
+                },
+                "required": ["mission"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("empfiehl einen kaizen sieben agenten",),  # i18n-allow: input vocab
+                "en": ("recommend a kaizen seven agent",),
+                "es": ("recomienda un agente de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-agent-bench",
+            title="Dry-run bench a KAIZEN7 agent",
+            description=(
+                "Run a dry configuration bench for one agent passport. It only "
+                "checks declared environment contract and never calls the agent."
+            ),
+            method="POST",
+            path="/api/kaizen7/agents/{agent_id}/bench",
+            path_params=("agent_id",),
+            params={
+                "type": "object",
+                "properties": {
+                    "agent_id": _str_param(
+                        "Agent id such as codex-cli, hermes-runtime, mcp-tool-server, or generic-cloud-agent.",
+                        min_length=1,
+                        max_length=80,
+                    ),
+                    "env": {
+                        "type": "object",
+                        "description": "Optional fake env map for testing readiness without using real secrets.",
+                    },
+                },
+                "required": ["agent_id"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("teste einen kaizen sieben agenten trocken",),  # i18n-allow: input vocab
+                "en": ("dry run bench a kaizen seven agent",),
+                "es": ("prueba en seco un agente de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-agent-propose",
+            title="Propose work for a KAIZEN7 agent",
+            description=(
+                "Record a recommendation-only handoff proposal for any agent "
+                "passport. It does not call a model, CLI, MCP server, runtime "
+                "or cloud agent."
+            ),
+            method="POST",
+            path="/api/kaizen7/agents/{agent_id}/propose",
+            path_params=("agent_id",),
+            params={
+                "type": "object",
+                "properties": {
+                    "agent_id": _str_param(
+                        "Agent id such as codex-cli, hermes-runtime, openhands-worker, or openai-compatible-model.",
+                        min_length=1,
+                        max_length=80,
+                    ),
+                    "message": _str_param(
+                        "Work request to propose.",
+                        min_length=1,
+                        max_length=4000,
+                    ),
+                    "context": {
+                        "type": "object",
+                        "description": "Optional capsule, mission, workdir or routing context.",
+                    },
+                },
+                "required": ["agent_id", "message"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("schlage arbeit fuer einen kaizen sieben agenten vor",),  # i18n-allow: input vocab
+                "en": ("propose work for a kaizen seven agent",),
+                "es": ("propÃ³n trabajo para un agente de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-monetization-playbooks",
+            title="List KAIZEN7 monetization playbooks",
+            description=(
+                "List proposal-only growth playbooks for viral content, offer "
+                "ladders, ecommerce readiness, lead magnets, affiliate "
+                "monetization and retention upsells."
+            ),
+            method="GET",
+            path="/api/kaizen7/monetization/playbooks",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige kaizen sieben monetarisierungs playbooks",),  # i18n-allow: input vocab
+                "en": ("list kaizen seven monetization playbooks",),
+                "es": ("lista los playbooks de monetizacion de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-monetization-pack",
+            title="Build KAIZEN7 monetization pack",
+            description=(
+                "Create a proposal-only growth pack with viral content, offer, "
+                "ecommerce readiness, monetization paths, experiments, gates "
+                "and next actions. This does not publish, charge or spend."
+            ),
+            method="POST",
+            path="/api/kaizen7/monetization/pack",
+            params={
+                "type": "object",
+                "properties": {
+                    "objective": _str_param(
+                        "Business monetization objective.",
+                        min_length=1,
+                        max_length=4000,
+                    ),
+                    "business": _str_param("Business or project name.", max_length=200),
+                    "audience": _str_param("Target buyer or audience.", max_length=500),
+                    "assets": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Existing assets such as logo, story, product, list or proof.",
+                    },
+                    "needs": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Needs such as content, ecommerce, sales or monetization.",
+                    },
+                    "constraints": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Constraints such as no_paid_ads or approval_required.",
+                    },
+                },
+                "required": ["objective"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("erstelle ein kaizen sieben monetarisierungs paket",),  # i18n-allow: input vocab
+                "en": ("build a kaizen seven monetization pack",),
+                "es": ("crea un pack de monetizacion de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-monetization-quick",
+            title="Get one KAIZEN7 monetization move",
+            description=(
+                "Return the easiest high-leverage monetization move: score, "
+                "next move, three quick actions, success metric and ready prompt. "
+                "This does not publish, charge or spend."
+            ),
+            method="POST",
+            path="/api/kaizen7/monetization/quick",
+            params={
+                "type": "object",
+                "properties": {
+                    "objective": _str_param(
+                        "Business monetization objective.",
+                        min_length=1,
+                        max_length=4000,
+                    ),
+                    "business": _str_param("Business or project name.", max_length=200),
+                    "audience": _str_param("Target buyer or audience.", max_length=500),
+                    "assets": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Existing assets such as logo, story, product, list or proof.",
+                    },
+                    "needs": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Needs such as content, ecommerce, sales or monetization.",
+                    },
+                    "constraints": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Constraints such as no_paid_ads or approval_required.",
+                    },
+                },
+                "required": ["objective"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("gib mir den naechsten kaizen sieben monetarisierungs schritt",),  # i18n-allow: input vocab
+                "en": ("give me the next kaizen seven monetization move",),
+                "es": ("dame el siguiente movimiento de monetizacion de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-monetization-propose",
+            title="Propose KAIZEN7 monetization move",
+            description=(
+                "Record a monetization proposal and receipt. It prepares the "
+                "growth pack but never publishes, charges, sends messages, "
+                "changes credentials or collects customer data."
+            ),
+            method="POST",
+            path="/api/kaizen7/monetization/propose",
+            params={
+                "type": "object",
+                "properties": {
+                    "objective": _str_param(
+                        "Business monetization objective.",
+                        min_length=1,
+                        max_length=4000,
+                    ),
+                    "business": _str_param("Business or project name.", max_length=200),
+                    "audience": _str_param("Target buyer or audience.", max_length=500),
+                    "assets": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Existing assets such as logo, story, product, list or proof.",
+                    },
+                    "needs": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Needs such as content, ecommerce, sales or monetization.",
+                    },
+                    "constraints": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Constraints such as no_paid_ads or approval_required.",
+                    },
+                },
+                "required": ["objective"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("schlage eine kaizen sieben monetarisierung vor",),  # i18n-allow: input vocab
+                "en": ("propose a kaizen seven monetization move",),
+                "es": ("propÃ³n una monetizacion de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-growth-command",
+            title="Build KAIZEN7 Growth OS card",
+            description=(
+                "Return one proposal-only operating card with next move, draft "
+                "asset, distribution plan, ecommerce audit, agentic-commerce "
+                "readiness and receipt seed."
+            ),
+            method="POST",
+            path="/api/kaizen7/growth/command",
+            params={
+                "type": "object",
+                "properties": {
+                    "objective": _str_param("Growth objective.", min_length=1, max_length=4000),
+                    "business": _str_param("Business or project name.", max_length=200),
+                    "audience": _str_param("Target buyer or audience.", max_length=500),
+                    "channels": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Channels such as instagram, youtube, email or owned_content.",
+                    },
+                    "assets": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Existing assets such as logo, product, proof, schema or analytics.",
+                    },
+                    "constraints": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Constraints such as no_paid_ads or approval_required.",
+                    },
+                },
+                "required": ["objective"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("erstelle eine kaizen sieben growth os karte",),  # i18n-allow: input vocab
+                "en": ("build a kaizen seven growth os card",),
+                "es": ("crea una tarjeta growth os de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-growth-asset",
+            title="Draft KAIZEN7 growth asset",
+            description=(
+                "Create one draft-only growth asset such as a short video "
+                "script, carousel, landing section or email. It does not publish."
+            ),
+            method="POST",
+            path="/api/kaizen7/growth/asset",
+            params={
+                "type": "object",
+                "properties": {
+                    "objective": _str_param("Asset objective.", min_length=1, max_length=4000),
+                    "business": _str_param("Business or project name.", max_length=200),
+                    "audience": _str_param("Target buyer or audience.", max_length=500),
+                    "channels": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Preferred channel; first item is used.",
+                    },
+                },
+                "required": ["objective"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("entwirf ein kaizen sieben growth asset",),  # i18n-allow: input vocab
+                "en": ("draft a kaizen seven growth asset",),
+                "es": ("crea un borrador de activo growth de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-launch-kit",
+            title="Build KAIZEN7 launch kit",
+            description=(
+                "Return a five-minute product onboarding kit with GitHub pitch, "
+                "install commands, demo payload, first value path, community "
+                "tasks and acceptance tests. Proposal-only."
+            ),
+            method="POST",
+            path="/api/kaizen7/growth/launch-kit",
+            params={
+                "type": "object",
+                "properties": {
+                    "objective": _str_param("Launch objective.", min_length=1, max_length=4000),
+                    "business": _str_param("Business or project name.", max_length=200),
+                    "audience": _str_param("Target user or buyer.", max_length=500),
+                },
+                "required": ["objective"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("erstelle ein kaizen sieben launch kit",),  # i18n-allow: input vocab
+                "en": ("build a kaizen seven launch kit",),
+                "es": ("crea un launch kit de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-ecommerce-audit",
+            title="Audit ecommerce readiness",
+            description=(
+                "Check product clarity, proof, checkout policy, analytics and "
+                "agent-readable commerce before launch. Proposal-only."
+            ),
+            method="POST",
+            path="/api/kaizen7/growth/ecommerce-audit",
+            params={
+                "type": "object",
+                "properties": {
+                    "business": _str_param("Business or project name.", max_length=200),
+                    "assets": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Existing assets such as product, proof, policy, analytics, llms.txt or schema.",
+                    },
+                },
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("pruefe ecommerce readiness",),  # i18n-allow: input vocab
+                "en": ("audit ecommerce readiness",),
+                "es": ("audita la preparacion ecommerce",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-growth-propose",
+            title="Propose KAIZEN7 Growth OS move",
+            description=(
+                "Record a Growth OS proposal and receipt. It prepares work for "
+                "human approval but never publishes, charges, sends or spends."
+            ),
+            method="POST",
+            path="/api/kaizen7/growth/propose",
+            params={
+                "type": "object",
+                "properties": {
+                    "objective": _str_param("Growth objective.", min_length=1, max_length=4000),
+                    "business": _str_param("Business or project name.", max_length=200),
+                    "audience": _str_param("Target buyer or audience.", max_length=500),
+                    "channels": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Channels such as instagram, youtube, email or owned_content.",
+                    },
+                    "assets": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Existing assets such as logo, product, proof, schema or analytics.",
+                    },
+                    "constraints": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Constraints such as no_paid_ads or approval_required.",
+                    },
+                },
+                "required": ["objective"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("schlage einen kaizen sieben growth os schritt vor",),  # i18n-allow: input vocab
+                "en": ("propose a kaizen seven growth os move",),
+                "es": ("propone un movimiento growth os de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-adapters-list",
+            title="List KAIZEN7 adapters",
+            description=(
+                "List agent-agnostic connection adapters for OpenAI-compatible "
+                "APIs, HTTP agents, local CLIs, MCP, webhooks and cloud agents. "
+                "Every adapter is proposal-only by default."
+            ),
+            method="GET",
+            path="/api/kaizen7/adapters",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige kaizen sieben adapter",),  # i18n-allow: input vocab
+                "en": ("list kaizen seven adapters",),
+                "es": ("lista los adaptadores de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-adapters-manifest",
+            title="Show KAIZEN7 adapter manifest",
+            description=(
+                "Show the stable adapter manifest for connecting any model, "
+                "agent API, CLI, MCP server, webhook or cloud agent without "
+                "storing secret values."
+            ),
+            method="GET",
+            path="/api/kaizen7/adapters/manifest",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige das kaizen sieben adapter manifest",),  # i18n-allow: input vocab
+                "en": ("show kaizen seven adapter manifest",),
+                "es": ("muestra el manifiesto de adaptadores de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-adapter-recommend",
+            title="Recommend a KAIZEN7 adapter",
+            description=(
+                "Rank safe connection adapters for a mission by requested "
+                "capabilities and constraints such as local_only or no_paid_api. "
+                "This does not call any adapter."
+            ),
+            method="POST",
+            path="/api/kaizen7/adapters/recommend",
+            params={
+                "type": "object",
+                "properties": {
+                    "mission": _str_param(
+                        "Mission or integration request to route.",
+                        min_length=1,
+                        max_length=4000,
+                    ),
+                    "needs": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Needs such as code, local, mcp, workflow, cloud, chat, or diagnostics.",
+                    },
+                    "constraints": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Constraints such as local_only or no_paid_api.",
+                    },
+                },
+                "required": ["mission"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("empfiehl einen kaizen sieben adapter",),  # i18n-allow: input vocab
+                "en": ("recommend a kaizen seven adapter",),
+                "es": ("recomienda un adaptador de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-adapter-propose",
+            title="Propose work for a KAIZEN7 adapter",
+            description=(
+                "Record a recommendation-only proposal for any registered "
+                "adapter. It does not call a model, CLI, API, webhook or cloud "
+                "agent."
+            ),
+            method="POST",
+            path="/api/kaizen7/adapters/{adapter_id}/propose",
+            path_params=("adapter_id",),
+            params={
+                "type": "object",
+                "properties": {
+                    "adapter_id": _str_param(
+                        "Adapter id such as openai-compatible, generic-cli-agent, mcp-server, webhook-agent, or cloud-agent.",
+                        min_length=1,
+                        max_length=80,
+                    ),
+                    "message": _str_param(
+                        "Work request to propose.",
+                        min_length=1,
+                        max_length=4000,
+                    ),
+                    "context": {
+                        "type": "object",
+                        "description": "Optional capsule, mission, or routing context.",
+                    },
+                },
+                "required": ["adapter_id", "message"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("schlage arbeit fuer einen kaizen sieben adapter vor",),  # i18n-allow: input vocab
+                "en": ("propose work for a kaizen seven adapter",),
+                "es": ("propÃ³n trabajo para un adaptador de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-capabilities-list",
+            title="List KAIZEN7 capabilities",
+            description=(
+                "List the internal KAIZEN7 capability marketplace: useful work "
+                "surfaces mapped to providers, permissions, cost, privacy and "
+                "approval policies."
+            ),
+            method="GET",
+            path="/api/kaizen7/capabilities",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige kaizen sieben faehigkeiten",),  # i18n-allow: input vocab
+                "en": ("list kaizen seven capabilities",),
+                "es": ("lista las capacidades de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-capability-plan",
+            title="Plan KAIZEN7 capabilities",
+            description=(
+                "Create a safe proposal-only launch plan from the capability "
+                "marketplace. It does not execute any provider."
+            ),
+            method="POST",
+            path="/api/kaizen7/capabilities/plan",
+            params={
+                "type": "object",
+                "properties": {
+                    "mission": _str_param(
+                        "Mission or product objective to plan.",
+                        min_length=1,
+                        max_length=4000,
+                    ),
+                    "needs": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Needs such as focus, research, content, code, approval, or diagnostics.",
+                    },
+                    "constraints": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Constraints such as local_only or no_paid_api.",
+                    },
+                },
+                "required": ["mission"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("plane kaizen sieben faehigkeiten",),  # i18n-allow: input vocab
+                "en": ("plan kaizen seven capabilities",),
+                "es": ("planifica capacidades de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-market-blueprint",
+            title="Show KAIZEN7 market blueprint",
+            description=(
+                "Show the legal pattern fork: which open-source market patterns "
+                "KAIZEN7 absorbs, rejects, or keeps as reference."
+            ),
+            method="GET",
+            path="/api/kaizen7/market-blueprint",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige den kaizen sieben markt bauplan",),  # i18n-allow: input vocab
+                "en": ("show kaizen seven market blueprint",),
+                "es": ("muestra el blueprint de mercado de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-market-upgrade-plan",
+            title="Show KAIZEN7 market upgrade plan",
+            description=(
+                "Show the proposal-only upgrade plan derived from the market "
+                "blueprint. It does not install dependencies or copy code."
+            ),
+            method="GET",
+            path="/api/kaizen7/market-blueprint/upgrade-plan",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige den kaizen sieben markt upgrade plan",),  # i18n-allow: input vocab
+                "en": ("show kaizen seven market upgrade plan",),
+                "es": ("muestra el plan de mejora de mercado de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-product-readiness",
+            title="Show KAIZEN7 product readiness",
+            description=(
+                "Score install, security, product surfaces, APIs, docs and tests "
+                "for KAIZEN7 Jarvis. This is read-only."
+            ),
+            method="GET",
+            path="/api/kaizen7/product/readiness",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige kaizen sieben produkt bereitschaft",),  # i18n-allow: input vocab
+                "en": ("show kaizen seven product readiness",),
+                "es": ("muestra la preparacion de producto de kaizen siete",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-bridge-capabilities",
+            title="List Control Bridge capabilities",
+            description=(
+                "List safe recommendation-only bridge capabilities. This never "
+                "executes external actions."
+            ),
+            method="GET",
+            path="/api/kaizen7/bridge/capabilities",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige die control bridge faehigkeiten",),  # i18n-allow: input vocab
+                "en": ("list control bridge capabilities",),
+                "es": ("lista las capacidades del puente de control",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-bridge-propose",
+            title="Record a Control Bridge proposal",
+            description=(
+                "Record a recommendation-only proposal as a receipt. It does "
+                "not publish, send, spend, change credentials, or execute."
+            ),
+            method="POST",
+            path="/api/kaizen7/bridge/propose",
+            params={
+                "type": "object",
+                "properties": {
+                    "message": _str_param(
+                        "Recommendation request to record.",
+                        min_length=1,
+                        max_length=4000,
+                    ),
+                },
+                "required": ["message"],
+            },
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("notiere einen control bridge vorschlag",),  # i18n-allow: input vocab
+                "en": ("record a control bridge proposal",),
+                "es": ("registra una propuesta del puente de control",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
+            id="kaizen7-bridge-receipts",
+            title="List Control Bridge receipts",
+            description="List recent bridge receipts for proposals and activity.",
+            method="GET",
+            path="/api/kaizen7/bridge/receipts",
+            worker_allowed=True,
+            ui_section="agents",
+            voice_aliases={
+                "de": ("zeige control bridge belege",),  # i18n-allow: input vocab
+                "en": ("show control bridge receipts",),
+                "es": ("muestra los recibos del puente de control",),  # i18n-allow: input vocab
+            },
+        ),
+        AppCommand(
             id="providers-list",
             title="List providers",
             description="List all configured providers and which ones are active.",

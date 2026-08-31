@@ -15,12 +15,13 @@
  * Colours come from theme tokens only, so the view is correct in light and dark
  * without a second palette to keep in step.
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Mic, MicOff, Plus, RotateCcw, Sparkles, Trash2, Check } from "lucide-react";
 
 import { ViewHeader } from "@/views/ChatsView";
 import { useEventStore } from "@/store/events";
 import { useVoiceCall } from "@/components/agentic/useVoiceCall";
+import { BrandedSelect } from "@/components/ui/select";
 import { sendChatMessage } from "@/lib/chat";
 import { cn } from "@/lib/utils";
 import {
@@ -64,6 +65,77 @@ const PROACTIVITY_LABELS: Record<Proactivity, string> = {
   forward: "Thinks a step ahead",
 };
 
+type JarvisTone = "executive" | "warm" | "direct" | "strict";
+type JarvisEnergy = "focused" | "calm" | "high";
+type PersonalCore = {
+  mission: string;
+  owner: string;
+  focus: string;
+  tone: JarvisTone;
+  energy: JarvisEnergy;
+  guardrails: string;
+  priorityLimit: number;
+};
+
+const JARVIS_TONE_OPTIONS = [
+  { value: "executive", label: "Executive" },
+  { value: "warm", label: "Warm" },
+  { value: "direct", label: "Direct" },
+  { value: "strict", label: "Strict" },
+] as const;
+
+const JARVIS_ENERGY_OPTIONS = [
+  { value: "focused", label: "Focused" },
+  { value: "calm", label: "Calm" },
+  { value: "high", label: "High focus" },
+] as const;
+
+const JARVIS_TONE_COPY = {
+  executive: {
+    name: "Jarvis Personal Operator",
+    description: "Executive personal operating mode",
+    voice:
+      "Operate like a concise chief of staff: clear priorities, sharp tradeoffs, no theatrical filler.",
+  },
+  warm: {
+    name: "Jarvis Steady Companion",
+    description: "Warm operating mode for calm clarity and humane momentum.",
+    voice:
+      "Stay warm, steady and direct. Help Luciano feel oriented without losing operational edge.",
+  },
+  direct: {
+    name: "Jarvis Precision Driver",
+    description: "Direct operating mode for blunt decisions and fast execution.",
+    voice:
+      "Be blunt, concise and evidence-led. Cut ambiguity and name the next concrete move.",
+  },
+  strict: {
+    name: "Jarvis Mission Governor",
+    description: "Strict operating mode for narrow priorities and hard execution gates.",
+    voice:
+      "Be strict about scope, proof and irreversible actions. Challenge drift before helping with it.",
+  },
+} satisfies Record<JarvisTone, { name: string; description: string; voice: string }>;
+
+const JARVIS_ENERGY_COPY = {
+  focused: {
+    verbosity: "normal" as Verbosity,
+    proactivity: "normal" as Proactivity,
+    voice: "Keep one active mission visible. Limit priorities before adding work.",
+  },
+  calm: {
+    verbosity: "brief" as Verbosity,
+    proactivity: "reactive" as Proactivity,
+    voice: "Slow the pace down. Reduce options. Ask before widening scope.",
+  },
+  high: {
+    verbosity: "normal" as Verbosity,
+    proactivity: "forward" as Proactivity,
+    voice:
+      "Drive the day with urgency, but keep the mission narrow and approval gates intact.",
+  },
+} satisfies Record<JarvisEnergy, { verbosity: Verbosity; proactivity: Proactivity; voice: string }>;
+
 const EMPTY_DRAFT = {
   name: "",
   emoji: "",
@@ -72,6 +144,52 @@ const EMPTY_DRAFT = {
   verbosity: "normal" as Verbosity,
   proactivity: "normal" as Proactivity,
 };
+
+const verbosityOptions = (values: readonly Verbosity[] = []) =>
+  values.map((value) => ({
+    value,
+    label: VERBOSITY_LABELS[value],
+  }));
+
+const proactivityOptions = (values: readonly Proactivity[] = []) =>
+  values.map((value) => ({
+    value,
+    label: PROACTIVITY_LABELS[value],
+  }));
+
+const DEFAULT_APPROVAL_BOUNDARY =
+  "Human approval is required before publishing, payments, messages, credentials, financial operations, external sends, destructive changes, or irreversible actions.";
+
+function buildPersonalJarvisDraft(core: PersonalCore) {
+  const tone = JARVIS_TONE_COPY[core.tone];
+  const energy = JARVIS_ENERGY_COPY[core.energy];
+  const owner = core.owner.trim() || "Luciano";
+  const mission = core.mission.trim();
+  const focus = core.focus.trim();
+  const guardrails =
+    core.guardrails.trim() ||
+    "Never publish, pay, message, change credentials, operate money, or make irreversible changes without explicit approval.";
+
+  return {
+    name: tone.name,
+    emoji: "K7",
+    description: `${tone.description} for ${owner} with one active focus.`,
+    character: [
+      tone.voice,
+      energy.voice,
+      `Owner: ${owner}`,
+      `Mission: ${mission}`,
+      `Active focus: ${focus}`,
+      `Priority cap: keep at most ${core.priorityLimit} active priorities visible.`,
+      `Guardrails: ${guardrails}`,
+      "Always separate recommendation from execution.",
+      DEFAULT_APPROVAL_BOUNDARY,
+      "Every answer should end with the smallest useful next action when action is needed.",
+    ].join("\n\n"),
+    verbosity: energy.verbosity,
+    proactivity: energy.proactivity,
+  };
+}
 
 export function ModesView() {
   const pushToast = useEventStore((s) => s.pushToast);
@@ -84,6 +202,19 @@ export function ModesView() {
   const [draft, setDraft] = useState(EMPTY_DRAFT);
   const [saving, setSaving] = useState(false);
   const [written, setWritten] = useState("");
+  const draftNameRef = useRef<HTMLInputElement>(null);
+  const missionRef = useRef<HTMLTextAreaElement>(null);
+  const focusRef = useRef<HTMLInputElement>(null);
+  const priorityRef = useRef<HTMLInputElement>(null);
+  const [personalCore, setPersonalCore] = useState<PersonalCore>({
+    mission: "",
+    owner: "Luciano",
+    focus: "",
+    tone: "executive" as JarvisTone,
+    energy: "focused" as JarvisEnergy,
+    guardrails: "",
+    priorityLimit: 3,
+  });
 
   const refresh = useCallback(async () => {
     try {
@@ -153,6 +284,26 @@ export function ModesView() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const buildPersonalCore = () => {
+    if (!personalCore.mission.trim() || !personalCore.focus.trim()) {
+      pushToast(
+        "warning",
+        "Jarvis needs a mission and active focus before it can become operational.",
+      );
+      if (!personalCore.mission.trim()) missionRef.current?.focus();
+      else focusRef.current?.focus();
+      return;
+    }
+    if (personalCore.priorityLimit < 1 || personalCore.priorityLimit > 5) {
+      pushToast("warning", "Jarvis keeps one to five active priorities. Set a tighter cap.");
+      priorityRef.current?.focus();
+      return;
+    }
+    setDraft(buildPersonalJarvisDraft(personalCore));
+    draftNameRef.current?.focus();
+    pushToast("info", "Jarvis Personal Core ready. Review it, then save the mode.");
   };
 
   const startInterview = async () => {
@@ -271,6 +422,120 @@ export function ModesView() {
               </p>
             </div>
 
+            <article className="flex flex-col gap-4 rounded-xl border border-primary/30 bg-primary/5 p-4">
+              <div className="flex flex-col gap-1">
+                <h4 className="font-display text-sm font-semibold tracking-tight">
+                  Jarvis Personal Core
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                  Build a ready-to-save personal operating mode with focus, priorities and approval gates.
+                </p>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
+                  Assistant mission
+                  <textarea
+                    ref={missionRef}
+                    aria-label="Assistant mission"
+                    value={personalCore.mission}
+                    onChange={(e) =>
+                      setPersonalCore({ ...personalCore, mission: e.target.value })
+                    }
+                    rows={3}
+                    placeholder="Keep Luciano focused on one business move at a time"
+                    className="resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
+                  Approval boundaries
+                  <textarea
+                    aria-label="Approval boundaries"
+                    value={personalCore.guardrails}
+                    onChange={(e) =>
+                      setPersonalCore({ ...personalCore, guardrails: e.target.value })
+                    }
+                    rows={3}
+                    placeholder="Never publish, pay or message without approval"
+                    className="resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
+                  Owner
+                  <input
+                    aria-label="Owner"
+                    value={personalCore.owner}
+                    onChange={(e) =>
+                      setPersonalCore({ ...personalCore, owner: e.target.value })
+                    }
+                    placeholder="Luciano"
+                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
+                  Active focus
+                  <input
+                    ref={focusRef}
+                    aria-label="Active focus"
+                    value={personalCore.focus}
+                    onChange={(e) =>
+                      setPersonalCore({ ...personalCore, focus: e.target.value })
+                    }
+                    placeholder="Build a clean PersonalJarvis product"
+                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                  />
+                </label>
+                <div className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
+                  Jarvis tone
+                  <BrandedSelect
+                    value={personalCore.tone}
+                    onValueChange={(value) =>
+                      setPersonalCore({ ...personalCore, tone: value as JarvisTone })
+                    }
+                    ariaLabel="Jarvis tone"
+                    options={JARVIS_TONE_OPTIONS}
+                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+                <div className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
+                  Jarvis energy
+                  <BrandedSelect
+                    value={personalCore.energy}
+                    onValueChange={(value) =>
+                      setPersonalCore({ ...personalCore, energy: value as JarvisEnergy })
+                    }
+                    ariaLabel="Jarvis energy"
+                    options={JARVIS_ENERGY_OPTIONS}
+                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+                <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
+                  Max active priorities
+                  <input
+                    ref={priorityRef}
+                    aria-label="Max active priorities"
+                    type="number"
+                    min={1}
+                    max={5}
+                    value={personalCore.priorityLimit}
+                    onChange={(e) =>
+                      setPersonalCore({
+                        ...personalCore,
+                        priorityLimit: Number(e.target.value),
+                      })
+                    }
+                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                  />
+                </label>
+              </div>
+              <button
+                type="button"
+                onClick={buildPersonalCore}
+                className="self-start rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              >
+                Build personal Jarvis
+              </button>
+            </article>
+
             <div className="grid gap-4 lg:grid-cols-2">
               <div className="flex flex-col gap-3 rounded-xl border border-border bg-secondary/30 p-4">
                 <button
@@ -335,6 +600,7 @@ export function ModesView() {
                   />
                   <input
                     aria-label="Mode name"
+                    ref={draftNameRef}
                     value={draft.name}
                     onChange={(e) => setDraft({ ...draft, name: e.target.value })}
                     placeholder="Night Owl"
@@ -357,32 +623,24 @@ export function ModesView() {
                   className="resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                 />
                 <div className="flex flex-wrap gap-2">
-                  <select
-                    aria-label="Answer length"
+                  <BrandedSelect
                     value={draft.verbosity}
-                    onChange={(e) => setDraft({ ...draft, verbosity: e.target.value as Verbosity })}
-                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                  >
-                    {(state?.verbosities ?? []).map((v) => (
-                      <option key={v} value={v}>
-                        {VERBOSITY_LABELS[v]}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    aria-label="How much it volunteers"
-                    value={draft.proactivity}
-                    onChange={(e) =>
-                      setDraft({ ...draft, proactivity: e.target.value as Proactivity })
+                    onValueChange={(value) =>
+                      setDraft({ ...draft, verbosity: value as Verbosity })
                     }
+                    ariaLabel="Answer length"
+                    options={verbosityOptions(state?.verbosities)}
                     className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                  >
-                    {(state?.proactivities ?? []).map((p) => (
-                      <option key={p} value={p}>
-                        {PROACTIVITY_LABELS[p]}
-                      </option>
-                    ))}
-                  </select>
+                  />
+                  <BrandedSelect
+                    value={draft.proactivity}
+                    onValueChange={(value) =>
+                      setDraft({ ...draft, proactivity: value as Proactivity })
+                    }
+                    ariaLabel="How much it volunteers"
+                    options={proactivityOptions(state?.proactivities)}
+                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                  />
                 </div>
                 <button
                   type="button"

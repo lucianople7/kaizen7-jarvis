@@ -83,6 +83,20 @@ def _build_parser() -> argparse.ArgumentParser:
                              "worker CLI, brain provider). Exits non-zero on a "
                              "hard failure.")
     parser.add_argument(
+        "--kaizen7-doctor",
+        action="store_true",
+        dest="kaizen7_doctor",
+        help="KAIZEN7 readiness check: Hermes/Codex bridge status, Bot Mode "
+             "profiles, receipts, and approval gates. Read-only.",
+    )
+    parser.add_argument(
+        "--kaizen7-product",
+        action="store_true",
+        dest="kaizen7_product",
+        help="KAIZEN7 product readiness score: install, safety, APIs, docs, "
+             "tests and product surfaces. Read-only.",
+    )
+    parser.add_argument(
         "--reset-onboarding",
         action="store_true",
         dest="reset_onboarding",
@@ -273,6 +287,33 @@ def _cmd_doctor() -> int:
 
     print("\n".join(lines))
     return 1 if fail else 0
+
+
+def _cmd_kaizen7_doctor() -> int:
+    """Read-only readiness check for the KAIZEN7/Hermes/Codex layer."""
+    from jarvis.kaizen7.doctor import (
+        has_failures,
+        render_kaizen7_doctor,
+        run_kaizen7_doctor,
+    )
+
+    config = cfg.load_config()
+    findings = run_kaizen7_doctor(config)
+    print(render_kaizen7_doctor(findings))
+    return 1 if has_failures(findings) else 0
+
+
+def _cmd_kaizen7_product() -> int:
+    """Read-only product readiness score for KAIZEN7 Jarvis."""
+    from jarvis.kaizen7.product_readiness import (
+        build_product_readiness,
+        render_product_readiness,
+    )
+
+    config = cfg.load_config()
+    readiness = build_product_readiness(config=config)
+    print(render_product_readiness(readiness))
+    return 0 if readiness["status"] == "ready" else 1
 
 
 def _cmd_orb_doctor() -> int:
@@ -550,6 +591,10 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_orb_doctor()
     if args.doctor:
         return _cmd_doctor()
+    if args.kaizen7_doctor:
+        return _cmd_kaizen7_doctor()
+    if args.kaizen7_product:
+        return _cmd_kaizen7_product()
     if args.install_admin_helper:
         return _cmd_install_admin_helper()
     if args.uninstall:

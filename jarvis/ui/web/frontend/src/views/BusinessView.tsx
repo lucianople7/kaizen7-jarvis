@@ -1,15 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import {
   BadgeCheck,
+  Bot,
   BriefcaseBusiness,
   CheckCircle2,
   CircleAlert,
   Clipboard,
+  ClipboardCheck,
   Download,
   LockKeyhole,
   Plus,
   RotateCcw,
   Save,
+  Send,
   Smartphone,
   Target,
   TrendingUp,
@@ -19,6 +22,7 @@ import { ViewHeader } from "@/views/ChatsView";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { BrandedSelect } from "@/components/ui/select";
 
 const STORAGE_KEY = "jarvis.business.workspace.v1";
 const LEGACY_STORAGE_KEY = "jarvis.business.workspace.v1";
@@ -29,6 +33,8 @@ const MAX_ACTIVE_PRIORITIES = 3;
 type DecisionRisk = "low" | "approval";
 type CopyStatus = "idle" | "copied" | "error";
 type BackupStatus = "idle" | "restored" | "invalid";
+type HandoffStatus = "idle" | "saving" | "saved" | "error";
+type JarvisRoute = "hermes" | "codex" | "buzz" | "work";
 
 interface BusinessDecision {
   id: string;
@@ -46,6 +52,14 @@ interface BusinessAction {
   done: boolean;
 }
 
+interface BusinessMetricTarget {
+  id: string;
+  label: string;
+  current: number;
+  target: number;
+  unit: string;
+}
+
 interface LastComplete {
   actionId: string;
   decisionId: string;
@@ -59,6 +73,7 @@ interface BusinessWorkspace {
   weeklyObjective: string;
   priorities: string[];
   metrics: string[];
+  metricTargets: BusinessMetricTarget[];
   actions: BusinessAction[];
   decisions: BusinessDecision[];
   lastComplete: LastComplete | null;
@@ -69,6 +84,83 @@ interface WorkspaceBackup {
   version: typeof BACKUP_VERSION;
   exportedAt: string;
   workspace: BusinessWorkspace;
+}
+
+interface BusinessDiagnostics {
+  generatedAt: string;
+  currentUrl: string;
+  storageWritable: boolean;
+  workspacePayloadBytes: number;
+  serviceWorkerSupport: boolean;
+  serviceWorkerControlled: boolean;
+  cacheSupport: boolean;
+  userAgent: string;
+}
+
+interface ReadinessCheck {
+  label: string;
+  passed: boolean;
+  detail: string;
+}
+
+interface HermesStatus {
+  installed: boolean;
+  version: string;
+  profile_count: number;
+  error: string;
+}
+
+interface HermesProfile {
+  name: string;
+  model?: string;
+  gateway?: string;
+  alias?: string;
+  handle?: string;
+}
+
+interface HermesProfilesPayload {
+  installed: boolean;
+  count: number;
+  profiles: HermesProfile[];
+  error?: string;
+}
+
+interface HermesCapability {
+  id: string;
+  title: string;
+  command: string;
+  requires_approval: boolean;
+}
+
+interface HermesCapabilitiesPayload {
+  capabilities: HermesCapability[];
+  execution_enabled: boolean;
+  approval_required_for: string[];
+}
+
+interface HermesBotModeBot {
+  profile: string;
+  title: string;
+  installed?: boolean;
+}
+
+interface HermesBotModePayload {
+  name: string;
+  execution_enabled: boolean;
+  personal_jarvis: { role: string };
+  hermes: { role: string; installed?: boolean; version?: string };
+  bot_mode: { role: string };
+  recommended_bots: HermesBotModeBot[];
+  human_approval_required_for: string[];
+}
+
+interface CodexStatus {
+  installed: boolean;
+  version: string;
+  execution_enabled: boolean;
+  requires_git_repo: boolean;
+  requires_pty: boolean;
+  error: string;
 }
 
 const DEFAULT_WORKSPACE: BusinessWorkspace = {
@@ -87,6 +179,29 @@ const DEFAULT_WORKSPACE: BusinessWorkspace = {
     "Test one offer without charging.",
   ],
   metrics: ["Leads", "Assets", "Validated offers"],
+  metricTargets: [
+    {
+      id: "lead-velocity",
+      label: "Lead velocity",
+      current: 0,
+      target: 25,
+      unit: "leads",
+    },
+    {
+      id: "asset-output",
+      label: "Asset output",
+      current: 0,
+      target: 5,
+      unit: "assets",
+    },
+    {
+      id: "offer-tests",
+      label: "Offer tests",
+      current: 0,
+      target: 1,
+      unit: "tests",
+    },
+  ],
   actions: [
     {
       id: "seed-signal",
@@ -149,6 +264,71 @@ const GUARDED_ACTIONS = [
   "Irreversible file or account change",
 ];
 
+const ACTION_RISK_OPTIONS = [
+  { value: "low", label: "Recommendation" },
+  { value: "approval", label: "Needs approval" },
+];
+
+const DECISION_RISK_OPTIONS = [
+  { value: "low", label: "Recommendation only" },
+  { value: "approval", label: "Needs human approval" },
+];
+
+const JARVIS_ROUTES: Array<{
+  id: JarvisRoute;
+  label: string;
+  summary: string;
+  handoff: string;
+}> = [
+  {
+    id: "hermes",
+    label: "Hermes",
+    summary: "Coordinate agents, profiles and daily operating loops.",
+    handoff: "Coordinate the right agents and return the next safe action.",
+  },
+  {
+    id: "codex",
+    label: "Codex",
+    summary: "Build, debug and verify code changes in the repo.",
+    handoff: "Build, debug and verify code changes.",
+  },
+  {
+    id: "buzz",
+    label: "Buzz",
+    summary: "Put humans and agents in shared signed channels.",
+    handoff:
+      "Join the shared human and agent workspace through the native Hermes Buzz gateway while preserving approvals.",
+  },
+  {
+    id: "work",
+    label: "Work Assistant",
+    summary: "Research, docs, review and business support.",
+    handoff: "Research, organize and review the work before execution.",
+  },
+];
+
+const JARVIS_QUICK_STARTS: Array<{
+  label: string;
+  route: JarvisRoute;
+  request: string;
+}> = [
+  {
+    label: "Debug app",
+    route: "codex",
+    request: "Debug the app, find the blocker, fix it, run tests and report proof.",
+  },
+  {
+    label: "Plan my day",
+    route: "hermes",
+    request: "Choose today's mission, limit priorities and define the next safe action.",
+  },
+  {
+    label: "Research market",
+    route: "work",
+    request: "Research the market, cite sources and extract useful business moves.",
+  },
+];
+
 function readWorkspace(): BusinessWorkspace {
   if (typeof window === "undefined") return DEFAULT_WORKSPACE;
   try {
@@ -162,6 +342,9 @@ function readWorkspace(): BusinessWorkspace {
       ...parsed,
       priorities: normalizeList(parsed.priorities, DEFAULT_WORKSPACE.priorities),
       metrics: normalizeList(parsed.metrics, DEFAULT_WORKSPACE.metrics),
+      metricTargets: Array.isArray(parsed.metricTargets)
+        ? parsed.metricTargets.filter(isMetricTarget)
+        : DEFAULT_WORKSPACE.metricTargets,
       actions: Array.isArray(parsed.actions)
         ? parsed.actions.filter(isAction)
         : DEFAULT_WORKSPACE.actions,
@@ -189,6 +372,20 @@ function isAction(value: unknown): value is BusinessAction {
     typeof item.title === "string" &&
     (item.risk === "low" || item.risk === "approval") &&
     typeof item.done === "boolean"
+  );
+}
+
+function isMetricTarget(value: unknown): value is BusinessMetricTarget {
+  if (!value || typeof value !== "object") return false;
+  const item = value as Record<string, unknown>;
+  return (
+    typeof item.id === "string" &&
+    typeof item.label === "string" &&
+    typeof item.current === "number" &&
+    Number.isFinite(item.current) &&
+    typeof item.target === "number" &&
+    Number.isFinite(item.target) &&
+    typeof item.unit === "string"
   );
 }
 
@@ -254,6 +451,9 @@ function parseWorkspaceBackup(raw: string): BusinessWorkspace | null {
       weeklyObjective: candidate.weeklyObjective,
       priorities: normalizeList(candidate.priorities, DEFAULT_WORKSPACE.priorities),
       metrics: normalizeList(candidate.metrics, DEFAULT_WORKSPACE.metrics),
+      metricTargets: Array.isArray(candidate.metricTargets)
+        ? candidate.metricTargets.filter(isMetricTarget)
+        : DEFAULT_WORKSPACE.metricTargets,
       actions: candidate.actions.filter(isAction),
       decisions: candidate.decisions.filter(isDecision),
       lastComplete: isLastComplete(candidate.lastComplete) ? candidate.lastComplete : null,
@@ -290,6 +490,187 @@ function currentAccessUrl(): string {
   return `${window.location.origin}${window.location.pathname}`;
 }
 
+function storageWritable(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const key = "jarvis.business.debug.check";
+    window.localStorage.setItem(key, "ok");
+    window.localStorage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function collectBusinessDiagnostics(workspace: BusinessWorkspace): BusinessDiagnostics {
+  const payload = JSON.stringify(workspace);
+  return {
+    generatedAt: new Date().toISOString(),
+    currentUrl: currentAccessUrl(),
+    storageWritable: storageWritable(),
+    workspacePayloadBytes: payload.length,
+    serviceWorkerSupport: typeof navigator !== "undefined" && "serviceWorker" in navigator,
+    serviceWorkerControlled:
+      typeof navigator !== "undefined" && Boolean(navigator.serviceWorker?.controller),
+    cacheSupport: typeof window !== "undefined" && "caches" in window,
+    userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "unknown",
+  };
+}
+
+function yesNo(value: boolean): string {
+  return value ? "yes" : "no";
+}
+
+function buildReadinessChecks(
+  diagnostics: BusinessDiagnostics,
+  workspace: BusinessWorkspace,
+  activePriorities: string[],
+  openActions: BusinessAction[],
+): ReadinessCheck[] {
+  return [
+    {
+      label: "Storage writable",
+      passed: diagnostics.storageWritable,
+      detail: diagnostics.storageWritable ? "Local memory can persist" : "Browser storage blocked",
+    },
+    {
+      label: "Workspace payload",
+      passed: diagnostics.workspacePayloadBytes > 0,
+      detail: `${diagnostics.workspacePayloadBytes} bytes`,
+    },
+    {
+      label: "Service worker",
+      passed: diagnostics.serviceWorkerSupport,
+      detail: diagnostics.serviceWorkerControlled ? "Controlling page" : "Supported",
+    },
+    {
+      label: "Cache API",
+      passed: diagnostics.cacheSupport,
+      detail: diagnostics.cacheSupport ? "Available" : "Unavailable",
+    },
+    {
+      label: "Mission defined",
+      passed: workspace.mission.trim().length > 0,
+      detail: workspace.mission.trim() ? "Active mission present" : "Mission missing",
+    },
+    {
+      label: "Active priorities limited",
+      passed: activePriorities.length > 0 && activePriorities.length <= MAX_ACTIVE_PRIORITIES,
+      detail: `${activePriorities.length}/${MAX_ACTIVE_PRIORITIES} active`,
+    },
+    {
+      label: "Metrics defined",
+      passed: workspace.metrics.length > 0,
+      detail: `${workspace.metrics.length} metrics`,
+    },
+    {
+      label: "Open action available",
+      passed: openActions.length > 0,
+      detail: `${openActions.length} open`,
+    },
+    {
+      label: "Approval gate present",
+      passed: workspace.actions.some((action) => action.risk === "approval"),
+      detail: "Guarded execution is separated",
+    },
+    {
+      label: "Receipts available",
+      passed: workspace.decisions.length > 0,
+      detail: `${workspace.decisions.length} receipts`,
+    },
+  ];
+}
+
+function buildDailyReview({
+  workspace,
+  activePriorities,
+  openActions,
+  nextAction,
+  approvalActions,
+  doneCount,
+  totalCount,
+}: {
+  workspace: BusinessWorkspace;
+  activePriorities: string[];
+  openActions: BusinessAction[];
+  nextAction: BusinessAction | null;
+  approvalActions: BusinessAction[];
+  doneCount: number;
+  totalCount: number;
+}): string {
+  return [
+    "# Daily Review",
+    "",
+    `Mission: ${workspace.mission}`,
+    `Weekly objective: ${workspace.weeklyObjective}`,
+    `Progress: ${doneCount}/${totalCount} completed`,
+    `Open actions: ${openActions.length}`,
+    `Approvals waiting: ${approvalActions.length}`,
+    `Next action: ${nextAction?.title ?? "All clear for today"}`,
+    "",
+    "Active priorities:",
+    ...activePriorities.map((priority, index) => `${index + 1}. ${priority}`),
+    "",
+    "Metrics to inspect:",
+    ...workspace.metrics.map((metric) => `- ${metric}`),
+  ].join("\n");
+}
+
+function buildCockpitReport({
+  workspace,
+  nextAction,
+  approvalActions,
+}: {
+  workspace: BusinessWorkspace;
+  nextAction: BusinessAction | null;
+  approvalActions: BusinessAction[];
+}): string {
+  return [
+    "# Business Cockpit Report",
+    "",
+    `Mission: ${workspace.mission}`,
+    `Weekly objective: ${workspace.weeklyObjective}`,
+    `Next action: ${nextAction?.title ?? "All clear for today"}`,
+    `Approval queue: ${approvalActions.length}`,
+    "",
+    "Metric targets:",
+    ...workspace.metricTargets.map((metric) => {
+      const remaining = Math.max(metric.target - metric.current, 0);
+      return `- ${metric.label}: ${metric.current}/${metric.target} ${metric.unit}, ${remaining} remaining`;
+    }),
+  ].join("\n");
+}
+
+function buildDebugReport(
+  diagnostics: BusinessDiagnostics,
+  workspace: BusinessWorkspace,
+  readinessChecks: ReadinessCheck[],
+): string {
+  const passedChecks = readinessChecks.filter((check) => check.passed).length;
+  return [
+    "# Business OS Debug Report",
+    "",
+    `Generated at: ${diagnostics.generatedAt}`,
+    `Readiness: ${passedChecks}/${readinessChecks.length}`,
+    `Current URL: ${diagnostics.currentUrl}`,
+    `Storage writable: ${yesNo(diagnostics.storageWritable)}`,
+    `Workspace payload bytes: ${diagnostics.workspacePayloadBytes}`,
+    `Service worker support: ${yesNo(diagnostics.serviceWorkerSupport)}`,
+    `Service worker controlled: ${yesNo(diagnostics.serviceWorkerControlled)}`,
+    `Cache API support: ${yesNo(diagnostics.cacheSupport)}`,
+    `Actions: ${workspace.actions.length}`,
+    `Receipts: ${workspace.decisions.length}`,
+    `Priorities: ${workspace.priorities.length}`,
+    `Metrics: ${workspace.metrics.length}`,
+    `User agent: ${diagnostics.userAgent}`,
+    "",
+    "Readiness checks:",
+    ...readinessChecks.map(
+      (check) => `- ${check.label}: ${check.passed ? "pass" : "check"} (${check.detail})`,
+    ),
+  ].join("\n");
+}
+
 export function BusinessView() {
   const [workspace, setWorkspace] = useState<BusinessWorkspace>(() => readWorkspace());
   const [saved, setSaved] = useState(false);
@@ -304,6 +685,19 @@ export function BusinessView() {
   const [metricDraft, setMetricDraft] = useState("");
   const [actionDraft, setActionDraft] = useState("");
   const [actionRisk, setActionRisk] = useState<DecisionRisk>("low");
+  const [diagnosticTick, setDiagnosticTick] = useState(0);
+  const [hermesStatus, setHermesStatus] = useState<HermesStatus | null>(null);
+  const [hermesProfiles, setHermesProfiles] = useState<HermesProfile[]>([]);
+  const [hermesCapabilities, setHermesCapabilities] = useState<HermesCapability[]>([]);
+  const [hermesExecutionEnabled, setHermesExecutionEnabled] = useState(false);
+  const [hermesBotMode, setHermesBotMode] = useState<HermesBotModePayload | null>(null);
+  const [hermesError, setHermesError] = useState("");
+  const [codexStatus, setCodexStatus] = useState<CodexStatus | null>(null);
+  const [handoffProfile, setHandoffProfile] = useState("kaizen7");
+  const [handoffMessage, setHandoffMessage] = useState(
+    "Focus today on the highest leverage action.",
+  );
+  const [handoffStatus, setHandoffStatus] = useState<HandoffStatus>("idle");
   const [decisionDraft, setDecisionDraft] = useState({
     title: "",
     evidence: "",
@@ -319,6 +713,70 @@ export function BusinessView() {
     }, 250);
     return () => window.clearTimeout(timer);
   }, [workspace]);
+
+  useEffect(() => {
+    if (typeof fetch !== "function") return;
+    let cancelled = false;
+
+    const loadHermes = async () => {
+      try {
+        const [
+          statusResponse,
+          profilesResponse,
+          capabilitiesResponse,
+          codexStatusResponse,
+          botModeResponse,
+        ] = await Promise.all([
+          fetch("/api/kaizen7/hermes/status"),
+          fetch("/api/kaizen7/hermes/profiles"),
+          fetch("/api/kaizen7/hermes/capabilities"),
+          fetch("/api/kaizen7/codex/status").catch(() => null),
+          fetch("/api/kaizen7/hermes/bot-mode").catch(() => null),
+        ]);
+        if (!statusResponse.ok || !profilesResponse.ok || !capabilitiesResponse.ok) {
+          throw new Error("Hermes API unavailable");
+        }
+        const status = (await statusResponse.json()) as HermesStatus;
+        const profilesPayload = (await profilesResponse.json()) as HermesProfilesPayload;
+        const capabilitiesPayload =
+          (await capabilitiesResponse.json()) as HermesCapabilitiesPayload;
+        const codexPayload = codexStatusResponse && codexStatusResponse.ok
+          ? ((await codexStatusResponse.json()) as CodexStatus)
+          : null;
+        const botModePayload =
+          botModeResponse && botModeResponse.ok
+            ? ((await botModeResponse.json()) as HermesBotModePayload)
+            : null;
+        if (cancelled) return;
+        const profiles = Array.isArray(profilesPayload.profiles)
+          ? profilesPayload.profiles
+          : [];
+        setHermesStatus(status);
+        setHermesProfiles(profiles);
+        setHermesCapabilities(
+          Array.isArray(capabilitiesPayload.capabilities)
+            ? capabilitiesPayload.capabilities
+            : [],
+        );
+        setHermesExecutionEnabled(Boolean(capabilitiesPayload.execution_enabled));
+        setCodexStatus(codexPayload);
+        setHermesBotMode(botModePayload);
+        setHermesError(status.error || profilesPayload.error || "");
+        setHandoffProfile((current) => {
+          if (profiles.some((profile) => profile.name === current)) return current;
+          return profiles[0]?.name ?? "kaizen7";
+        });
+      } catch {
+        if (!cancelled) setHermesError("Hermes API unavailable");
+      }
+    };
+
+    void loadHermes();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const activePriorities = useMemo(
     () => workspace.priorities.slice(0, MAX_ACTIVE_PRIORITIES),
@@ -340,8 +798,21 @@ export function BusinessView() {
     () => openActions.find((action) => action.risk === "low") ?? openActions[0] ?? null,
     [openActions],
   );
+  const approvalActions = useMemo(
+    () => openActions.filter((action) => action.risk === "approval"),
+    [openActions],
+  );
   const doneCount = doneActions.length;
   const totalCount = workspace.actions.length;
+  const diagnostics = useMemo(
+    () => collectBusinessDiagnostics(workspace),
+    [workspace, diagnosticTick],
+  );
+  const readinessChecks = useMemo(
+    () => buildReadinessChecks(diagnostics, workspace, activePriorities, openActions),
+    [diagnostics, workspace, activePriorities, openActions],
+  );
+  const passedReadinessChecks = readinessChecks.filter((check) => check.passed).length;
 
   const addPriority = () => {
     const value = priorityDraft.trim();
@@ -358,6 +829,21 @@ export function BusinessView() {
     if (!value) return;
     setWorkspace((current) => ({ ...current, metrics: [...current.metrics, value] }));
     setMetricDraft("");
+  };
+
+  const updateMetricTarget = (
+    id: string,
+    field: "current" | "target",
+    rawValue: string,
+  ) => {
+    const parsed = Number.parseInt(rawValue, 10);
+    const value = Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+    setWorkspace((current) => ({
+      ...current,
+      metricTargets: current.metricTargets.map((metric) =>
+        metric.id === id ? { ...metric, [field]: value } : metric,
+      ),
+    }));
   };
 
   const addAction = () => {
@@ -468,6 +954,52 @@ export function BusinessView() {
     await writeClipboard(briefing);
   };
 
+  const copyDailyReview = async () => {
+    await writeClipboard(
+      buildDailyReview({
+        workspace,
+        activePriorities,
+        openActions,
+        nextAction,
+        approvalActions,
+        doneCount,
+        totalCount,
+      }),
+    );
+  };
+
+  const copyCockpitReport = async () => {
+    await writeClipboard(
+      buildCockpitReport({
+        workspace,
+        nextAction,
+        approvalActions,
+      }),
+    );
+  };
+
+  const copyDebugReport = async () => {
+    await writeClipboard(buildDebugReport(diagnostics, workspace, readinessChecks));
+  };
+
+  const saveDailyReview = () => {
+    const decisionId = `review-${Date.now()}`;
+    setWorkspace((current) => ({
+      ...current,
+      decisions: [
+        {
+          id: decisionId,
+          title: `Daily review: ${doneCount}/${totalCount} completed`,
+          evidence: `Open actions: ${openActions.length}. Approvals waiting: ${approvalActions.length}.`,
+          result: `Next action: ${nextAction?.title ?? "All clear for today"}.`,
+          risk: "low",
+          createdAt: new Date().toISOString(),
+        },
+        ...current.decisions,
+      ],
+    }));
+  };
+
   const copyBackup = async () => {
     const backup = JSON.stringify(toWorkspaceBackup(workspace), null, 2);
     await writeClipboard(backup);
@@ -537,6 +1069,26 @@ export function BusinessView() {
       ],
     }));
     setDecisionDraft({ title: "", evidence: "", result: "", risk: "low" });
+  };
+
+  const proposeHermesHandoff = async () => {
+    const message = handoffMessage.trim();
+    if (!message || typeof fetch !== "function") return;
+    setHandoffStatus("saving");
+    try {
+      const response = await fetch("/api/kaizen7/hermes/chat/propose", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          profile: handoffProfile,
+          message,
+        }),
+      });
+      if (!response.ok) throw new Error("Handoff proposal failed");
+      setHandoffStatus("saved");
+    } catch {
+      setHandoffStatus("error");
+    }
   };
 
   return (
@@ -610,6 +1162,165 @@ export function BusinessView() {
             <article className="card-outline p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-sm font-semibold">
+                  <Target className="h-4 w-4 text-primary" />
+                  Start-to-finish flow
+                </div>
+                <Badge variant="outline">One loop</Badge>
+              </div>
+              <div className="grid gap-2 md:grid-cols-4">
+                <FlowStep
+                  icon={<Target className="h-4 w-4 text-primary" />}
+                  label="Focus"
+                  value={activePriorities[0] ?? "Define one priority"}
+                />
+                <FlowStep
+                  icon={<CheckCircle2 className="h-4 w-4 text-primary" />}
+                  label="Do"
+                  value={nextAction?.title ?? "All clear for today"}
+                />
+                <FlowStep
+                  icon={<ClipboardCheck className="h-4 w-4 text-primary" />}
+                  label="Review"
+                  value={`${doneCount} of ${totalCount} completed`}
+                />
+                <FlowStep
+                  icon={<BadgeCheck className="h-4 w-4 text-primary" />}
+                  label="Receipt"
+                  value={`${workspace.decisions.length} saved receipts`}
+                />
+              </div>
+            </article>
+
+            <article className="card-outline p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                  Business cockpit
+                </div>
+                <Badge variant="outline">Targets</Badge>
+              </div>
+              <div className="grid gap-2 md:grid-cols-3">
+                {workspace.metricTargets.map((metric) => (
+                  <MetricTargetRow
+                    key={metric.id}
+                    metric={metric}
+                    onChange={updateMetricTarget}
+                  />
+                ))}
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button size="sm" variant="secondary" onClick={copyCockpitReport}>
+                  <Clipboard className="mr-1 h-4 w-4" />
+                  Copy cockpit report
+                </Button>
+              </div>
+            </article>
+
+            <article className="card-outline p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <CircleAlert className="h-4 w-4 text-primary" />
+                  Debug kit
+                </div>
+                <Badge variant="outline">
+                  {passedReadinessChecks}/{readinessChecks.length} ready
+                </Badge>
+              </div>
+              <div className="mb-3 rounded-md border border-primary/30 bg-primary/5 px-3 py-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm font-semibold">10-point readiness</div>
+                  <Badge variant="secondary">10 checks</Badge>
+                </div>
+              </div>
+              <div className="grid gap-2 text-sm">
+                {readinessChecks.map((check) => (
+                  <DebugRow
+                    key={check.label}
+                    label={check.label}
+                    value={check.detail}
+                    ok={check.passed}
+                  />
+                ))}
+              </div>
+              <div className="mt-3 rounded-md border border-border/70 bg-background/50 px-3 py-2">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Current URL
+                </div>
+                <div className="mt-1 break-all font-mono text-xs text-muted-foreground">
+                  {diagnostics.currentUrl}
+                </div>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button size="sm" variant="secondary" onClick={copyDebugReport}>
+                  <Clipboard className="mr-1 h-4 w-4" />
+                  Copy debug report
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setDiagnosticTick((value) => value + 1)}
+                >
+                  <RotateCcw className="mr-1 h-4 w-4" />
+                  Refresh diagnostics
+                </Button>
+              </div>
+            </article>
+
+            <article className="card-outline p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <ClipboardCheck className="h-4 w-4 text-primary" />
+                  Daily review
+                </div>
+                <div className="flex flex-wrap justify-end gap-2">
+                  <Badge variant="outline">
+                    {doneCount}/{totalCount} completed
+                  </Badge>
+                  <Badge variant={approvalActions.length > 0 ? "destructive" : "secondary"}>
+                    {approvalActions.length}{" "}
+                    {approvalActions.length === 1 ? "approval" : "approvals"} waiting
+                  </Badge>
+                </div>
+              </div>
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="rounded-md border border-border/70 bg-background/50 px-3 py-2">
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Next action
+                  </div>
+                  <div className="mt-1 text-sm font-medium">
+                    {nextAction?.title ?? "All clear for today"}
+                  </div>
+                </div>
+                <div className="rounded-md border border-border/70 bg-background/50 px-3 py-2">
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Active focus
+                  </div>
+                  <div className="mt-1 text-sm font-medium">
+                    {activePriorities[0] ?? "Define one priority"}
+                  </div>
+                </div>
+                <div className="rounded-md border border-border/70 bg-background/50 px-3 py-2">
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Metrics
+                  </div>
+                  <div className="mt-1 text-sm font-medium">{workspace.metrics.join(", ")}</div>
+                </div>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button size="sm" variant="secondary" onClick={copyDailyReview}>
+                  <Clipboard className="mr-1 h-4 w-4" />
+                  Copy daily review
+                </Button>
+                <Button size="sm" onClick={saveDailyReview}>
+                  <Save className="mr-1 h-4 w-4" />
+                  Save daily review
+                </Button>
+              </div>
+            </article>
+
+            <article className="card-outline p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm font-semibold">
                   <CheckCircle2 className="h-4 w-4 text-primary" />
                   Daily execution
                 </div>
@@ -625,15 +1336,13 @@ export function BusinessView() {
                   aria-label="New action"
                   className="rounded-md border border-border bg-background/60 px-3 py-2 text-sm"
                 />
-                <select
+                <BrandedSelect
                   value={actionRisk}
-                  onChange={(event) => setActionRisk(event.target.value as DecisionRisk)}
-                  aria-label="Action risk"
+                  onValueChange={(value) => setActionRisk(value as DecisionRisk)}
+                  ariaLabel="Action risk"
+                  options={ACTION_RISK_OPTIONS}
                   className="rounded-md border border-border bg-background/60 px-3 py-2 text-sm"
-                >
-                  <option value="low">Recommendation</option>
-                  <option value="approval">Needs approval</option>
-                </select>
+                />
                 <Button size="sm" onClick={addAction}>
                   <Plus className="mr-1 h-4 w-4" />
                   Add action
@@ -732,20 +1441,18 @@ export function BusinessView() {
                 />
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <select
+                <BrandedSelect
                   value={decisionDraft.risk}
-                  onChange={(event) =>
+                  onValueChange={(value) =>
                     setDecisionDraft((current) => ({
                       ...current,
-                      risk: event.target.value as DecisionRisk,
+                      risk: value as DecisionRisk,
                     }))
                   }
-                  aria-label="Decision risk"
+                  ariaLabel="Decision risk"
+                  options={DECISION_RISK_OPTIONS}
                   className="rounded-md border border-border bg-background/60 px-3 py-2 text-sm"
-                >
-                  <option value="low">Recommendation only</option>
-                  <option value="approval">Needs human approval</option>
-                </select>
+                />
                 <Button size="sm" onClick={addDecision}>
                   <Plus className="mr-1 h-4 w-4" />
                   Add receipt
@@ -783,6 +1490,25 @@ export function BusinessView() {
           </section>
 
           <aside className="space-y-4">
+            <HermesRuntimePanel
+              status={hermesStatus}
+              profiles={hermesProfiles}
+              capabilities={hermesCapabilities}
+              executionEnabled={hermesExecutionEnabled}
+              botMode={hermesBotMode}
+              codexStatus={codexStatus}
+              error={hermesError}
+              handoffProfile={handoffProfile}
+              handoffMessage={handoffMessage}
+              handoffStatus={handoffStatus}
+              onProfileChange={setHandoffProfile}
+              onMessageChange={(value) => {
+                setHandoffMessage(value);
+                setHandoffStatus("idle");
+              }}
+              onProposeHandoff={proposeHermesHandoff}
+            />
+
             <article className="card-outline border-primary/30 bg-primary/5 p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-sm font-semibold">
@@ -1000,6 +1726,356 @@ export function BusinessView() {
           </aside>
         </div>
       </ScrollArea>
+    </div>
+  );
+}
+
+function HermesRuntimePanel({
+  status,
+  profiles,
+  capabilities,
+  executionEnabled,
+  botMode,
+  codexStatus,
+  error,
+  handoffProfile,
+  handoffMessage,
+  handoffStatus,
+  onProfileChange,
+  onMessageChange,
+  onProposeHandoff,
+}: {
+  status: HermesStatus | null;
+  profiles: HermesProfile[];
+  capabilities: HermesCapability[];
+  executionEnabled: boolean;
+  botMode: HermesBotModePayload | null;
+  codexStatus: CodexStatus | null;
+  error: string;
+  handoffProfile: string;
+  handoffMessage: string;
+  handoffStatus: HandoffStatus;
+  onProfileChange: (value: string) => void;
+  onMessageChange: (value: string) => void;
+  onProposeHandoff: () => void;
+}) {
+  const [jarvisRoute, setJarvisRoute] = useState<JarvisRoute>("hermes");
+  const [jarvisRequest, setJarvisRequest] = useState(
+    "Plan the next focused business move.",
+  );
+  const profileOptions = profiles.length
+    ? profiles.map((profile) => ({ value: profile.name, label: profile.name }))
+    : [{ value: "kaizen7", label: "kaizen7" }];
+  const visibleCapabilities = capabilities.slice(0, 4);
+  const selectedRoute =
+    JARVIS_ROUTES.find((route) => route.id === jarvisRoute) ?? JARVIS_ROUTES[0];
+
+  const buildSafeHandoff = (route: typeof selectedRoute, request: string) =>
+    `Route: ${route.label}. ${route.handoff} Request: ${request}`;
+
+  const prepareSafeHandoff = (route = selectedRoute, request = jarvisRequest) => {
+    const cleanRequest = request.trim();
+    if (!cleanRequest) return;
+    onMessageChange(buildSafeHandoff(route, cleanRequest));
+  };
+
+  const useQuickStart = (quickStart: (typeof JARVIS_QUICK_STARTS)[number]) => {
+    const route =
+      JARVIS_ROUTES.find((candidate) => candidate.id === quickStart.route) ??
+      JARVIS_ROUTES[0];
+    setJarvisRoute(route.id);
+    setJarvisRequest(quickStart.request);
+    prepareSafeHandoff(route, quickStart.request);
+  };
+
+  const canPrepareHandoff = jarvisRequest.trim().length > 0;
+
+  const prepareCurrentHandoff = () => {
+    const request = jarvisRequest.trim();
+    if (!request) return;
+    prepareSafeHandoff(selectedRoute, request);
+  };
+
+  return (
+    <article className="card-outline border-primary/40 bg-primary/5 p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-sm font-semibold">
+          <Bot className="h-4 w-4 text-primary" />
+          Hermes runtime
+        </div>
+        <Badge variant={status?.installed ? "default" : "outline"}>
+          {status?.installed ? "Connected" : "Checking"}
+        </Badge>
+      </div>
+
+      <div className="mb-3 rounded-md border border-primary/30 bg-background/60 p-3">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <div className="text-sm font-semibold">Jarvis command center</div>
+          <Badge variant="outline">Selected: {selectedRoute.label}</Badge>
+        </div>
+        <label className="block">
+          <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            What should Jarvis help with?
+          </span>
+          <textarea
+            value={jarvisRequest}
+            rows={3}
+            onChange={(event) => setJarvisRequest(event.target.value)}
+            aria-label="What should Jarvis help with?"
+            className="w-full resize-none rounded-md border border-border bg-background/60 px-3 py-2 text-sm leading-relaxed outline-none transition-colors focus:border-primary/60"
+          />
+        </label>
+        <div className="mt-3">
+          <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Quick starts
+          </div>
+          <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-4">
+            {JARVIS_QUICK_STARTS.map((quickStart) => (
+              <Button
+                key={quickStart.label}
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => useQuickStart(quickStart)}
+                className="justify-start"
+              >
+                {quickStart.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+        <div className="mt-3 grid gap-2">
+          {JARVIS_ROUTES.map((route) => (
+            <button
+              key={route.id}
+              type="button"
+              onClick={() => setJarvisRoute(route.id)}
+              aria-label={`Use ${route.label}`}
+              className={`rounded-md border px-3 py-2 text-left text-sm transition-colors ${
+                route.id === jarvisRoute
+                  ? "border-primary/60 bg-primary/10"
+                  : "border-border/70 bg-background/40 hover:border-primary/40"
+              }`}
+            >
+              <div className="font-semibold">{route.label}</div>
+              <div className="mt-1 text-xs text-muted-foreground">{route.summary}</div>
+            </button>
+          ))}
+        </div>
+        <Button
+          size="sm"
+          className="mt-3"
+          onClick={prepareCurrentHandoff}
+          disabled={!canPrepareHandoff}
+        >
+          <Send className="mr-1 h-4 w-4" />
+          Prepare safe handoff
+        </Button>
+      </div>
+
+      <div className="grid gap-2 text-sm">
+        <div className="rounded-md border border-border/70 bg-background/50 px-3 py-2">
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Runtime
+          </div>
+          <div className="mt-1 font-medium">
+            {status?.version || (error ? "Hermes unavailable" : "Waiting for Hermes")}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 rounded-md border border-border/70 bg-background/50 px-3 py-2">
+          <span className="min-w-0 flex-1">Safety mode</span>
+          <Badge variant={executionEnabled ? "destructive" : "secondary"}>
+            {executionEnabled ? "Execution enabled" : "Proposal only"}
+          </Badge>
+        </div>
+        <div className="rounded-md border border-border/70 bg-background/50 px-3 py-2">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="text-sm font-medium">Codex CLI</span>
+            <Badge variant={codexStatus?.installed ? "default" : "outline"}>
+              {codexStatus?.installed ? "Ready" : "Check"}
+            </Badge>
+          </div>
+          <div className="font-medium">
+            {codexStatus?.version || codexStatus?.error || "Waiting for Codex"}
+          </div>
+          <div className="mt-1 text-xs text-muted-foreground">
+            {codexStatus?.requires_pty && codexStatus?.requires_git_repo
+              ? "PTY + Git repo"
+              : "Proposal-only delegation"}
+          </div>
+        </div>
+        {botMode && (
+          <div className="rounded-md border border-primary/30 bg-background/60 px-3 py-3">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <span className="text-sm font-medium">{botMode.name}</span>
+              <Badge variant="secondary">Unified</Badge>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-3">
+              <RuntimeRole label="Local interface" value={botMode.personal_jarvis.role} />
+              <RuntimeRole label="Agent runtime" value={botMode.hermes.role} />
+              <RuntimeRole label="Persistent bot runtime" value={botMode.bot_mode.role} />
+            </div>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {botMode.recommended_bots.slice(0, 5).map((bot) => (
+                <Badge key={bot.profile} variant={bot.installed ? "default" : "outline"}>
+                  {bot.profile}
+                </Badge>
+              ))}
+              <Badge variant="outline">Human approval</Badge>
+            </div>
+          </div>
+        )}
+        <div className="rounded-md border border-border/70 bg-background/50 px-3 py-2">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="text-sm font-medium">Profiles</span>
+            <Badge variant="outline">{profiles.length} profiles</Badge>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {profileOptions.map((profile) => (
+              <Badge key={profile.value} variant="secondary">
+                {profile.label}
+              </Badge>
+            ))}
+          </div>
+        </div>
+        {visibleCapabilities.length > 0 && (
+          <div className="rounded-md border border-border/70 bg-background/50 px-3 py-2">
+            <div className="mb-2 text-sm font-medium">Capabilities</div>
+            <div className="space-y-1.5">
+              {visibleCapabilities.map((capability) => (
+                <div key={capability.id} className="flex items-center gap-2">
+                  <span className="min-w-0 flex-1">{capability.title}</span>
+                  <Badge variant={capability.requires_approval ? "outline" : "secondary"}>
+                    {capability.requires_approval ? "Approval" : "Read-only"}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-3 space-y-2">
+        <BrandedSelect
+          value={handoffProfile}
+          onValueChange={onProfileChange}
+          ariaLabel="Hermes handoff profile"
+          options={profileOptions}
+          className="rounded-md border border-border bg-background/60 px-3 py-2 text-sm"
+        />
+        <label className="block">
+          <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Handoff
+          </span>
+          <textarea
+            value={handoffMessage}
+            rows={3}
+            onChange={(event) => onMessageChange(event.target.value)}
+            aria-label="Hermes handoff message"
+            className="w-full resize-none rounded-md border border-border bg-background/60 px-3 py-2 text-sm leading-relaxed outline-none transition-colors focus:border-primary/60"
+          />
+        </label>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={onProposeHandoff}
+            disabled={handoffStatus === "saving" || !handoffMessage.trim()}
+          >
+            <Send className="mr-1 h-4 w-4" />
+            Propose handoff
+          </Button>
+          {handoffStatus === "saved" && <Badge variant="default">Handoff recorded</Badge>}
+          {handoffStatus === "error" && (
+            <Badge variant="destructive">Handoff failed</Badge>
+          )}
+        </div>
+      </div>
+      {error && <p className="mt-2 text-xs text-muted-foreground">{error}</p>}
+    </article>
+  );
+}
+
+function RuntimeRole({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-border/60 bg-background/50 px-2 py-2">
+      <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {label}
+      </div>
+      <div className="mt-1 text-xs text-muted-foreground">{value.replaceAll("_", " ")}</div>
+    </div>
+  );
+}
+
+function FlowStep({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+  return (
+    <div className="min-h-[92px] rounded-md border border-border/70 bg-background/50 px-3 py-3">
+      <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {icon}
+        {label}
+      </div>
+      <div className="mt-2 text-sm font-medium leading-snug">{value}</div>
+    </div>
+  );
+}
+
+function MetricTargetRow({
+  metric,
+  onChange,
+}: {
+  metric: BusinessMetricTarget;
+  onChange: (id: string, field: "current" | "target", value: string) => void;
+}) {
+  const remaining = Math.max(metric.target - metric.current, 0);
+  return (
+    <div className="rounded-md border border-border/70 bg-background/50 px-3 py-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-sm font-semibold">{metric.label}</div>
+        <Badge variant={remaining === 0 ? "default" : "outline"}>
+          {remaining} remaining
+        </Badge>
+      </div>
+      <div className="mt-2 text-lg font-semibold">
+        {metric.current} / {metric.target}
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <label>
+          <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Current
+          </span>
+          <input
+            type="number"
+            min="0"
+            value={metric.current}
+            onChange={(event) => onChange(metric.id, "current", event.target.value)}
+            aria-label={`Current ${metric.label}`}
+            className="w-full rounded-md border border-border bg-background/60 px-2 py-1.5 text-sm"
+          />
+        </label>
+        <label>
+          <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Target
+          </span>
+          <input
+            type="number"
+            min="0"
+            value={metric.target}
+            onChange={(event) => onChange(metric.id, "target", event.target.value)}
+            aria-label={`Target ${metric.label}`}
+            className="w-full rounded-md border border-border bg-background/60 px-2 py-1.5 text-sm"
+          />
+        </label>
+      </div>
+      <div className="mt-2 text-xs text-muted-foreground">{metric.unit}</div>
+    </div>
+  );
+}
+
+function DebugRow({ label, value, ok }: { label: string; value: string; ok: boolean }) {
+  return (
+    <div className="flex items-center gap-2 rounded-md border border-border/70 bg-background/50 px-3 py-2">
+      <span className="min-w-0 flex-1">{label}</span>
+      <Badge variant={ok ? "secondary" : "outline"}>{value}</Badge>
     </div>
   );
 }

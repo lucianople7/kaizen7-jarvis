@@ -81,6 +81,126 @@ Switch the provider used for new missions (e.g. codex to openai). The next missi
 - **Desktop UI section:** `agents`
 - **Voice example (EN):** "switch the agent provider to openai"
 
+## `kaizen7-bridge-status` — Show Control Bridge status
+
+Show the local recommendation-only bridge status and receipt count. This never executes external actions.
+
+- **Endpoint:** `GET /api/kaizen7/bridge/status`
+- **Arguments:** none
+- **Requires confirmation:** no
+- **Desktop UI section:** `agents`
+- **Voice example (EN):** "show the control bridge status"
+
+## `kaizen7-bots-list` — List KAIZEN7 bots
+
+List the recommendation-only bot roster derived from assistant modes. This does not execute bot work.
+
+- **Endpoint:** `GET /api/kaizen7/bots`
+- **Arguments:** none
+- **Requires confirmation:** no
+- **Desktop UI section:** `agents`
+- **Voice example (EN):** "show the kaizen seven bots"
+
+## `kaizen7-bots-propose` — Propose a KAIZEN7 bot
+
+Record a recommendation-only proposal for a new bot profile. It does not create, run, message, or schedule anything.
+
+- **Endpoint:** `POST /api/kaizen7/bots/propose`
+- **Arguments:** `name` (string; required); `title` (string; optional); `description` (string; optional)
+- **Requires confirmation:** no
+- **Desktop UI section:** `agents`
+- **Voice example (EN):** "propose a kaizen seven bot"
+
+## `kaizen7-hermes-status` — Show Hermes runtime status
+
+Inspect the local Hermes CLI installation and profile count. This is read-only and never starts a profile.
+
+- **Endpoint:** `GET /api/kaizen7/hermes/status`
+- **Arguments:** none
+- **Requires confirmation:** no
+- **Desktop UI section:** `agents`
+- **Voice example (EN):** "show hermes runtime status"
+
+## `kaizen7-hermes-profiles` — List Hermes profiles
+
+List local Hermes profiles available as execution surfaces. This is read-only and never runs a chat.
+
+- **Endpoint:** `GET /api/kaizen7/hermes/profiles`
+- **Arguments:** none
+- **Requires confirmation:** no
+- **Desktop UI section:** `agents`
+- **Voice example (EN):** "list hermes profiles"
+
+## `kaizen7-hermes-capabilities` — List Hermes runtime capabilities
+
+List Hermes profile, chat, cron, and peer capabilities exposed to KAIZEN7. This does not execute profile chat.
+
+- **Endpoint:** `GET /api/kaizen7/hermes/capabilities`
+- **Arguments:** none
+- **Requires confirmation:** no
+- **Desktop UI section:** `agents`
+- **Voice example (EN):** "list hermes capabilities"
+
+## `kaizen7-hermes-chat-propose` — Propose Hermes profile chat
+
+Record a proposed handoff to a Hermes profile using query-file transport. It does not execute the chat.
+
+- **Endpoint:** `POST /api/kaizen7/hermes/chat/propose`
+- **Arguments:** `profile` (string; required); `message` (string; required)
+- **Requires confirmation:** no
+- **Desktop UI section:** `agents`
+- **Voice example (EN):** "propose a hermes chat"
+
+## `kaizen7-hermes-cron-list` — List Hermes cron routines
+
+List Hermes cron routines through the local runtime.
+
+- **Endpoint:** `GET /api/kaizen7/hermes/cron`
+- **Arguments:** none
+- **Requires confirmation:** no
+- **Desktop UI section:** `agents`
+- **Voice example (EN):** "list hermes routines"
+
+## `kaizen7-hermes-peer-list` — List Hermes peers
+
+List registered Hermes peers through the local runtime.
+
+- **Endpoint:** `GET /api/kaizen7/hermes/peers`
+- **Arguments:** none
+- **Requires confirmation:** no
+- **Desktop UI section:** `agents`
+- **Voice example (EN):** "list hermes peers"
+
+## `kaizen7-bridge-capabilities` — List Control Bridge capabilities
+
+List safe recommendation-only bridge capabilities. This never executes external actions.
+
+- **Endpoint:** `GET /api/kaizen7/bridge/capabilities`
+- **Arguments:** none
+- **Requires confirmation:** no
+- **Desktop UI section:** `agents`
+- **Voice example (EN):** "list control bridge capabilities"
+
+## `kaizen7-bridge-propose` — Record a Control Bridge proposal
+
+Record a recommendation-only proposal as a receipt. It does not publish, send, spend, change credentials, or execute.
+
+- **Endpoint:** `POST /api/kaizen7/bridge/propose`
+- **Arguments:** `message` (string; required)
+- **Requires confirmation:** no
+- **Desktop UI section:** `agents`
+- **Voice example (EN):** "record a control bridge proposal"
+
+## `kaizen7-bridge-receipts` — List Control Bridge receipts
+
+List recent bridge receipts for proposals and activity.
+
+- **Endpoint:** `GET /api/kaizen7/bridge/receipts`
+- **Arguments:** none
+- **Requires confirmation:** no
+- **Desktop UI section:** `agents`
+- **Voice example (EN):** "show control bridge receipts"
+
 ## `providers-list` — List providers
 
 List all configured providers and which ones are active.
