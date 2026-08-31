@@ -2,14 +2,20 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 vi.mock("@/i18n", () => ({ useT: () => (k: string) => k }));
 vi.mock("../IntroClip", () => ({ IntroClip: () => <div data-testid="clip" /> }));
+vi.mock("@/components/FocuxLogo", () => ({
+  FocuxLogo: ({ className }: { className?: string }) => (
+    <div data-testid="focux-logo" className={className} />
+  ),
+}));
 import { WelcomeStep } from "./WelcomeStep";
 afterEach(cleanup);
 
-it("renders the clip and advances on the CTA", () => {
+it("renders the THE FOCUX logo, the clip and advances on the CTA", () => {
   const goNext = vi.fn();
   render(
     <WelcomeStep onb={{} as never} goNext={goNext} goBack={vi.fn()} skip={vi.fn()} isFirst isLast={false} />,
   );
+  expect(screen.getByTestId("focux-logo")).toBeDefined();
   expect(screen.getByTestId("clip")).toBeDefined();
   fireEvent.click(screen.getByRole("button", { name: "onboarding.welcome.cta" }));
   expect(goNext).toHaveBeenCalled();

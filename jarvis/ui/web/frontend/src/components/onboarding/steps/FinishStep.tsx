@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { FocuxLogo } from "@/components/FocuxLogo";
 import { useT } from "@/i18n";
 import type { StepProps } from "../OnboardingFlow";
 
@@ -44,6 +45,9 @@ export function FinishStep({ onb, goNext }: StepProps) {
 
   return (
     <div className="flex flex-col gap-4 text-center">
+      <div className="mx-auto">
+        <FocuxLogo className="h-14 w-14" />
+      </div>
       <h2 className="font-display text-xl font-semibold">{t("onboarding.finish.title")}</h2>
       <p className="text-sm text-muted-foreground">{t("onboarding.finish.body")}</p>
       {skipped.length > 0 && (
