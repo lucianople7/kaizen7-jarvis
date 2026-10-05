@@ -44,7 +44,7 @@ cryptography==48.0.1; sys_platform == 'darwin' and platform_machine == 'x86_64'
 cryptography>=50; (sys_platform != 'win32' or platform_machine != 'ARM64') and (sys_platform != 'darwin' or platform_machine != 'x86_64')
 
 # Config & settings
-pydantic>=2.9,<3.0
+pydantic>=2.13.5,<3.0
 pydantic-settings>=2.6
 pyyaml>=6.0
 
@@ -56,7 +56,7 @@ loguru>=0.7
 keyring>=25.5
 
 # Audio I/O
-sounddevice>=0.5
+sounddevice>=0.5.6
 # Upstream's native dependencies do not publish Windows ARM64 wheels. The
 # WebRTC transport capability-probes this dependency and degrades honestly.
 aiortc>=1.13; sys_platform != 'win32' or platform_machine != 'ARM64'
@@ -164,7 +164,7 @@ markdown>=3.5
 # Deterministic number->words for the voice path (spoken-safe).
 num2words>=0.5.13
 jinja2>=3.1
-croniter>=6.0
+croniter>=6.2.4
 # Floor 3.1.51: three high-severity GitPython command-injection / unsafe-clone
 # advisories (long-option prefix-abbreviation bypass of the CVE-2026-42215
 # blocklist, joined-short-option gate bypass, argument-vector injection) are
@@ -173,7 +173,7 @@ gitpython>=3.1.51
 watchdog>=5.0; (sys_platform != 'darwin' or python_version < '3.14') and (sys_platform != 'win32' or platform_machine != 'ARM64')
 
 # Atomic TOML edits (Phase 1b)
-tomlkit>=0.12
+tomlkit>=0.15.1
 
 # F-FRIENDS [F0+F1] — async SQLite + Telegram channel
 aiosqlite>=0.21
